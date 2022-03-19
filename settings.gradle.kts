@@ -5,6 +5,6 @@ pluginManagement {
     }
 }
 
-rootProject.name = "forktest"
+rootProject.name = "papyrus"
 
-include("forktest-api", "forktest-server")
+include("papyrus-api", "papyrus-server")
