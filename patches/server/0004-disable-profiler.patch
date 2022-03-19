@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Malfrador <malfrador@gmail.com>
+Date: Sat, 19 Mar 2022 15:30:45 +0100
+Subject: [PATCH] disable profiler
+
+
+diff --git a/src/main/java/com/destroystokyo/paper/PaperConfig.java b/src/main/java/com/destroystokyo/paper/PaperConfig.java
+index 88a4dda44e59fbe6215d7ac2e5af0c54527a2fc7..dbddac306a0dfb6868f959d65491ad5d9d391d41 100644
+--- a/src/main/java/com/destroystokyo/paper/PaperConfig.java
++++ b/src/main/java/com/destroystokyo/paper/PaperConfig.java
+@@ -240,7 +240,7 @@ public class PaperConfig {
+ 
+     public static String timingsServerName;
+     private static void timings() {
+-        boolean timings = getBoolean("timings.enabled", true);
++        boolean timings = false; // Papyrus - disable timings by default
+         boolean verboseTimings = getBoolean("timings.verbose", true);
+         TimingsManager.url = getString("timings.url", "https://timings.aikar.co/");
+         if (!TimingsManager.url.endsWith("/")) {
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index d5e4f4fc571df1645c641bc0c8c13bdf6e243358..6b2059d8182da30fbc8f9768a577c77c4f0671af 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -2252,7 +2252,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+     }
+ 
+     public ProfilerFiller getProfiler() {
+-        return this.profiler;
++        return  net.minecraft.util.profiling.InactiveProfiler.INSTANCE; // Papyrus - disable profiler
+     }
+ 
+     public abstract boolean isSingleplayerOwner(GameProfile profile);
+diff --git a/src/main/java/net/minecraft/world/level/Level.java b/src/main/java/net/minecraft/world/level/Level.java
+index 160c0f37aa3aaf7598f852acf9bd444f79444c97..ed95dac7e2d753a9980eca513a129d9833b112fd 100644
+--- a/src/main/java/net/minecraft/world/level/Level.java
++++ b/src/main/java/net/minecraft/world/level/Level.java
+@@ -1405,7 +1405,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable {
+     }
+ 
+     public ProfilerFiller getProfiler() {
+-        return (ProfilerFiller) this.profiler.get();
++        return net.minecraft.util.profiling.InactiveProfiler.INSTANCE; // Papyrus - disable profiler
+     }
+ 
+     public Supplier<ProfilerFiller> getProfilerSupplier() {
