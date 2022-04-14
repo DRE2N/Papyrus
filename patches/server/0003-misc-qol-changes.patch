@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Malfrador <malfrador@gmail.com>
+Date: Thu, 14 Apr 2022 19:39:57 +0200
+Subject: [PATCH] misc-qol-changes
+
+
+diff --git a/src/main/java/com/destroystokyo/paper/PaperConfig.java b/src/main/java/com/destroystokyo/paper/PaperConfig.java
+index 9f0e4bfed860b7e1dbf73ff188013e235baa46e0..34dca3eb8ce38c91a36f9572908176d71feda400 100644
+--- a/src/main/java/com/destroystokyo/paper/PaperConfig.java
++++ b/src/main/java/com/destroystokyo/paper/PaperConfig.java
+@@ -240,7 +240,7 @@ public class PaperConfig {
+ 
+     public static String timingsServerName;
+     private static void timings() {
+-        boolean timings = getBoolean("timings.enabled", true);
++        boolean timings = false;
+         // Pufferfish start
+         boolean reallyEnableTimings = getBoolean("timings.really-enabled", false);
+         if (timings && !reallyEnableTimings) {
+diff --git a/src/main/java/io/papermc/paper/chunk/PlayerChunkLoader.java b/src/main/java/io/papermc/paper/chunk/PlayerChunkLoader.java
+index 0f62a766a3249d8651a11dce6e9051b162693716..76961457b7fc87fbea13a33fe9a317e8c60335ea 100644
+--- a/src/main/java/io/papermc/paper/chunk/PlayerChunkLoader.java
++++ b/src/main/java/io/papermc/paper/chunk/PlayerChunkLoader.java
+@@ -996,7 +996,7 @@ public final class PlayerChunkLoader {
+                 // update the view radius for client
+                 // note that this should be after the map calls because the client wont expect unload calls not in its VD
+                 // and it's possible we decreased VD here
+-                this.player.connection.send(new ClientboundSetChunkCacheRadiusPacket(sendViewDistance));
++                this.player.connection.send(new ClientboundSetChunkCacheRadiusPacket(32));
+             }
+             if (tickViewDistance != this.lastTickDistance) {
+                 this.player.connection.send(new ClientboundSetSimulationDistancePacket(tickViewDistance));
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index aabc7bf7c34595bf8da8c0653db0dcc3d4aa692c..cbff73f8d196b30173a005bb118edc97149806fb 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -2254,8 +2254,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+     }
+ 
+     public ProfilerFiller getProfiler() {
+-        if (gg.pufferfish.pufferfish.PufferfishConfig.disableMethodProfiler) return net.minecraft.util.profiling.InactiveProfiler.INSTANCE;
+-        return this.profiler;
++        return net.minecraft.util.profiling.InactiveProfiler.INSTANCE;
+     }
+ 
+     public abstract boolean isSingleplayerOwner(GameProfile profile);
+diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
+index 02dc93c394d37c9a84aa4a58d80615c403c54fb9..d57bdf8d4ced93885d3af0643db03ed595be43e9 100644
+--- a/src/main/java/net/minecraft/server/players/PlayerList.java
++++ b/src/main/java/net/minecraft/server/players/PlayerList.java
+@@ -949,7 +949,7 @@ public abstract class PlayerList {
+         // CraftBukkit start
+         LevelData worlddata = worldserver1.getLevelData();
+         entityplayer1.connection.send(new ClientboundRespawnPacket(worldserver1.dimensionTypeRegistration(), worldserver1.dimension(), BiomeManager.obfuscateSeed(worldserver1.getSeed()), entityplayer1.gameMode.getGameModeForPlayer(), entityplayer1.gameMode.getPreviousGameModeForPlayer(), worldserver1.isDebug(), worldserver1.isFlat(), flag));
+-        entityplayer1.connection.send(new ClientboundSetChunkCacheRadiusPacket(worldserver1.getChunkSource().chunkMap.playerChunkManager.getTargetSendDistance())); // Spigot // Paper - replace old player chunk management
++        entityplayer1.connection.send(new ClientboundSetChunkCacheRadiusPacket(32)); // Spigot // Paper - replace old player chunk management
+         entityplayer1.connection.send(new ClientboundSetSimulationDistancePacket(worldserver1.getChunkSource().chunkMap.playerChunkManager.getTargetTickViewDistance())); // Spigot // Paper - replace old player chunk management
+         entityplayer1.spawnIn(worldserver1);
+         entityplayer1.unsetRemoved();
+diff --git a/src/main/java/net/minecraft/world/level/Level.java b/src/main/java/net/minecraft/world/level/Level.java
+index 8026e8ca528071bf80fecb5e96370d1d2ae799db..6545a4f94220a72607cf92d6f23f41bc1a51bb92 100644
+--- a/src/main/java/net/minecraft/world/level/Level.java
++++ b/src/main/java/net/minecraft/world/level/Level.java
+@@ -1506,8 +1506,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable {
+     }
+ 
+     public ProfilerFiller getProfiler() {
+-        if (gg.pufferfish.pufferfish.PufferfishConfig.disableMethodProfiler) return net.minecraft.util.profiling.InactiveProfiler.INSTANCE; // Pufferfish
+-        return (ProfilerFiller) this.profiler.get();
++        return net.minecraft.util.profiling.InactiveProfiler.INSTANCE; // Papyrus
+     }
+ 
+     public Supplier<ProfilerFiller> getProfilerSupplier() {
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/Heightmap.java b/src/main/java/net/minecraft/world/level/levelgen/Heightmap.java
+index 0181cef8b6c9e7d1b5c08a43b429f5db40cc8d07..25cb30f28ec9219a1ddf2c0931b786dec27ef908 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/Heightmap.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/Heightmap.java
+@@ -129,7 +129,7 @@ public class Heightmap {
+         if (ms.length == ls.length) {
+             System.arraycopy(ls, 0, ms, 0, ls.length);
+         } else {
+-            LOGGER.warn("Ignoring heightmap data for chunk " + chunk.getPos() + ", size does not match; expected: " + ms.length + ", got: " + ls.length);
++            // Papyrus - LOGGER.warn("Ignoring heightmap data for chunk " + chunk.getPos() + ", size does not match; expected: " + ms.length + ", got: " + ls.length);
+             primeHeightmaps(chunk, EnumSet.of(type));
+         }
+     }
