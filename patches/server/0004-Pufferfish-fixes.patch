@@ -18,10 +18,18 @@ index 020368da69b9a492155f6de6297f74732f4ab6ea..a1e943422d16adc350be0aed99c62c11
          this.setPermission("bukkit.command.pufferfish");
      }
 diff --git a/src/main/java/gg/pufferfish/pufferfish/PufferfishConfig.java b/src/main/java/gg/pufferfish/pufferfish/PufferfishConfig.java
-index 56330536c52fa327ef89d7a08e72557c6633c8bb..682133bf75c9df03757eaeb4726ac0a6ee5dc3da 100644
+index a820bfe38cb5765ee74c4fd7084d949477f83692..fae78f59fb2fa239c57cdd702fc93f315d2d1eb5 100644
 --- a/src/main/java/gg/pufferfish/pufferfish/PufferfishConfig.java
 +++ b/src/main/java/gg/pufferfish/pufferfish/PufferfishConfig.java
-@@ -163,15 +163,6 @@ public class PufferfishConfig {
+@@ -102,7 +102,6 @@ public class PufferfishConfig {
+ 			PufferfishLogger.LOGGER.warning("SIMD operations are available for your server, but are not configured!");
+ 			PufferfishLogger.LOGGER.warning("To enable additional optimizations, add \"--add-modules=jdk.incubator.vector\" to your startup flags, BEFORE the \"-jar\".");
+ 			PufferfishLogger.LOGGER.warning("If you have already added this flag, then SIMD operations are not supported on your JVM or CPU.");
+-			PufferfishLogger.LOGGER.warning("Debug: Java: " + System.getProperty("java.version") + ", test run: " + SIMDDetection.testRun);
+ 		}
+ 	}
+ 	
+@@ -165,15 +164,6 @@ public class PufferfishConfig {
  	}
  	
  	public static String sentryDsn;
