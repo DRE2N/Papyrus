@@ -6,10 +6,10 @@ Subject: [PATCH] combat changes
 
 diff --git a/src/main/java/de/erethon/papyrus/DamageType.java b/src/main/java/de/erethon/papyrus/DamageType.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..9a6056c427377880303b6e8e1a1b60abd8f1e813
+index 0000000000000000000000000000000000000000..14e5a77b107a7dd9070e160f56eaf4c3261ce1db
 --- /dev/null
 +++ b/src/main/java/de/erethon/papyrus/DamageType.java
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,14 @@
 +package de.erethon.papyrus;
 +
 +public enum DamageType {
@@ -19,44 +19,193 @@ index 0000000000000000000000000000000000000000..9a6056c427377880303b6e8e1a1b60ab
 +    FIRE,
 +    MAGIC,
 +    PHYSICAL,
-+    WATER;
++    WATER,
++    PURE;
 +
 +    DamageType() {}
 +}
-diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..e047c9dc856e18d1ddae29e72955a3d67aadbc28 100644
---- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
-+++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-@@ -19,6 +19,8 @@ import java.util.Optional;
- import java.util.UUID;
- import java.util.function.Predicate;
+diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
+index c8057f98e16ba6e19640e0b250e5201e0f4f57db..23bdd75d22b3941065963912ef6d34c59a5c4e69 100644
+--- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
++++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
+@@ -13,6 +13,8 @@ import java.util.Objects;
+ import java.util.Optional;
+ import java.util.OptionalInt;
  import javax.annotation.Nullable;
 +
 +import de.erethon.papyrus.DamageType;
  import net.minecraft.BlockUtil;
+ import net.minecraft.ChatFormatting;
+ import net.minecraft.CrashReport;
+@@ -2063,7 +2065,7 @@ public class ServerPlayer extends Player {
+         if (this.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
+             this.setCamera(target);
+         } else {
+-            super.attack(target);
++            super.attack(target, DamageType.PHYSICAL); // Papyrus
+         }
+ 
+     }
+diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
+index fa3263bffcfe042c2f210f85c6868fff08132a7c..cb94a286c4afb6427699ebb3dc625e9c87d8fcd2 100644
+--- a/src/main/java/net/minecraft/world/entity/Entity.java
++++ b/src/main/java/net/minecraft/world/entity/Entity.java
+@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
+ import com.google.common.collect.Sets;
+ import com.google.common.collect.UnmodifiableIterator;
+ import com.mojang.logging.LogUtils;
++import de.erethon.papyrus.DamageType;
+ import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
+ import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
+ import java.util.Arrays;
+@@ -2004,6 +2005,16 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+         }
+     }
+ 
++    // Papyrus - combat rework
++    public boolean hurt(DamageSource source, float amount, DamageType type) {
++        if (this.isInvulnerableTo(source)) {
++            return false;
++        } else {
++            this.markHurt();
++            return false;
++        }
++    }
++
+     public final Vec3 getViewVector(float tickDelta) {
+         return this.calculateViewVector(this.getViewXRot(tickDelta), this.getViewYRot(tickDelta));
+     }
+diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..c2ee0557b35ad9b450e691e760af32bf98a7704a 100644
+--- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
++++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+@@ -10,15 +10,13 @@ import com.mojang.datafixers.util.Pair;
+ import com.mojang.logging.LogUtils;
+ import com.mojang.serialization.DataResult;
+ import com.mojang.serialization.Dynamic;
+-import java.util.Collection;
+-import java.util.ConcurrentModificationException;
+-import java.util.Iterator;
+-import java.util.List;
+-import java.util.Map;
+-import java.util.Optional;
+-import java.util.UUID;
++
++import java.util.*;
+ import java.util.function.Predicate;
+ import javax.annotation.Nullable;
++
++import de.erethon.papyrus.DamageType;
++import net.kyori.adventure.text.Component;
+ import net.minecraft.BlockUtil;
  import net.minecraft.advancements.CriteriaTriggers;
  import net.minecraft.commands.arguments.EntityAnchorArgument;
-@@ -1320,9 +1322,18 @@ public abstract class LivingEntity extends Entity {
+@@ -123,9 +121,6 @@ import net.minecraft.world.scores.PlayerTeam;
+ import org.slf4j.Logger;
+ 
+ // CraftBukkit start
+-import java.util.ArrayList;
+-import java.util.HashSet;
+-import java.util.Set;
+ import com.google.common.base.Function;
+ import org.bukkit.Location;
+ import org.bukkit.craftbukkit.attribute.CraftAttributeMap;
+@@ -277,6 +272,12 @@ public abstract class LivingEntity extends Entity {
+     }
+     // Spigot end
+ 
++    // Papyrus start
++    private Map<DamageType, Float> resistances = new HashMap<>();
++    private Map<DamageType, Float> strengths = new HashMap<>();
++
++    // Papyrus end
++
+     protected LivingEntity(EntityType<? extends LivingEntity> type, Level world) {
+         super(type, world);
+         this.lastHandItemStacks = NonNullList.withSize(2, ItemStack.EMPTY);
+@@ -299,6 +300,22 @@ public abstract class LivingEntity extends Entity {
+         this.yHeadRot = this.getYRot();
+         this.maxUpStep = 0.6F;
+         NbtOps dynamicopsnbt = NbtOps.INSTANCE;
++        // Papyrus start - default resistances
++        resistances.put(DamageType.PHYSICAL, 50f);
++        resistances.put(DamageType.MAGIC, 50f);
++        resistances.put(DamageType.AIR, 50f);
++        resistances.put(DamageType.EARTH, 50f);
++        resistances.put(DamageType.FIRE, 50f);
++        resistances.put(DamageType.WATER, 50f);
++        resistances.put(DamageType.PURE, 0f); // For vanilla damage mechanics
++        strengths.put(DamageType.PHYSICAL, 50f);
++        strengths.put(DamageType.MAGIC, 50f);
++        strengths.put(DamageType.AIR, 50f);
++        strengths.put(DamageType.EARTH, 50f);
++        strengths.put(DamageType.FIRE, 50f);
++        strengths.put(DamageType.WATER, 50f);
++        strengths.put(DamageType.PURE, 2f);
++        // Papyrus end
+ 
+         this.brain = this.makeBrain(new Dynamic(dynamicopsnbt, (Tag) dynamicopsnbt.createMap((Map) ImmutableMap.of(dynamicopsnbt.createString("memories"), (Tag) dynamicopsnbt.emptyMap()))));
+     }
+@@ -1303,7 +1320,14 @@ public abstract class LivingEntity extends Entity {
+             player.updateScaledHealth(false);
+             return;
+         }
+-        // CraftBukkit end
++        // Papyrus start
++        if (!(this instanceof net.minecraft.world.entity.player.Player)) {
++            setCustomName(net.minecraft.network.chat.Component.literal("Health: " + getHealth()));
++            if (!isCustomNameVisible()) {
++                setCustomNameVisible(true);
++            }
++        }
++        // Papyrus end
+         this.entityData.set(LivingEntity.DATA_HEALTH_ID, Mth.clamp(health, 0.0F, this.getMaxHealth()));
+     }
+ 
+@@ -1320,9 +1344,41 @@ public abstract class LivingEntity extends Entity {
      }
      // Pufferfish end
  
-+    // Papyrus start
++    // Papyrus start - rewrite damage system
 +
++    public float getStrength(DamageType type) {
++        return strengths.get(type);
++    }
++
++    public float getResistance(DamageType type) {
++        return resistances.get(type);
++    }
++
++    @Override
 +    public boolean hurt(DamageSource source, float amount, DamageType type) {
-+        this.setHealth(getHealth() - amount);
++        if (isInvulnerable() || isRemoved() || dead || getHealth() <= 0F || level.isClientSide) {
++            return false;
++        }
++        markHurt();
++        float finalDmg = amount - getResistance(type);
++        if (source.getEntity() != null && source.getEntity() instanceof net.minecraft.world.entity.player.Player player) {
++            player.getBukkitEntity().sendActionBar(Component.text(type + ": " + amount + " | Res: " + getResistance(type) + " | = " + finalDmg));
++        }
++        if (finalDmg <= 0 && source.getEntity() != null) {
++            return false;
++        }
++        playHurtSound(source);
++        level.broadcastEntityEvent(this, (byte) 2); // hurt animation
++        setHealth(getHealth() - finalDmg);
 +        return true;
 +    }
      @Override
      public boolean hurt(DamageSource source, float amount) {
 -        if (this.isInvulnerableTo(source)) {
-+        hurt(source, amount, DamageType.PHYSICAL);
++        hurt(source, amount, DamageType.PURE);
 +        return true;
 +    }
++    // Papyrus end
 +        /*if (this.isInvulnerableTo(source)) {
              return false;
          } else if (this.level.isClientSide) {
              return false;
-@@ -1505,8 +1516,8 @@ public abstract class LivingEntity extends Entity {
+@@ -1505,8 +1561,8 @@ public abstract class LivingEntity extends Entity {
              }
  
              return flag2;
@@ -67,3 +216,143 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..e047c9dc856e18d1ddae29e72955a3d6
  
      protected void blockUsingShield(LivingEntity attacker) {
          attacker.blockedByShield(this);
+diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
+index e8e60ea8b9e97ed87be78752f398ab25ba8e9a1b..6efed94454f320212d044c19e8d1c7062931b5ea 100644
+--- a/src/main/java/net/minecraft/world/entity/Mob.java
++++ b/src/main/java/net/minecraft/world/entity/Mob.java
+@@ -9,6 +9,8 @@ import java.util.Map;
+ import java.util.Optional;
+ import java.util.UUID;
+ import javax.annotation.Nullable;
++
++import de.erethon.papyrus.DamageType;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.NonNullList;
+ import net.minecraft.core.Vec3i;
+@@ -1585,14 +1587,15 @@ public abstract class Mob extends LivingEntity {
+         return d0 <= this.getMeleeAttackRangeSqr(entity);
+     }
+ 
++
+     @Override
+     public boolean doHurtTarget(Entity target) {
+-        float f = (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE);
+-        float f1 = (float) this.getAttributeValue(Attributes.ATTACK_KNOCKBACK);
++        float dmg = (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE);
++        float knockback = (float) this.getAttributeValue(Attributes.ATTACK_KNOCKBACK);
+ 
+         if (target instanceof LivingEntity) {
+-            f += EnchantmentHelper.getDamageBonus(this.getMainHandItem(), ((LivingEntity) target).getMobType());
+-            f1 += (float) EnchantmentHelper.getKnockbackBonus(this);
++            dmg += EnchantmentHelper.getDamageBonus(this.getMainHandItem(), ((LivingEntity) target).getMobType());
++            knockback += (float) EnchantmentHelper.getKnockbackBonus(this);
+         }
+ 
+         int i = EnchantmentHelper.getFireAspect(this);
+@@ -1607,12 +1610,12 @@ public abstract class Mob extends LivingEntity {
+             }
+             // CraftBukkit end
+         }
+-
+-        boolean flag = target.hurt(DamageSource.mobAttack(this), f);
++        dmg = dmg + getStrength(DamageType.PHYSICAL);
++        boolean flag = target.hurt(DamageSource.mobAttack(this), dmg);
+ 
+         if (flag) {
+-            if (f1 > 0.0F && target instanceof LivingEntity) {
+-                ((LivingEntity) target).knockback((double) (f1 * 0.5F), (double) Mth.sin(this.getYRot() * 0.017453292F), (double) (-Mth.cos(this.getYRot() * 0.017453292F)), this); // Paper
++            if (knockback > 0.0F && target instanceof LivingEntity) {
++                ((LivingEntity) target).knockback((double) (knockback * 0.5F), (double) Mth.sin(this.getYRot() * 0.017453292F), (double) (-Mth.cos(this.getYRot() * 0.017453292F)), this); // Paper
+                 this.setDeltaMovement(this.getDeltaMovement().multiply(0.6D, 1.0D, 0.6D));
+             }
+ 
+diff --git a/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java b/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
+index dc27e53c6c8711db87a38ef678d5f328d099376f..542f1c9a6d58ac44904a92b79d6014da49827c17 100644
+--- a/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
++++ b/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
+@@ -5,12 +5,12 @@ import net.minecraft.core.Registry;
+ 
+ public class Attributes {
+ 
+-    public static final Attribute MAX_HEALTH = Attributes.register("generic.max_health", (new RangedAttribute("attribute.name.generic.max_health", 20.0D, 1.0D, org.spigotmc.SpigotConfig.maxHealth)).setSyncable(true));
++    public static final Attribute MAX_HEALTH = Attributes.register("generic.max_health", (new RangedAttribute("attribute.name.generic.max_health", 500.0D, 1.0D, org.spigotmc.SpigotConfig.maxHealth)).setSyncable(true));
+     public static final Attribute FOLLOW_RANGE = Attributes.register("generic.follow_range", new RangedAttribute("attribute.name.generic.follow_range", 32.0D, 0.0D, 2048.0D));
+     public static final Attribute KNOCKBACK_RESISTANCE = Attributes.register("generic.knockback_resistance", new RangedAttribute("attribute.name.generic.knockback_resistance", 0.0D, 0.0D, 1.0D));
+     public static final Attribute MOVEMENT_SPEED = Attributes.register("generic.movement_speed", (new RangedAttribute("attribute.name.generic.movement_speed", 0.699999988079071D, 0.0D, org.spigotmc.SpigotConfig.movementSpeed)).setSyncable(true));
+     public static final Attribute FLYING_SPEED = Attributes.register("generic.flying_speed", (new RangedAttribute("attribute.name.generic.flying_speed", 0.4000000059604645D, 0.0D, 1024.0D)).setSyncable(true));
+-    public static final Attribute ATTACK_DAMAGE = Attributes.register("generic.attack_damage", new RangedAttribute("attribute.name.generic.attack_damage", 2.0D, 0.0D, org.spigotmc.SpigotConfig.attackDamage));
++    public static final Attribute ATTACK_DAMAGE = Attributes.register("generic.attack_damage", new RangedAttribute("attribute.name.generic.attack_damage", 20.0D, 0.0D, org.spigotmc.SpigotConfig.attackDamage));
+     public static final Attribute ATTACK_KNOCKBACK = Attributes.register("generic.attack_knockback", new RangedAttribute("attribute.name.generic.attack_knockback", 0.0D, 0.0D, 5.0D));
+     public static final Attribute ATTACK_SPEED = Attributes.register("generic.attack_speed", (new RangedAttribute("attribute.name.generic.attack_speed", 4.0D, 0.0D, 1024.0D)).setSyncable(true));
+     public static final Attribute ARMOR = Attributes.register("generic.armor", (new RangedAttribute("attribute.name.generic.armor", 0.0D, 0.0D, 30.0D)).setSyncable(true));
+diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
+index cd9cbfa5ef94994b3f7f2ecdde843620e7e6c071..7d187b0c10ea0980ff8649e2aeac2546cad788dc 100644
+--- a/src/main/java/net/minecraft/world/entity/player/Player.java
++++ b/src/main/java/net/minecraft/world/entity/player/Player.java
+@@ -17,6 +17,8 @@ import java.util.Optional;
+ import java.util.OptionalInt;
+ import java.util.function.Predicate;
+ import javax.annotation.Nullable;
++
++import de.erethon.papyrus.DamageType;
+ import net.minecraft.SharedConstants;
+ import net.minecraft.Util;
+ import net.minecraft.advancements.CriteriaTriggers;
+@@ -130,7 +132,7 @@ public abstract class Player extends LivingEntity {
+ 
+     private static final Logger LOGGER = LogUtils.getLogger();
+     public static final int MAX_NAME_LENGTH = 16;
+-    public static final int MAX_HEALTH = 20;
++    public static final int MAX_HEALTH = 500;
+     public static final int SLEEP_DURATION = 100;
+     public static final int WAKE_UP_DURATION = 10;
+     public static final int ENDER_SLOT_OFFSET = 200;
+@@ -226,7 +228,7 @@ public abstract class Player extends LivingEntity {
+     }
+ 
+     public static AttributeSupplier.Builder createAttributes() {
+-        return LivingEntity.createLivingAttributes().add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.10000000149011612D).add(Attributes.ATTACK_SPEED).add(Attributes.LUCK);
++        return LivingEntity.createLivingAttributes().add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.10000000149011612D).add(Attributes.ATTACK_SPEED).add(Attributes.LUCK).add(Attributes.MAX_HEALTH, 500);
+     }
+ 
+     @Override
+@@ -1249,6 +1251,15 @@ public abstract class Player extends LivingEntity {
+         return this.onGround || this.fallDistance < this.maxUpStep && !this.level.noCollision(this, this.getBoundingBox().move(0.0D, (double) (this.fallDistance - this.maxUpStep), 0.0D));
+     }
+ 
++    // Papyrus - combat rework
++    public void attack(Entity target, DamageType type) {
++        if (!target.isAttackable()) {
++            return;
++        }
++        float damage = (float) (getAttributeValue(Attributes.ATTACK_DAMAGE) + getStrength(type));
++        target.hurt(DamageSource.playerAttack(this), damage, type);
++    }
++
+     public void attack(Entity target) {
+         if (target.isAttackable()) {
+             if (!target.skipAttackInteraction(this)) {
+@@ -1459,7 +1470,7 @@ public abstract class Player extends LivingEntity {
+ 
+     @Override
+     protected void doAutoAttackOnTouch(LivingEntity target) {
+-        this.attack(target);
++        this.attack(target, DamageType.PHYSICAL); // Papyrus
+     }
+ 
+     public void disableShield(boolean sprinting) {
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+index abcce6bd0b32d0188751393a6f56f2e82530912c..caf0da70c82870cb66f589859027ae02283d6a66 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+@@ -160,8 +160,8 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+     private final Map<UUID, Set<WeakReference<Plugin>>> hiddenEntities = new HashMap<>();
+     private static final WeakHashMap<Plugin, WeakReference<Plugin>> pluginWeakReferences = new WeakHashMap<>();
+     private int hash = 0;
+-    private double health = 20;
+-    private boolean scaledHealth = false;
++    private double health = 500; // Papyrus
++    private boolean scaledHealth = true; // Papyrus
+     private double healthScale = 20;
+     private CraftWorldBorder clientWorldBorder = null;
+     private BorderChangeListener clientWorldBorderListener = this.createWorldBorderListener();
