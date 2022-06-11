@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: malfrador <malfrador@gmail.com>
+Date: Sat, 11 Jun 2022 18:07:35 +0200
+Subject: [PATCH] combat changes
+
+
+diff --git a/src/main/java/de/erethon/papyrus/DamageType.java b/src/main/java/de/erethon/papyrus/DamageType.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..9a6056c427377880303b6e8e1a1b60abd8f1e813
+--- /dev/null
++++ b/src/main/java/de/erethon/papyrus/DamageType.java
+@@ -0,0 +1,13 @@
++package de.erethon.papyrus;
++
++public enum DamageType {
++
++    AIR,
++    EARTH,
++    FIRE,
++    MAGIC,
++    PHYSICAL,
++    WATER;
++
++    DamageType() {}
++}
+diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..e047c9dc856e18d1ddae29e72955a3d67aadbc28 100644
+--- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
++++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+@@ -19,6 +19,8 @@ import java.util.Optional;
+ import java.util.UUID;
+ import java.util.function.Predicate;
+ import javax.annotation.Nullable;
++
++import de.erethon.papyrus.DamageType;
+ import net.minecraft.BlockUtil;
+ import net.minecraft.advancements.CriteriaTriggers;
+ import net.minecraft.commands.arguments.EntityAnchorArgument;
+@@ -1320,9 +1322,18 @@ public abstract class LivingEntity extends Entity {
+     }
+     // Pufferfish end
+ 
++    // Papyrus start
++
++    public boolean hurt(DamageSource source, float amount, DamageType type) {
++        this.setHealth(getHealth() - amount);
++        return true;
++    }
+     @Override
+     public boolean hurt(DamageSource source, float amount) {
+-        if (this.isInvulnerableTo(source)) {
++        hurt(source, amount, DamageType.PHYSICAL);
++        return true;
++    }
++        /*if (this.isInvulnerableTo(source)) {
+             return false;
+         } else if (this.level.isClientSide) {
+             return false;
+@@ -1505,8 +1516,8 @@ public abstract class LivingEntity extends Entity {
+             }
+ 
+             return flag2;
+-        }
+-    }
++            }
++    }*/
+ 
+     protected void blockUsingShield(LivingEntity attacker) {
+         attacker.blockedByShield(this);
