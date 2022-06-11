@@ -1,3 +1,5 @@
+import java.util.Locale
+
 pluginManagement {
     repositories {
         gradlePluginPortal()
@@ -6,5 +8,8 @@ pluginManagement {
 }
 
 rootProject.name = "papyrus"
-
-include("papyrus-api", "papyrus-server")
+for (name in listOf("papyrus-api", "papyrus-server")) {
+    val projName = name.toLowerCase(Locale.ENGLISH)
+    include(projName)
+    findProject(":$projName")!!.projectDir = file(name)
+}
