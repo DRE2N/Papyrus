@@ -96,7 +96,7 @@ index 4d57f2b8d08a83e404f0b81321b18c83a47ddb4e..0f7409e121c1b2e4bcec105c47e59447
          return this.calculateViewVector(this.getViewXRot(tickDelta), this.getViewYRot(tickDelta));
      }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..6319adfe3f5098032a5260eddd529fa2e8c980a5 100644
+index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..8120122582994a29a9d01740577b73164d278f3a 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -10,15 +10,14 @@ import com.mojang.datafixers.util.Pair;
@@ -121,7 +121,12 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..6319adfe3f5098032a5260eddd529fa2
  import net.minecraft.BlockUtil;
  import net.minecraft.advancements.CriteriaTriggers;
  import net.minecraft.commands.arguments.EntityAnchorArgument;
-@@ -123,9 +122,6 @@ import net.minecraft.world.scores.PlayerTeam;
+@@ -120,25 +119,18 @@ import net.minecraft.world.phys.EntityHitResult;
+ import net.minecraft.world.phys.HitResult;
+ import net.minecraft.world.phys.Vec3;
+ import net.minecraft.world.scores.PlayerTeam;
++import org.bukkit.Bukkit;
++import org.bukkit.event.entity.*;
  import org.slf4j.Logger;
  
  // CraftBukkit start
@@ -131,7 +136,20 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..6319adfe3f5098032a5260eddd529fa2
  import com.google.common.base.Function;
  import org.bukkit.Location;
  import org.bukkit.craftbukkit.attribute.CraftAttributeMap;
-@@ -277,6 +273,12 @@ public abstract class LivingEntity extends Entity {
+ import org.bukkit.craftbukkit.event.CraftEventFactory;
+ import org.bukkit.craftbukkit.inventory.CraftItemStack;
+ import org.bukkit.entity.Player;
+-import org.bukkit.event.entity.ArrowBodyCountChangeEvent;
+-import org.bukkit.event.entity.EntityDamageEvent;
+ import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
+-import org.bukkit.event.entity.EntityPotionEffectEvent;
+-import org.bukkit.event.entity.EntityRegainHealthEvent;
+-import org.bukkit.event.entity.EntityResurrectEvent;
+-import org.bukkit.event.entity.EntityTeleportEvent;
+ import org.bukkit.event.player.PlayerItemConsumeEvent;
+ // CraftBukkit end
+ 
+@@ -277,6 +269,12 @@ public abstract class LivingEntity extends Entity {
      }
      // Spigot end
  
@@ -144,7 +162,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..6319adfe3f5098032a5260eddd529fa2
      protected LivingEntity(EntityType<? extends LivingEntity> type, Level world) {
          super(type, world);
          this.lastHandItemStacks = NonNullList.withSize(2, ItemStack.EMPTY);
-@@ -299,6 +301,22 @@ public abstract class LivingEntity extends Entity {
+@@ -299,6 +297,22 @@ public abstract class LivingEntity extends Entity {
          this.yHeadRot = this.getYRot();
          this.maxUpStep = 0.6F;
          NbtOps dynamicopsnbt = NbtOps.INSTANCE;
@@ -167,16 +185,23 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..6319adfe3f5098032a5260eddd529fa2
  
          this.brain = this.makeBrain(new Dynamic(dynamicopsnbt, (Tag) dynamicopsnbt.createMap((Map) ImmutableMap.of(dynamicopsnbt.createString("memories"), (Tag) dynamicopsnbt.emptyMap()))));
      }
-@@ -336,7 +354,7 @@ public abstract class LivingEntity extends Entity {
+@@ -336,7 +350,14 @@ public abstract class LivingEntity extends Entity {
      }
  
      public static AttributeSupplier.Builder createLivingAttributes() {
 -        return AttributeSupplier.builder().add(Attributes.MAX_HEALTH).add(Attributes.KNOCKBACK_RESISTANCE).add(Attributes.MOVEMENT_SPEED).add(Attributes.ARMOR).add(Attributes.ARMOR_TOUGHNESS);
-+        return AttributeSupplier.builder().add(Attributes.MAX_HEALTH).add(Attributes.STAT_AGI).add(Attributes.KNOCKBACK_RESISTANCE).add(Attributes.MOVEMENT_SPEED).add(Attributes.ARMOR).add(Attributes.ARMOR_TOUGHNESS);
++        return AttributeSupplier.builder()
++            .add(Attributes.MAX_HEALTH)
++            .add(Attributes.KNOCKBACK_RESISTANCE)
++            .add(Attributes.MOVEMENT_SPEED)
++            .add(Attributes.ARMOR)
++            .add(Attributes.ARMOR_TOUGHNESS)
++            .add(Attributes.COMBAT_HURTINVUL)
++            .add(Attributes.STAT_AGI);
      }
  
      @Override
-@@ -1283,6 +1301,7 @@ public abstract class LivingEntity extends Entity {
+@@ -1283,6 +1304,7 @@ public abstract class LivingEntity extends Entity {
          return (Float) this.entityData.get(LivingEntity.DATA_HEALTH_ID);
      }
  
@@ -184,7 +209,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..6319adfe3f5098032a5260eddd529fa2
      public void setHealth(float health) {
          // Paper start
          if (Float.isNaN(health)) { health = getMaxHealth(); if (this.valid) {
-@@ -1303,7 +1322,11 @@ public abstract class LivingEntity extends Entity {
+@@ -1303,7 +1325,11 @@ public abstract class LivingEntity extends Entity {
              player.updateScaledHealth(false);
              return;
          }
@@ -197,7 +222,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..6319adfe3f5098032a5260eddd529fa2
          this.entityData.set(LivingEntity.DATA_HEALTH_ID, Mth.clamp(health, 0.0F, this.getMaxHealth()));
      }
  
-@@ -1320,9 +1343,41 @@ public abstract class LivingEntity extends Entity {
+@@ -1320,9 +1346,52 @@ public abstract class LivingEntity extends Entity {
      }
      // Pufferfish end
  
@@ -217,13 +242,24 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..6319adfe3f5098032a5260eddd529fa2
 +            return false;
 +        }
 +        markHurt();
-+        float finalDmg = amount - getResistance(type);
-+        if (source.getEntity() != null && source.getEntity() instanceof net.minecraft.world.entity.player.Player player) {
-+            player.getBukkitEntity().sendActionBar(Component.text(type + ": " + amount + " | Res: " + getResistance(type) + " | = " + finalDmg));
-+        }
-+        if (finalDmg <= 0 && source.getEntity() != null) {
++        if (invulnerableTime > 0) {
 +            return false;
 +        }
++        float finalDmg = amount - getResistance(type);
++        if (source.getEntity() != null) {
++            EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(source.getEntity().getBukkitEntity(), this.getBukkitLivingEntity(), EntityDamageEvent.DamageCause.ENTITY_ATTACK,amount);
++            Bukkit.getServer().getPluginManager().callEvent(event);
++            if (event.isCancelled()) {
++                return false;
++            }
++            if (source.getEntity() instanceof net.minecraft.world.entity.player.Player player) {
++                player.getBukkitEntity().sendActionBar(Component.text(type + ": " + amount + " | Res: " + getResistance(type) + " | = " + finalDmg));
++            }
++            if (finalDmg <= 0) {
++                return false;
++            }
++        }
++        invulnerableTime = (int) getAttribute(Attributes.COMBAT_HURTINVUL).getValue();
 +        playHurtSound(source);
 +        level.broadcastEntityEvent(this, (byte) 2); // hurt animation
 +        setHealth(getHealth() - finalDmg);
@@ -240,7 +276,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..6319adfe3f5098032a5260eddd529fa2
              return false;
          } else if (this.level.isClientSide) {
              return false;
-@@ -1505,8 +1560,8 @@ public abstract class LivingEntity extends Entity {
+@@ -1505,8 +1574,8 @@ public abstract class LivingEntity extends Entity {
              }
  
              return flag2;
@@ -251,7 +287,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..6319adfe3f5098032a5260eddd529fa2
  
      protected void blockUsingShield(LivingEntity attacker) {
          attacker.blockedByShield(this);
-@@ -2480,6 +2535,7 @@ public abstract class LivingEntity extends Entity {
+@@ -2480,6 +2549,7 @@ public abstract class LivingEntity extends Entity {
  
      @Nullable
      public AttributeInstance getAttribute(Attribute attribute) {
@@ -310,7 +346,7 @@ index e8e60ea8b9e97ed87be78752f398ab25ba8e9a1b..6efed94454f320212d044c19e8d1c706
              }
  
 diff --git a/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java b/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
-index dc27e53c6c8711db87a38ef678d5f328d099376f..a2772bd30c40b43d1099ddfa36269177718db1f2 100644
+index dc27e53c6c8711db87a38ef678d5f328d099376f..044d4a2af5b725b78ff970d286c03912c4c230c8 100644
 --- a/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
 +++ b/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
 @@ -5,12 +5,12 @@ import net.minecraft.core.Registry;
@@ -328,7 +364,7 @@ index dc27e53c6c8711db87a38ef678d5f328d099376f..a2772bd30c40b43d1099ddfa36269177
      public static final Attribute ATTACK_KNOCKBACK = Attributes.register("generic.attack_knockback", new RangedAttribute("attribute.name.generic.attack_knockback", 0.0D, 0.0D, 5.0D));
      public static final Attribute ATTACK_SPEED = Attributes.register("generic.attack_speed", (new RangedAttribute("attribute.name.generic.attack_speed", 4.0D, 0.0D, 1024.0D)).setSyncable(true));
      public static final Attribute ARMOR = Attributes.register("generic.armor", (new RangedAttribute("attribute.name.generic.armor", 0.0D, 0.0D, 30.0D)).setSyncable(true));
-@@ -19,6 +19,31 @@ public class Attributes {
+@@ -19,6 +19,33 @@ public class Attributes {
      public static final Attribute SPAWN_REINFORCEMENTS_CHANCE = Attributes.register("zombie.spawn_reinforcements", new RangedAttribute("attribute.name.zombie.spawn_reinforcements", 0.0D, 0.0D, 1.0D));
      public static final Attribute JUMP_STRENGTH = Attributes.register("horse.jump_strength", (new RangedAttribute("attribute.name.horse.jump_strength", 0.7D, 0.0D, 2.0D)).setSyncable(true));
  
@@ -354,6 +390,8 @@ index dc27e53c6c8711db87a38ef678d5f328d099376f..a2772bd30c40b43d1099ddfa36269177
 +    public static final Attribute STAT_AGI = Attributes.register("stat.agility", new RangedAttribute("attribute.name.stat.intelligence", 0, 0, 4096));
 +    public static final Attribute STAT_STR = Attributes.register("stat.strength", new RangedAttribute("attribute.name.stat.strength", 0, 0, 4096));
 +    public static final Attribute STAT_CDR = Attributes.register("stat.cooldownreduction", new RangedAttribute("attribute.name.stat.cooldownreduction", 0, 0, 4096));
++    // Combat
++    public static final Attribute COMBAT_HURTINVUL= Attributes.register("combat.hurtinvul", new RangedAttribute("attribute.name.combat.hurtinvul", 5, 0, 4096));
 +
 +    // Papyrus end
 +

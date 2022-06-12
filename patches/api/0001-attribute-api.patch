@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: malfrador <malfrador@gmail.com>
+Date: Sun, 12 Jun 2022 21:43:09 +0200
+Subject: [PATCH] attribute api
+
+
+diff --git a/src/main/java/org/bukkit/attribute/Attribute.java b/src/main/java/org/bukkit/attribute/Attribute.java
+index 107e36ef02a9481954bd770ce9a55a0b1e84be7a..1c4ad07185fb1d29ba9644ccbef20772cdf23cb8 100644
+--- a/src/main/java/org/bukkit/attribute/Attribute.java
++++ b/src/main/java/org/bukkit/attribute/Attribute.java
+@@ -60,7 +60,31 @@ public enum Attribute implements Keyed, net.kyori.adventure.translation.Translat
+     /**
+      * Chance of a zombie to spawn reinforcements.
+      */
+-    ZOMBIE_SPAWN_REINFORCEMENTS("zombie.spawn_reinforcements");
++    ZOMBIE_SPAWN_REINFORCEMENTS("zombie.spawn_reinforcements"),
++
++    // Papyrus start
++    RES_PURE("resistance.pure"),
++    RES_PHYSICAL("resistance.physical"),
++    RES_MAGIC("resistance.magic"),
++    RES_AIR("resistance.air"),
++    RES_EARTH("resistance.earth"),
++    RES_FIRE("resistance.fire"),
++    RES_WATER("resistance.water"),
++
++    ADV_PURE("advantage.pure"),
++    ADV_PHYSICAL("advantage.physical"),
++    ADV_MAGIC("advantage.magic"),
++    ADV_AIR("advantage.air"),
++    ADV_EARTH("advantage.earth"),
++    ADV_FIRE("advantage.fire"),
++    ADV_WATER("advantage.water"),
++
++    STAT_INT("stat.intelligence"),
++    STAT_AGI("stat.agility"),
++    STAT_STR("stat.strength"),
++    STAT_CDR("stat.cooldownreduction"),
++
++    COMBAT_HURTINVUL("combat.hurtinvul");
+ 
+     private final NamespacedKey key;
+ 
