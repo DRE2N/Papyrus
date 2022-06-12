@@ -24,6 +24,26 @@ index 0000000000000000000000000000000000000000..14e5a77b107a7dd9070e160f56eaf4c3
 +
 +    DamageType() {}
 +}
+diff --git a/src/main/java/de/erethon/papyrus/PapyrusUtils.java b/src/main/java/de/erethon/papyrus/PapyrusUtils.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..afe4ed93f622cc46c0bb1faa12976e44297f4ea9
+--- /dev/null
++++ b/src/main/java/de/erethon/papyrus/PapyrusUtils.java
+@@ -0,0 +1,14 @@
++package de.erethon.papyrus;
++
++import io.papermc.paper.adventure.PaperAdventure;
++import net.kyori.adventure.text.minimessage.MiniMessage;
++import net.minecraft.network.chat.Component;
++
++public class PapyrusUtils {
++
++    private static final char healthBar = '|';
++
++    public static Component getHealthMessage(double health, double max) { // maybe with color based on damage type?
++        return PaperAdventure.asVanilla(MiniMessage.miniMessage().deserialize("<red>" + Math.round(health) + "<dark_gray>/" + "<dark_red>" + Math.round(max)));
++    }
++}
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
 index c8057f98e16ba6e19640e0b250e5201e0f4f57db..23bdd75d22b3941065963912ef6d34c59a5c4e69 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
@@ -47,7 +67,7 @@ index c8057f98e16ba6e19640e0b250e5201e0f4f57db..23bdd75d22b3941065963912ef6d34c5
  
      }
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index fa3263bffcfe042c2f210f85c6868fff08132a7c..cb94a286c4afb6427699ebb3dc625e9c87d8fcd2 100644
+index 4d57f2b8d08a83e404f0b81321b18c83a47ddb4e..0f7409e121c1b2e4bcec105c47e59447101a88c0 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
 @@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
@@ -76,10 +96,10 @@ index fa3263bffcfe042c2f210f85c6868fff08132a7c..cb94a286c4afb6427699ebb3dc625e9c
          return this.calculateViewVector(this.getViewXRot(tickDelta), this.getViewYRot(tickDelta));
      }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..c2ee0557b35ad9b450e691e760af32bf98a7704a 100644
+index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..6319adfe3f5098032a5260eddd529fa2e8c980a5 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-@@ -10,15 +10,13 @@ import com.mojang.datafixers.util.Pair;
+@@ -10,15 +10,14 @@ import com.mojang.datafixers.util.Pair;
  import com.mojang.logging.LogUtils;
  import com.mojang.serialization.DataResult;
  import com.mojang.serialization.Dynamic;
@@ -96,11 +116,12 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..c2ee0557b35ad9b450e691e760af32bf
  import javax.annotation.Nullable;
 +
 +import de.erethon.papyrus.DamageType;
++import de.erethon.papyrus.PapyrusUtils;
 +import net.kyori.adventure.text.Component;
  import net.minecraft.BlockUtil;
  import net.minecraft.advancements.CriteriaTriggers;
  import net.minecraft.commands.arguments.EntityAnchorArgument;
-@@ -123,9 +121,6 @@ import net.minecraft.world.scores.PlayerTeam;
+@@ -123,9 +122,6 @@ import net.minecraft.world.scores.PlayerTeam;
  import org.slf4j.Logger;
  
  // CraftBukkit start
@@ -110,7 +131,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..c2ee0557b35ad9b450e691e760af32bf
  import com.google.common.base.Function;
  import org.bukkit.Location;
  import org.bukkit.craftbukkit.attribute.CraftAttributeMap;
-@@ -277,6 +272,12 @@ public abstract class LivingEntity extends Entity {
+@@ -277,6 +273,12 @@ public abstract class LivingEntity extends Entity {
      }
      // Spigot end
  
@@ -123,7 +144,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..c2ee0557b35ad9b450e691e760af32bf
      protected LivingEntity(EntityType<? extends LivingEntity> type, Level world) {
          super(type, world);
          this.lastHandItemStacks = NonNullList.withSize(2, ItemStack.EMPTY);
-@@ -299,6 +300,22 @@ public abstract class LivingEntity extends Entity {
+@@ -299,6 +301,22 @@ public abstract class LivingEntity extends Entity {
          this.yHeadRot = this.getYRot();
          this.maxUpStep = 0.6F;
          NbtOps dynamicopsnbt = NbtOps.INSTANCE;
@@ -146,23 +167,37 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..c2ee0557b35ad9b450e691e760af32bf
  
          this.brain = this.makeBrain(new Dynamic(dynamicopsnbt, (Tag) dynamicopsnbt.createMap((Map) ImmutableMap.of(dynamicopsnbt.createString("memories"), (Tag) dynamicopsnbt.emptyMap()))));
      }
-@@ -1303,7 +1320,14 @@ public abstract class LivingEntity extends Entity {
+@@ -336,7 +354,7 @@ public abstract class LivingEntity extends Entity {
+     }
+ 
+     public static AttributeSupplier.Builder createLivingAttributes() {
+-        return AttributeSupplier.builder().add(Attributes.MAX_HEALTH).add(Attributes.KNOCKBACK_RESISTANCE).add(Attributes.MOVEMENT_SPEED).add(Attributes.ARMOR).add(Attributes.ARMOR_TOUGHNESS);
++        return AttributeSupplier.builder().add(Attributes.MAX_HEALTH).add(Attributes.STAT_AGI).add(Attributes.KNOCKBACK_RESISTANCE).add(Attributes.MOVEMENT_SPEED).add(Attributes.ARMOR).add(Attributes.ARMOR_TOUGHNESS);
+     }
+ 
+     @Override
+@@ -1283,6 +1301,7 @@ public abstract class LivingEntity extends Entity {
+         return (Float) this.entityData.get(LivingEntity.DATA_HEALTH_ID);
+     }
+ 
++
+     public void setHealth(float health) {
+         // Paper start
+         if (Float.isNaN(health)) { health = getMaxHealth(); if (this.valid) {
+@@ -1303,7 +1322,11 @@ public abstract class LivingEntity extends Entity {
              player.updateScaledHealth(false);
              return;
          }
 -        // CraftBukkit end
 +        // Papyrus start
 +        if (!(this instanceof net.minecraft.world.entity.player.Player)) {
-+            setCustomName(net.minecraft.network.chat.Component.literal("Health: " + getHealth()));
-+            if (!isCustomNameVisible()) {
-+                setCustomNameVisible(true);
-+            }
++            setCustomName(PapyrusUtils.getHealthMessage(health, getMaxHealth()));
 +        }
 +        // Papyrus end
          this.entityData.set(LivingEntity.DATA_HEALTH_ID, Mth.clamp(health, 0.0F, this.getMaxHealth()));
      }
  
-@@ -1320,9 +1344,41 @@ public abstract class LivingEntity extends Entity {
+@@ -1320,9 +1343,41 @@ public abstract class LivingEntity extends Entity {
      }
      // Pufferfish end
  
@@ -205,7 +240,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..c2ee0557b35ad9b450e691e760af32bf
              return false;
          } else if (this.level.isClientSide) {
              return false;
-@@ -1505,8 +1561,8 @@ public abstract class LivingEntity extends Entity {
+@@ -1505,8 +1560,8 @@ public abstract class LivingEntity extends Entity {
              }
  
              return flag2;
@@ -216,6 +251,14 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..c2ee0557b35ad9b450e691e760af32bf
  
      protected void blockUsingShield(LivingEntity attacker) {
          attacker.blockedByShield(this);
+@@ -2480,6 +2535,7 @@ public abstract class LivingEntity extends Entity {
+ 
+     @Nullable
+     public AttributeInstance getAttribute(Attribute attribute) {
++        LOGGER.debug(getAttributes().toString());
+         return this.getAttributes().getInstance(attribute);
+     }
+ 
 diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
 index e8e60ea8b9e97ed87be78752f398ab25ba8e9a1b..6efed94454f320212d044c19e8d1c7062931b5ea 100644
 --- a/src/main/java/net/minecraft/world/entity/Mob.java
@@ -267,7 +310,7 @@ index e8e60ea8b9e97ed87be78752f398ab25ba8e9a1b..6efed94454f320212d044c19e8d1c706
              }
  
 diff --git a/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java b/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
-index dc27e53c6c8711db87a38ef678d5f328d099376f..542f1c9a6d58ac44904a92b79d6014da49827c17 100644
+index dc27e53c6c8711db87a38ef678d5f328d099376f..a2772bd30c40b43d1099ddfa36269177718db1f2 100644
 --- a/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
 +++ b/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
 @@ -5,12 +5,12 @@ import net.minecraft.core.Registry;
@@ -275,7 +318,7 @@ index dc27e53c6c8711db87a38ef678d5f328d099376f..542f1c9a6d58ac44904a92b79d6014da
  public class Attributes {
  
 -    public static final Attribute MAX_HEALTH = Attributes.register("generic.max_health", (new RangedAttribute("attribute.name.generic.max_health", 20.0D, 1.0D, org.spigotmc.SpigotConfig.maxHealth)).setSyncable(true));
-+    public static final Attribute MAX_HEALTH = Attributes.register("generic.max_health", (new RangedAttribute("attribute.name.generic.max_health", 500.0D, 1.0D, org.spigotmc.SpigotConfig.maxHealth)).setSyncable(true));
++    public static final Attribute MAX_HEALTH = Attributes.register("generic.max_health", new RangedAttribute("attribute.name.generic.max_health", 500.0D, 1.0D, org.spigotmc.SpigotConfig.maxHealth).setSyncable(true));
      public static final Attribute FOLLOW_RANGE = Attributes.register("generic.follow_range", new RangedAttribute("attribute.name.generic.follow_range", 32.0D, 0.0D, 2048.0D));
      public static final Attribute KNOCKBACK_RESISTANCE = Attributes.register("generic.knockback_resistance", new RangedAttribute("attribute.name.generic.knockback_resistance", 0.0D, 0.0D, 1.0D));
      public static final Attribute MOVEMENT_SPEED = Attributes.register("generic.movement_speed", (new RangedAttribute("attribute.name.generic.movement_speed", 0.699999988079071D, 0.0D, org.spigotmc.SpigotConfig.movementSpeed)).setSyncable(true));
@@ -285,8 +328,40 @@ index dc27e53c6c8711db87a38ef678d5f328d099376f..542f1c9a6d58ac44904a92b79d6014da
      public static final Attribute ATTACK_KNOCKBACK = Attributes.register("generic.attack_knockback", new RangedAttribute("attribute.name.generic.attack_knockback", 0.0D, 0.0D, 5.0D));
      public static final Attribute ATTACK_SPEED = Attributes.register("generic.attack_speed", (new RangedAttribute("attribute.name.generic.attack_speed", 4.0D, 0.0D, 1024.0D)).setSyncable(true));
      public static final Attribute ARMOR = Attributes.register("generic.armor", (new RangedAttribute("attribute.name.generic.armor", 0.0D, 0.0D, 30.0D)).setSyncable(true));
+@@ -19,6 +19,31 @@ public class Attributes {
+     public static final Attribute SPAWN_REINFORCEMENTS_CHANCE = Attributes.register("zombie.spawn_reinforcements", new RangedAttribute("attribute.name.zombie.spawn_reinforcements", 0.0D, 0.0D, 1.0D));
+     public static final Attribute JUMP_STRENGTH = Attributes.register("horse.jump_strength", (new RangedAttribute("attribute.name.horse.jump_strength", 0.7D, 0.0D, 2.0D)).setSyncable(true));
+ 
++    // Papyrus start - combat changes
++    // Element resistance
++    public static final Attribute RES_PURE = Attributes.register("resistance.pure", new RangedAttribute("attribute.name.resistance.pure", 0, 0, 4096));
++    public static final Attribute RES_PHYSICAL = Attributes.register("resistance.physical", new RangedAttribute("attribute.name.resistance.physical", 0, 0, 4096));
++    public static final Attribute RES_MAGIC = Attributes.register("resistance.magic", new RangedAttribute("attribute.name.resistance.magic", 0, 0, 4096));
++    public static final Attribute RES_AIR = Attributes.register("resistance.air", new RangedAttribute("attribute.name.resistance.air", 0, 0, 4096));
++    public static final Attribute RES_EARTH = Attributes.register("resistance.earth", new RangedAttribute("attribute.name.resistance.earth", 0, 0, 4096));
++    public static final Attribute RES_FIRE = Attributes.register("resistance.fire", new RangedAttribute("attribute.name.resistance.fire", 0, 0, 4096));
++    public static final Attribute RES_WATER = Attributes.register("resistance.water", new RangedAttribute("attribute.name.resistance.water", 0, 0, 4096));
++    // Element advantage
++    public static final Attribute ADV_PURE = Attributes.register("advantage.pure", new RangedAttribute("attribute.name.advantage.pure", 0, 0, 4096));
++    public static final Attribute ADV_PHYSICAL = Attributes.register("advantage.physical", new RangedAttribute("attribute.name.advantage.physical", 0, 0, 4096));
++    public static final Attribute ADV_MAGIC = Attributes.register("advantage.magic", new RangedAttribute("attribute.name.advantage.magic", 0, 0, 4096));
++    public static final Attribute ADV_AIR = Attributes.register("advantage.air", new RangedAttribute("attribute.name.advantage.air", 0, 0, 4096));
++    public static final Attribute ADV_EARTH = Attributes.register("advantage.earth", new RangedAttribute("attribute.name.advantage.earth", 0, 0, 4096));
++    public static final Attribute ADV_FIRE = Attributes.register("advantage.fire", new RangedAttribute("attribute.name.advantage.fire", 0, 0, 4096));
++    public static final Attribute ADV_WATER = Attributes.register("advantage.water", new RangedAttribute("attribute.name.advantage.water", 0, 0, 4096));
++    // Stats
++    public static final Attribute STAT_INT = Attributes.register("stat.intelligence", new RangedAttribute("attribute.name.stat.intelligence", 0, 0, 4096));
++    public static final Attribute STAT_AGI = Attributes.register("stat.agility", new RangedAttribute("attribute.name.stat.intelligence", 0, 0, 4096));
++    public static final Attribute STAT_STR = Attributes.register("stat.strength", new RangedAttribute("attribute.name.stat.strength", 0, 0, 4096));
++    public static final Attribute STAT_CDR = Attributes.register("stat.cooldownreduction", new RangedAttribute("attribute.name.stat.cooldownreduction", 0, 0, 4096));
++
++    // Papyrus end
++
+     public Attributes() {}
+ 
+     private static Attribute register(String id, Attribute attribute) {
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
-index cd9cbfa5ef94994b3f7f2ecdde843620e7e6c071..7d187b0c10ea0980ff8649e2aeac2546cad788dc 100644
+index cd9cbfa5ef94994b3f7f2ecdde843620e7e6c071..399d0b4d9dad3157a6e560383cc692201e83a438 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
 +++ b/src/main/java/net/minecraft/world/entity/player/Player.java
 @@ -17,6 +17,8 @@ import java.util.Optional;
@@ -307,16 +382,20 @@ index cd9cbfa5ef94994b3f7f2ecdde843620e7e6c071..7d187b0c10ea0980ff8649e2aeac2546
      public static final int SLEEP_DURATION = 100;
      public static final int WAKE_UP_DURATION = 10;
      public static final int ENDER_SLOT_OFFSET = 200;
-@@ -226,7 +228,7 @@ public abstract class Player extends LivingEntity {
+@@ -226,7 +228,11 @@ public abstract class Player extends LivingEntity {
      }
  
      public static AttributeSupplier.Builder createAttributes() {
 -        return LivingEntity.createLivingAttributes().add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.10000000149011612D).add(Attributes.ATTACK_SPEED).add(Attributes.LUCK);
-+        return LivingEntity.createLivingAttributes().add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.10000000149011612D).add(Attributes.ATTACK_SPEED).add(Attributes.LUCK).add(Attributes.MAX_HEALTH, 500);
++        return LivingEntity.createLivingAttributes().add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.10000000149011612D).add(Attributes.ATTACK_SPEED).add(Attributes.LUCK)
++            .add(Attributes.MAX_HEALTH, 500)
++            .add(Attributes.STAT_AGI, 10)
++            .add(Attributes.STAT_INT, 10)
++            .add(Attributes.STAT_STR, 10);
      }
  
      @Override
-@@ -1249,6 +1251,15 @@ public abstract class Player extends LivingEntity {
+@@ -1249,6 +1255,15 @@ public abstract class Player extends LivingEntity {
          return this.onGround || this.fallDistance < this.maxUpStep && !this.level.noCollision(this, this.getBoundingBox().move(0.0D, (double) (this.fallDistance - this.maxUpStep), 0.0D));
      }
  
@@ -332,7 +411,7 @@ index cd9cbfa5ef94994b3f7f2ecdde843620e7e6c071..7d187b0c10ea0980ff8649e2aeac2546
      public void attack(Entity target) {
          if (target.isAttackable()) {
              if (!target.skipAttackInteraction(this)) {
-@@ -1459,7 +1470,7 @@ public abstract class Player extends LivingEntity {
+@@ -1459,7 +1474,7 @@ public abstract class Player extends LivingEntity {
  
      @Override
      protected void doAutoAttackOnTouch(LivingEntity target) {
