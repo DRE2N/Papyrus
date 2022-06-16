@@ -1,14 +1,22 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: malfrador <malfrador@gmail.com>
 Date: Sun, 12 Jun 2022 21:43:09 +0200
-Subject: [PATCH] attribute api
+Subject: [PATCH] combat changes
 
 
 diff --git a/src/main/java/org/bukkit/attribute/Attribute.java b/src/main/java/org/bukkit/attribute/Attribute.java
-index 107e36ef02a9481954bd770ce9a55a0b1e84be7a..1c4ad07185fb1d29ba9644ccbef20772cdf23cb8 100644
+index 107e36ef02a9481954bd770ce9a55a0b1e84be7a..dc820ba494e92a0fc770703c7d5020cb2af549fd 100644
 --- a/src/main/java/org/bukkit/attribute/Attribute.java
 +++ b/src/main/java/org/bukkit/attribute/Attribute.java
-@@ -60,7 +60,31 @@ public enum Attribute implements Keyed, net.kyori.adventure.translation.Translat
+@@ -4,6 +4,7 @@ import org.bukkit.Keyed;
+ import org.bukkit.NamespacedKey;
+ import org.jetbrains.annotations.NotNull;
+ 
++
+ /**
+  * Types of attributes which may be present on an {@link Attributable}.
+  */
+@@ -60,7 +61,31 @@ public enum Attribute implements Keyed, net.kyori.adventure.translation.Translat
      /**
       * Chance of a zombie to spawn reinforcements.
       */
