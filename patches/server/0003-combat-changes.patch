@@ -63,19 +63,30 @@ index 0000000000000000000000000000000000000000..afe4ed93f622cc46c0bb1faa12976e44
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-index c8057f98e16ba6e19640e0b250e5201e0f4f57db..23bdd75d22b3941065963912ef6d34c59a5c4e69 100644
+index c8057f98e16ba6e19640e0b250e5201e0f4f57db..a44cae67f4a55f0069b943e3ee6b1dfa145b7a50 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
 +++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-@@ -13,6 +13,8 @@ import java.util.Objects;
+@@ -13,6 +13,9 @@ import java.util.Objects;
  import java.util.Optional;
  import java.util.OptionalInt;
  import javax.annotation.Nullable;
 +
 +import de.erethon.papyrus.DamageType;
++import net.kyori.adventure.text.minimessage.MiniMessage;
  import net.minecraft.BlockUtil;
  import net.minecraft.ChatFormatting;
  import net.minecraft.CrashReport;
-@@ -2063,7 +2065,7 @@ public class ServerPlayer extends Player {
+@@ -667,6 +670,9 @@ public class ServerPlayer extends Player {
+         this.trackStartFallingPosition();
+         this.trackEnteredOrExitedLavaOnVehicle();
+         this.advancements.flushDirty(this);
++        // Papyrus - combat changes
++        this.getBukkitEntity().sendActionBar(MiniMessage.miniMessage().deserialize("<red> " + getHealth() + "<dark_gray> / " + "<dark_red> " + getMaxHealth() + "          <yellow>||||||          <gold>0<dark_gray>/<gray>0"));
++
+     }
+ 
+     public void doTick() {
+@@ -2063,7 +2069,7 @@ public class ServerPlayer extends Player {
          if (this.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
              this.setCamera(target);
          } else {
@@ -126,7 +137,7 @@ index 4d57f2b8d08a83e404f0b81321b18c83a47ddb4e..0f7409e121c1b2e4bcec105c47e59447
          return this.calculateViewVector(this.getViewXRot(tickDelta), this.getViewYRot(tickDelta));
      }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..25684c52a079469517591e26ed90cb8e15a72aee 100644
+index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..dd8ad5a44c7db856d3a412061fe283f23673f4a6 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -10,15 +10,14 @@ import com.mojang.datafixers.util.Pair;
@@ -179,7 +190,16 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..25684c52a079469517591e26ed90cb8e
  import org.bukkit.event.player.PlayerItemConsumeEvent;
  // CraftBukkit end
  
-@@ -336,9 +328,31 @@ public abstract class LivingEntity extends Entity {
+@@ -264,6 +256,8 @@ public abstract class LivingEntity extends Entity {
+     public org.bukkit.craftbukkit.entity.CraftLivingEntity getBukkitLivingEntity() { return (org.bukkit.craftbukkit.entity.CraftLivingEntity) super.getBukkitEntity(); } // Paper
+     public boolean silentDeath = false; // Paper - mark entity as dying silently for cancellable death event
+ 
++    public DamageType attackDamageType = DamageType.PHYSICAL; // Papyrus - combat rework
++
+     @Override
+     public float getBukkitYaw() {
+         return this.getYHeadRot();
+@@ -336,9 +330,31 @@ public abstract class LivingEntity extends Entity {
      }
  
      public static AttributeSupplier.Builder createLivingAttributes() {
@@ -213,7 +233,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..25684c52a079469517591e26ed90cb8e
      @Override
      protected void checkFallDamage(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
          if (!this.isInWater()) {
-@@ -1283,6 +1297,7 @@ public abstract class LivingEntity extends Entity {
+@@ -1283,6 +1299,7 @@ public abstract class LivingEntity extends Entity {
          return (Float) this.entityData.get(LivingEntity.DATA_HEALTH_ID);
      }
  
@@ -221,7 +241,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..25684c52a079469517591e26ed90cb8e
      public void setHealth(float health) {
          // Paper start
          if (Float.isNaN(health)) { health = getMaxHealth(); if (this.valid) {
-@@ -1303,7 +1318,11 @@ public abstract class LivingEntity extends Entity {
+@@ -1303,7 +1320,11 @@ public abstract class LivingEntity extends Entity {
              player.updateScaledHealth(false);
              return;
          }
@@ -234,7 +254,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..25684c52a079469517591e26ed90cb8e
          this.entityData.set(LivingEntity.DATA_HEALTH_ID, Mth.clamp(health, 0.0F, this.getMaxHealth()));
      }
  
-@@ -1320,9 +1339,44 @@ public abstract class LivingEntity extends Entity {
+@@ -1320,9 +1341,44 @@ public abstract class LivingEntity extends Entity {
      }
      // Pufferfish end
  
@@ -280,7 +300,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..25684c52a079469517591e26ed90cb8e
              return false;
          } else if (this.level.isClientSide) {
              return false;
-@@ -1505,8 +1559,8 @@ public abstract class LivingEntity extends Entity {
+@@ -1505,8 +1561,8 @@ public abstract class LivingEntity extends Entity {
              }
  
              return flag2;
@@ -291,7 +311,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..25684c52a079469517591e26ed90cb8e
  
      protected void blockUsingShield(LivingEntity attacker) {
          attacker.blockedByShield(this);
-@@ -2480,6 +2534,7 @@ public abstract class LivingEntity extends Entity {
+@@ -2480,6 +2536,7 @@ public abstract class LivingEntity extends Entity {
  
      @Nullable
      public AttributeInstance getAttribute(Attribute attribute) {
@@ -300,7 +320,7 @@ index 39fab6a5195e32ae6ffc9988e6fcecfe96be2f76..25684c52a079469517591e26ed90cb8e
      }
  
 diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
-index e8e60ea8b9e97ed87be78752f398ab25ba8e9a1b..59dd7d4af3eb769d9a9a4f350136c8eb548afb97 100644
+index e8e60ea8b9e97ed87be78752f398ab25ba8e9a1b..a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec 100644
 --- a/src/main/java/net/minecraft/world/entity/Mob.java
 +++ b/src/main/java/net/minecraft/world/entity/Mob.java
 @@ -9,6 +9,8 @@ import java.util.Map;
@@ -312,16 +332,7 @@ index e8e60ea8b9e97ed87be78752f398ab25ba8e9a1b..59dd7d4af3eb769d9a9a4f350136c8eb
  import net.minecraft.core.BlockPos;
  import net.minecraft.core.NonNullList;
  import net.minecraft.core.Vec3i;
-@@ -135,6 +137,8 @@ public abstract class Mob extends LivingEntity {
- 
-     public boolean aware = true; // CraftBukkit
- 
-+    public DamageType attackDamageType = DamageType.PHYSICAL;
-+
-     protected Mob(EntityType<? extends Mob> type, Level world) {
-         super(type, world);
-         this.handItems = NonNullList.withSize(2, ItemStack.EMPTY);
-@@ -1587,12 +1591,16 @@ public abstract class Mob extends LivingEntity {
+@@ -1587,12 +1589,16 @@ public abstract class Mob extends LivingEntity {
  
      @Override
      public boolean doHurtTarget(Entity target) {
@@ -342,14 +353,14 @@ index e8e60ea8b9e97ed87be78752f398ab25ba8e9a1b..59dd7d4af3eb769d9a9a4f350136c8eb
          }
  
          int i = EnchantmentHelper.getFireAspect(this);
-@@ -1607,12 +1615,12 @@ public abstract class Mob extends LivingEntity {
+@@ -1607,12 +1613,12 @@ public abstract class Mob extends LivingEntity {
              }
              // CraftBukkit end
          }
 -
 -        boolean flag = target.hurt(DamageSource.mobAttack(this), f);
 +        dmg = (float) (dmg + getAttributeValue(type.getAdvAttr()));
-+        boolean flag = target.hurt(DamageSource.mobAttack(this), dmg);
++        boolean flag = target.hurt(DamageSource.mobAttack(this), dmg, type);
  
          if (flag) {
 -            if (f1 > 0.0F && target instanceof LivingEntity) {
