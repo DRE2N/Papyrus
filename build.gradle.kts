@@ -85,7 +85,7 @@ paperweight {
 //
 
 tasks.generateDevelopmentBundle {
-    apiCoordinates.set("de.erethon.de:papyrus-api")
+    apiCoordinates.set("de.erethon.papyrus:papyrus-api")
     mojangApiCoordinates.set("io.papermc.paper:paper-mojangapi")
     libraryRepositories.set(
         listOf(
