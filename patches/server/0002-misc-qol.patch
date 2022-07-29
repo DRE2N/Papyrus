@@ -17,11 +17,24 @@ index b53402903eb6845df361daf6b05a668608ad7b63..889b5548a879453129d4084944903dc6
              }
              if (tickViewDistance != this.lastTickDistance) {
                  this.player.connection.send(new ClientboundSetSimulationDistancePacket(tickViewDistance));
+diff --git a/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java b/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java
+index 9656233cf8889387e41efef9a45059f58994ecd3..1222097f2c46b37f6f6598266000622b81f0a8d2 100644
+--- a/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java
++++ b/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java
+@@ -31,7 +31,7 @@ public class ClientboundServerDataPacket implements Packet<ClientGamePacketListe
+         buf.writeOptional(this.motd, FriendlyByteBuf::writeComponent);
+         buf.writeOptional(this.iconBase64, FriendlyByteBuf::writeUtf);
+         buf.writeBoolean(this.previewsChat);
+-        buf.writeBoolean(this.enforcesSecureChat);
++        buf.writeBoolean(true);
+     }
+ 
+     @Override
 diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
-index 20cdfdb3b9351f74e89bc45b3ab972384165659a..520dbc4c335d095ebd437f94c28407fad4cb3cb3 100644
+index 37d8a797bb590c30bf42ab04128489a9390684d3..7f5cb7863c404e5058305d5e970093c3661e3273 100644
 --- a/src/main/java/net/minecraft/server/players/PlayerList.java
 +++ b/src/main/java/net/minecraft/server/players/PlayerList.java
-@@ -952,7 +952,7 @@ public abstract class PlayerList {
+@@ -953,7 +953,7 @@ public abstract class PlayerList {
          // CraftBukkit start
          LevelData worlddata = worldserver1.getLevelData();
          entityplayer1.connection.send(new ClientboundRespawnPacket(worldserver1.dimensionTypeId(), worldserver1.dimension(), BiomeManager.obfuscateSeed(worldserver1.getSeed()), entityplayer1.gameMode.getGameModeForPlayer(), entityplayer1.gameMode.getPreviousGameModeForPlayer(), worldserver1.isDebug(), worldserver1.isFlat(), flag, entityplayer1.getLastDeathLocation()));
