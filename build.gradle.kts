@@ -34,7 +34,8 @@ allprojects {
 subprojects {
     tasks.withType<JavaCompile> {
         options.encoding = Charsets.UTF_8.name()
-        options.release.set(17)
+        options.release.set(17);
+        options.isFailOnError = false;
     }
     tasks.withType<Javadoc> {
         options.encoding = Charsets.UTF_8.name()
@@ -105,11 +106,15 @@ allprojects {
     publishing {
         repositories {
             maven {
-                name = "myRepoSnapshots"
-                url = uri("https://my.repo/")
-                // See Gradle docs for how to provide credentials to PasswordCredentials
-                // https://docs.gradle.org/current/samples/sample_publishing_credentials.html
-                credentials(PasswordCredentials::class)
+                name = "erethon"
+                url = uri("sftp://grebe.bloom.host:2022")
+                credentials(PasswordCredentials::class) // Put credentials in ~/.gradle/gradle.properties
+            }
+        }
+        // Always publish dev bundle
+        publications.create<MavenPublication>("devBundle") {
+            artifact(rootProject.tasks.generateDevelopmentBundle) {
+                artifactId = "dev-bundle"
             }
         }
     }

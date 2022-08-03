@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: malfrador <malfrador@gmail.com>
+Date: Wed, 3 Aug 2022 20:57:07 +0200
+Subject: [PATCH] fixup javadoc
+
+
+diff --git a/build.gradle.kts b/build.gradle.kts
+index 10716b2c866631badb99b1fb79b66c62b117b038..b5f1c8005e63a2f3a8bd55bb2cc0aceaef886810 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -107,6 +107,7 @@ tasks.withType<Javadoc> {
+     options.overview = "src/main/javadoc/overview.html"
+     options.use()
+     options.isDocFilesSubDirs = true
++    options.noDeprecated()
+     options.links(
+         "https://guava.dev/releases/31.0.1-jre/api/docs/",
+         "https://javadoc.io/doc/org.yaml/snakeyaml/1.30/",
+@@ -127,6 +128,7 @@ tasks.withType<Javadoc> {
+             "sourcepath",
+             apiAndDocs.resolvedConfiguration.files.joinToString(separator = File.pathSeparator, transform = File::getPath)
+         )
++        options.addStringOption("--ignore-source-errors")
+     }
+ 
+     // workaround for https://github.com/gradle/gradle/issues/4046
