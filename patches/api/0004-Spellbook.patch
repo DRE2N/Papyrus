@@ -4,6 +4,107 @@ Date: Sat, 6 Aug 2022 00:56:47 +0200
 Subject: [PATCH] Spellbook
 
 
+diff --git a/src/main/java/de/erethon/spellbook/api/EffectData.java b/src/main/java/de/erethon/spellbook/api/EffectData.java
+index 531da0b20a7414326fed12987b10c4715b94df56..cc9f7fee55c973894aa65ece145eb14413eaace8 100644
+--- a/src/main/java/de/erethon/spellbook/api/EffectData.java
++++ b/src/main/java/de/erethon/spellbook/api/EffectData.java
+@@ -26,11 +26,14 @@ public class EffectData extends YamlConfiguration {
+ 
+     private boolean isPositive;
+     private Class<? extends SpellEffect> effectClass;
++    private final ClassLoader classLoader;
+ 
+-    public EffectData(SpellbookAPI spellbookAPI, String id) {
++
++    public EffectData(SpellbookAPI spellbookAPI, String id, ClassLoader classLoader) {
+         this.spellbookAPI = spellbookAPI;
+         this.id = id;
+         queue = spellbookAPI.getQueue();
++        this.classLoader = classLoader;
+         spellbookAPI.getServer().getLogger().info("Created new SpellData with " + spellbookAPI.getClass().getName());
+     }
+ 
+@@ -70,7 +73,7 @@ public class EffectData extends YamlConfiguration {
+         super.load(file);
+         String className = getString("class");
+         try {
+-            effectClass = (Class<? extends SpellEffect>) Class.forName("de.erethon.spellbook.spells." + className);
++            effectClass = (Class<? extends SpellEffect>) Class.forName("de.erethon.spellbook.spells." + className, true, classLoader);
+         } catch (ClassNotFoundException e1) {
+             spellbookAPI.getServer().getLogger().warning("Could not find class for effect " + id + ": " + className);
+             throw new RuntimeException(e1);
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellData.java b/src/main/java/de/erethon/spellbook/api/SpellData.java
+index 0a38c0e41a3e0ded01e312e31e6acfc026174b46..3863a714c6e90ecb129f277f43c70709320a7f1e 100644
+--- a/src/main/java/de/erethon/spellbook/api/SpellData.java
++++ b/src/main/java/de/erethon/spellbook/api/SpellData.java
+@@ -20,10 +20,12 @@ public class SpellData extends YamlConfiguration {
+     private List<String> description = new ArrayList<>();
+ 
+     private Class<? extends SpellbookSpell> spellClass;
++    private final ClassLoader classLoader;
+ 
+-    public SpellData(SpellbookAPI spellbookAPI, String id) {
++    public SpellData(SpellbookAPI spellbookAPI, String id, ClassLoader classLoader) {
+         this.spellbookAPI = spellbookAPI;
+         this.id = id;
++        this.classLoader = classLoader;
+         queue = spellbookAPI.getQueue();
+         spellbookAPI.getServer().getLogger().info("Created new SpellData with " + spellbookAPI.getClass().getName());
+     }
+@@ -95,7 +97,7 @@ public class SpellData extends YamlConfiguration {
+         String className = getString("class");
+         spellbookAPI.getServer().getLogger().info("de.erethon.spellbook.spells." + className);
+         try {
+-            spellClass = (Class<? extends SpellbookSpell>) Class.forName("de.erethon.spellbook.spells." + className);
++            spellClass = (Class<? extends SpellbookSpell>) Class.forName("de.erethon.spellbook.spells." + className, true, classLoader);
+         } catch (ClassNotFoundException e) {
+             spellbookAPI.getServer().getLogger().warning("Could not find class for spell " + id + ": " + className);
+             throw new RuntimeException(e);
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellLibrary.java b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
+index 99b89cb680f8e90d7db48f1a019431d298e58cb2..53e397104959b75fb37a00ebaac7d16eadd35777 100644
+--- a/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
++++ b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
+@@ -1,6 +1,9 @@
+ package de.erethon.spellbook.api;
+ 
++import org.bukkit.Bukkit;
+ import org.bukkit.configuration.InvalidConfigurationException;
++import org.bukkit.plugin.Plugin;
++import org.bukkit.plugin.java.PluginClassLoader;
+ 
+ import java.io.File;
+ import java.io.IOException;
+@@ -27,6 +30,12 @@ public class SpellLibrary {
+     }
+ 
+     public void loadSpells(File spellFolder) {
++        Plugin plugin = Bukkit.getPluginManager().getPlugin("Hecate"); // TODO: maybe don't assume its always there
++        if (plugin == null) {
++            spellbookAPI.getServer().getLogger().warning("Could not load spells due to Spellbook plugin missing.");
++            return;
++        }
++        ClassLoader classLoader = plugin.getClass().getClassLoader();
+         for (File f : getFilesForFolder(spellFolder)) {
+             if (!f.getName().endsWith(".yml")) {
+                 continue;
+@@ -34,7 +43,7 @@ public class SpellLibrary {
+             String id = f.getName().replace(".yml", "");
+             if (f.getName().contains("effect")) {
+                 spellbookAPI.getServer().getLogger().info("Loading effect " + id);
+-                EffectData effectData = new EffectData(spellbookAPI, id);
++                EffectData effectData = new EffectData(spellbookAPI, id, classLoader);
+                 try {
+                     effectData.load(f);
+                 } catch (IOException | InvalidConfigurationException e) {
+@@ -44,7 +53,7 @@ public class SpellLibrary {
+                 continue;
+             }
+             spellbookAPI.getServer().getLogger().info("Loading spell " + id);
+-            SpellData spellData = new SpellData(spellbookAPI, id);
++            SpellData spellData = new SpellData(spellbookAPI, id, classLoader);
+             try {
+                 spellData.load(f);
+             } catch (IOException | InvalidConfigurationException e) {
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java b/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java
 index 7cef585882e884b2334e8753f0d39b81c9ab3a0a..633828d54c4b67d82bbd400870e7b73a65e5ee5a 100644
 --- a/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java
