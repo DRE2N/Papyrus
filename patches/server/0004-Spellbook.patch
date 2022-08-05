@@ -31,7 +31,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..228e5b025f57eea5e8ee79e0b01ada8b
          this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 81fd066ddcdc3eadb1a531f00bea7b6ce1ed4bbe..7a3fabca0244b1cb871ca03b41f309a168840a40 100644
+index 81fd066ddcdc3eadb1a531f00bea7b6ce1ed4bbe..378818feb7b24c8d48adcfa0996784a768b31f05 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -13,6 +13,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -52,13 +52,14 @@ index 81fd066ddcdc3eadb1a531f00bea7b6ce1ed4bbe..7a3fabca0244b1cb871ca03b41f309a1
      static {
          ConfigurationSerialization.registerClass(CraftOfflinePlayer.class);
          ConfigurationSerialization.registerClass(CraftPlayerProfile.class);
-@@ -370,7 +374,13 @@ public final class CraftServer implements Server {
+@@ -370,7 +374,14 @@ public final class CraftServer implements Server {
              MapPalette.setMapColorCache(new CraftMapColorCache(this.logger));
          }
          datapackManager = new io.papermc.paper.datapack.PaperDatapackManager(console.getPackRepository()); // Paper
 +        spellbookAPI = new SpellbookAPI(this); // Papyrus start - Spellbook
 +    }
 +
++    @Override
 +    public SpellbookAPI getSpellbookAPI() {
 +        return spellbookAPI;
      }
@@ -66,11 +67,19 @@ index 81fd066ddcdc3eadb1a531f00bea7b6ce1ed4bbe..7a3fabca0244b1cb871ca03b41f309a1
  
      public boolean getCommandBlockOverride(String command) {
          return this.overrideAllCommandBlockCommands || this.commandsConfiguration.getStringList("command-block-overrides").contains(command);
+@@ -432,6 +443,7 @@ public final class CraftServer implements Server {
+         } else {
+             pluginFolder.mkdir();
+         }
++        spellbookAPI.getLibrary().loadSpells(SpellbookAPI.SPELLS); // Papyrus - Load spells after plugins
+     }
+ 
+     // Paper start
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
-index c022751e3b45469cc0ad6732e2d6ff08918bafa4..46bb16f3adef28d5ab4adca1bb964c4333c17356 100644
+index c022751e3b45469cc0ad6732e2d6ff08918bafa4..ca389c7bf26320e3eb497a538bca4838b67a5397 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
-@@ -3,12 +3,12 @@ package org.bukkit.craftbukkit.entity;
+@@ -3,12 +3,13 @@ package org.bukkit.craftbukkit.entity;
  import com.destroystokyo.paper.entity.TargetEntityInfo;
  import com.google.common.base.Preconditions;
  import com.google.common.collect.Sets;
@@ -86,10 +95,19 @@ index c022751e3b45469cc0ad6732e2d6ff08918bafa4..46bb16f3adef28d5ab4adca1bb964c43
 +import de.erethon.spellbook.api.SpellData;
 +import de.erethon.spellbook.api.SpellEffect;
 +import de.erethon.spellbook.api.SpellbookSpell;
++import net.kyori.adventure.text.minimessage.MiniMessage;
  import net.minecraft.server.level.ServerPlayer;
  import net.minecraft.world.InteractionHand;
  import net.minecraft.world.damagesource.DamageSource;
-@@ -87,6 +87,19 @@ import org.bukkit.util.Vector;
+@@ -39,6 +40,7 @@ import org.bukkit.Material;
+ import org.bukkit.attribute.Attribute;
+ import org.bukkit.attribute.AttributeInstance;
+ import org.bukkit.block.Block;
++import org.bukkit.command.CommandSender;
+ import org.bukkit.craftbukkit.CraftServer;
+ import org.bukkit.craftbukkit.CraftWorld;
+ import org.bukkit.craftbukkit.entity.memory.CraftMemoryKey;
+@@ -87,6 +89,20 @@ import org.bukkit.util.Vector;
  public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      private CraftEntityEquipment equipment;
  
@@ -104,12 +122,34 @@ index c022751e3b45469cc0ad6732e2d6ff08918bafa4..46bb16f3adef28d5ab4adca1bb964c43
 +    Set<SpellbookSpell> runningPassiveSpells = new HashSet<>();
 +    private int maxEnergy = 0;
 +    private int energy = 0;
++    private MiniMessage miniMessage = MiniMessage.miniMessage();
 +    // Papyrus end
 +
      public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
          super(server, entity);
  
-@@ -920,4 +933,64 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -904,6 +920,20 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+         getHandle().hurtDir = hurtDirection;
+     }
+ 
++    @Override
++    public void sendActionbar(String msg) {
++        if (this instanceof Player player) {
++            player.sendActionBar(miniMessage.deserialize(msg));
++        }
++    }
++
++    @Override
++    public void sendMessage(String msg) {
++        if (this instanceof Player player) {
++            player.sendMessage(miniMessage.deserialize(msg));
++        }
++    }
++
+     public static MobType fromBukkitEntityCategory(EntityCategory entityCategory) {
+         switch (entityCategory) {
+             case NONE:
+@@ -920,4 +950,64 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
          throw new IllegalArgumentException(entityCategory + " is an unrecognized entity category");
      }
      // Paper end
@@ -174,3 +214,26 @@ index c022751e3b45469cc0ad6732e2d6ff08918bafa4..46bb16f3adef28d5ab4adca1bb964c43
 +    }
 +    // Papyrus end
  }
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+index a1b101093e775ac8444b98aff9df977e9d4521ad..914f30ffd9c114ab3e5f2385357e1655431d7547 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+@@ -295,18 +295,6 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+         getHandle().connection.send(packet);
+     }
+ 
+-    @Override
+-    public void sendActionBar(String message) {
+-        if (getHandle().connection == null || message == null || message.isEmpty()) return;
+-        getHandle().connection.send(new net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket(CraftChatMessage.fromStringOrNull(message)));
+-    }
+-
+-    @Override
+-    public void sendActionBar(char alternateChar, String message) {
+-        if (message == null || message.isEmpty()) return;
+-        sendActionBar(org.bukkit.ChatColor.translateAlternateColorCodes(alternateChar, message));
+-    }
+-
+     @Override
+     public void setPlayerListHeaderFooter(BaseComponent[] header, BaseComponent[] footer) {
+          if (header != null) {

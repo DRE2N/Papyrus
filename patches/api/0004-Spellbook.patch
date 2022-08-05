@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Malfrador <malfrador@gmail.com>
+Date: Sat, 6 Aug 2022 00:56:47 +0200
+Subject: [PATCH] Spellbook
+
+
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java b/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java
+index 7cef585882e884b2334e8753f0d39b81c9ab3a0a..633828d54c4b67d82bbd400870e7b73a65e5ee5a 100644
+--- a/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java
++++ b/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java
+@@ -24,8 +24,6 @@ public class SpellbookAPI {
+         queue = new SpellQueue(this);
+ 
+         library = new SpellLibrary(this);
+-        library.loadSpells(SPELLS);
+-
+     }
+ 
+     public Server getServer() {
+diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
+index 56e261efa654e4a6872ccea28f0461df13845d13..62c5606ffdd3fb824141d868eaece2b404f3b22d 100644
+--- a/src/main/java/org/bukkit/Server.java
++++ b/src/main/java/org/bukkit/Server.java
+@@ -13,6 +13,7 @@ import java.util.Set;
+ import java.util.UUID;
+ import java.util.function.Consumer;
+ import java.util.logging.Logger;
++import de.erethon.spellbook.api.SpellbookAPI;
+ import org.bukkit.Warning.WarningState;
+ import org.bukkit.advancement.Advancement;
+ import org.bukkit.block.data.BlockData;
+@@ -2105,4 +2106,7 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+      */
+     @NotNull org.bukkit.potion.PotionBrewer getPotionBrewer();
+     // Paper end
++    // Papyrus start
++    SpellbookAPI getSpellbookAPI();
++    // Papyrus end
+ }
+diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
+index f9894d4d9a5317da1dfaff4761ec81ea583ceadf..0c560c57f09329435b9de06b9698a5f651151a30 100644
+--- a/src/main/java/org/bukkit/entity/LivingEntity.java
++++ b/src/main/java/org/bukkit/entity/LivingEntity.java
+@@ -911,4 +911,7 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+      */
+     void setHurtDirection(float hurtDirection);
+     // Paper end
++    // Papyrus start
++    void sendMessage(String msg);
++    void sendActionbar(String msg);
+ }
+diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
+index 3fcfe8651a9c422fa9c8ff77556477f1461424cf..dc7269032c49a703559c8061144d973a7cfdc706 100644
+--- a/src/main/java/org/bukkit/entity/Player.java
++++ b/src/main/java/org/bukkit/entity/Player.java
+@@ -944,29 +944,6 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+         return banEntry;
+     }
+ 
+-    /**
+-     * Sends an Action Bar message to the client.
+-     *
+-     * Use Section symbols for legacy color codes to send formatting.
+-     *
+-     * @param message The message to send
+-     * @deprecated use {@link #sendActionBar(Component)}
+-     */
+-    @Deprecated
+-    public void sendActionBar(@NotNull String message);
+-
+-    /**
+-     * Sends an Action Bar message to the client.
+-     *
+-     * Use supplied alternative character to the section symbol to represent legacy color codes.
+-     *
+-     * @param alternateChar Alternate symbol such as '&amp;'
+-     * @param message The message to send
+-     * @deprecated use {@link #sendActionBar(Component)}
+-     */
+-    @Deprecated
+-    public void sendActionBar(char alternateChar, @NotNull String message);
+-
+     /**
+      * Sends an Action Bar message to the client.
+      *
+@@ -1003,7 +980,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+     /**
+      * Sends an array of components as a single message to the specified screen position of this player
+      *
+-     * @deprecated This is unlikely the API you want to use. See {@link #sendActionBar(String)} for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
++     * @deprecated This is unlikely the API you want to use. See or a more proper Action Bar API. This deprecated API may send unsafe items to the client.
+      * @param position the screen position
+      * @param components the components to send
+      */
+@@ -2641,7 +2618,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+         /**
+          * Sends the component to the specified screen position of this player
+          *
+-         * @deprecated This is unlikely the API you want to use. See {@link #sendActionBar(String)} for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
++         * @deprecated This is unlikely the API you want to use. for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
+          * @param position the screen position
+          * @param component the components to send
+          * @deprecated use {@code sendMessage} methods that accept {@link net.kyori.adventure.text.Component}
+@@ -2654,7 +2631,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+         /**
+          * Sends an array of components as a single message to the specified screen position of this player
+          *
+-         * @deprecated This is unlikely the API you want to use. See {@link #sendActionBar(String)} for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
++         * @deprecated This is unlikely the API you want to use. See  for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
+          * @param position the screen position
+          * @param components the components to send
+          * @deprecated use {@code sendMessage} methods that accept {@link net.kyori.adventure.text.Component}
