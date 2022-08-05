@@ -5,17 +5,19 @@ Subject: [PATCH] Spellbook
 
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 29354a30d11fa49fa2ae924de7e53d111391fe54..936c4a3c650c2139a38970bc712c79e00405f0d9 100644
+index 29354a30d11fa49fa2ae924de7e53d111391fe54..d6a1c4cb488a4d9a743ae55bbab92f8d78d2ad13 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -1469,6 +1469,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1468,6 +1468,9 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+         // Paper start
          long endTime = System.nanoTime();
          long remaining = (TICK_TIME - (endTime - lastTick)) - catchupTime;
++        if (remaining > 0) {
++            server.getSpellbookAPI().getQueue().run(); // Papyrus - Spellbook
++        }
          new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.tickCount, ((double)(endTime - lastTick) / 1000000D), remaining).callEvent();
-+        server.getSpellbookAPI().getQueue().run(); // Papyrus - Spellbook
          // Paper end
          this.profiler.push("tallying");
-         long l = this.tickTimes[this.tickCount % 100] = Util.getNanos() - i;
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..228e5b025f57eea5e8ee79e0b01ada8b54eb998f 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
