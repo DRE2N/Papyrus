@@ -1,0 +1,747 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: malfrador <malfrador@gmail.com>
+Date: Fri, 5 Aug 2022 21:44:15 +0200
+Subject: [PATCH] Spellbook
+
+
+diff --git a/src/main/java/de/erethon/spellbook/api/EffectData.java b/src/main/java/de/erethon/spellbook/api/EffectData.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..531da0b20a7414326fed12987b10c4715b94df56
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/EffectData.java
+@@ -0,0 +1,79 @@
++package de.erethon.spellbook.api;
++
++import org.bukkit.configuration.InvalidConfigurationException;
++import org.bukkit.configuration.file.YamlConfiguration;
++import org.jetbrains.annotations.NotNull;
++
++import java.io.File;
++import java.io.IOException;
++import java.lang.reflect.InvocationTargetException;
++
++public class EffectData extends YamlConfiguration {
++
++    enum StackMode {
++        INTENSIFY,
++        PROLONG,
++    }
++
++    SpellbookAPI spellbookAPI;
++    SpellQueue queue;
++    private final String id;
++
++    private int maxDuration;
++    private int maxStacks;
++
++    private StackMode stackMode;
++
++    private boolean isPositive;
++    private Class<? extends SpellEffect> effectClass;
++
++    public EffectData(SpellbookAPI spellbookAPI, String id) {
++        this.spellbookAPI = spellbookAPI;
++        this.id = id;
++        queue = spellbookAPI.getQueue();
++        spellbookAPI.getServer().getLogger().info("Created new SpellData with " + spellbookAPI.getClass().getName());
++    }
++
++    public String getIcon() {
++        return getString("icon", "<red>E");
++    }
++
++    public int getMaxDuration() {
++        return maxDuration;
++    }
++
++    public int getMaxStacks() {
++        return maxStacks;
++    }
++
++    public StackMode getStackMode() {
++        return stackMode;
++    }
++
++    public boolean isPositive() {
++        return isPositive;
++    }
++
++    public SpellEffect getActiveEffect(SpellCaster target, int duration, int stack) {
++        SpellEffect spellEffect;
++        try {
++            spellEffect = effectClass.getDeclaredConstructor(EffectData.class, SpellCaster.class, Integer.class, Integer.class).newInstance(this, target, duration, stack);
++        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
++            spellbookAPI.getServer().getLogger().warning("Could not create class for effect " + id + ": " + effectClass.getName());
++            throw new RuntimeException(e);
++        }
++        return spellEffect;
++    }
++
++    @Override
++    public void load(@NotNull File file) throws IOException, InvalidConfigurationException {
++        super.load(file);
++        String className = getString("class");
++        try {
++            effectClass = (Class<? extends SpellEffect>) Class.forName("de.erethon.spellbook.spells." + className);
++        } catch (ClassNotFoundException e1) {
++            spellbookAPI.getServer().getLogger().warning("Could not find class for effect " + id + ": " + className);
++            throw new RuntimeException(e1);
++        }
++    }
++}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..4ebb9aaa10368f63ef4cd1b063c1bafedc81cab1
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
+@@ -0,0 +1,104 @@
++package de.erethon.spellbook.api;
++
++import org.bukkit.Location;
++
++import java.util.Iterator;
++import java.util.Map;
++import java.util.Set;
++
++public interface SpellCaster {
++    default void cast(SpellData spellData) {
++        if (!canCast(spellData)) {
++            spellData.queue(this);
++        }
++        spellData.queue(this);
++    }
++
++    Location getLocation();
++
++    Map<SpellData, Long> getUsedSpells();
++
++    Set<SpellEffect> getEffects();
++
++    Set<SpellbookSpell> getPassiveSpells();
++
++    Set<SpellData> getUnlockedSpells();
++    Set<SpellData> getUnlockedPassives();
++
++
++    default void tick() {
++        Iterator<SpellEffect> effectIterator = getEffects().iterator();
++        while(effectIterator.hasNext()) {
++            SpellEffect effect = effectIterator.next();
++            if (effect.shouldRemove()) {
++                effect.onRemove();
++                effectIterator.remove();
++            } else {
++                effect.tick();
++            }
++        }
++        for (SpellbookSpell spell : getPassiveSpells()) {
++            spell.tick();
++        }
++    }
++
++    default void addPassiveSpell(SpellbookSpell spell) {
++        System.out.println("Added passive spell " + spell.getId());
++        getPassiveSpells().add(spell);
++        spell.ready();
++    }
++
++    default void removePassiveSpell(SpellbookSpell spell) {
++        getPassiveSpells().remove(spell);
++    }
++
++    default void addEffect(EffectData data, int duration, int stacks) {
++        SpellEffect effect = data.getActiveEffect(this, duration, stacks);
++        if (getEffects().contains(effect)) {
++            SpellEffect oldEffect = getEffects().stream().filter(e -> e.getData().equals(effect.getData())).findFirst().get();
++            if (oldEffect.canAdd(duration, stacks)) {
++                oldEffect.add(duration, stacks);
++            }
++        } else {
++            getEffects().add(effect);
++        }
++    }
++
++    default void removeEffect(EffectData effect) {
++        getEffects().removeIf(e -> e.getData().equals(effect));
++    }
++
++    default boolean hasEffect(EffectData effect) {
++        return getEffects().stream().anyMatch(e -> e.getData().equals(effect));
++    }
++
++    default int calculateCooldown(SpellData spellData) {
++        long timestamp = getCooldown(spellData);
++        long now = System.currentTimeMillis();
++        int cooldown = (int) (now - timestamp) / 1000;
++        return Math.max(spellData.getCooldown() - cooldown, 1); // 1 because amount = 0 removes the item.
++    }
++
++    default boolean canCast(SpellData spellData) {
++        long time = getUsedSpells().getOrDefault(spellData, 0L);
++        double skillCD = spellData.getCooldown();
++        long now = System.currentTimeMillis();
++        return now - time > (skillCD * 1000);
++    }
++
++    default long getCooldown(SpellData spellData) {
++        return getUsedSpells().getOrDefault(spellData, 0L);
++    }
++
++    default void setCooldown(SpellData skill) {
++        getUsedSpells().put(skill, System.currentTimeMillis());
++    }
++
++    int getEnergy();
++    int setEnergy(int energy);
++    int getMaxEnergy();
++    int setMaxEnergy(int maxEnergy);
++    int addEnergy(int energy);
++    int removeEnergy(int energy);
++
++}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellData.java b/src/main/java/de/erethon/spellbook/api/SpellData.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..0a38c0e41a3e0ded01e312e31e6acfc026174b46
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/SpellData.java
+@@ -0,0 +1,106 @@
++package de.erethon.spellbook.api;
++
++import org.bukkit.configuration.InvalidConfigurationException;
++import org.bukkit.configuration.file.YamlConfiguration;
++import org.jetbrains.annotations.NotNull;
++
++import java.io.File;
++import java.io.IOException;
++import java.lang.reflect.InvocationTargetException;
++import java.util.ArrayList;
++import java.util.List;
++
++public class SpellData extends YamlConfiguration {
++
++    SpellbookAPI spellbookAPI;
++    SpellQueue queue;
++    private int cooldown;
++    private String id;
++    private String name;
++    private List<String> description = new ArrayList<>();
++
++    private Class<? extends SpellbookSpell> spellClass;
++
++    public SpellData(SpellbookAPI spellbookAPI, String id) {
++        this.spellbookAPI = spellbookAPI;
++        this.id = id;
++        queue = spellbookAPI.getQueue();
++        spellbookAPI.getServer().getLogger().info("Created new SpellData with " + spellbookAPI.getClass().getName());
++    }
++    /* Casting process:
++    Player clicks button -> ActiveSpell is created and queued -> queue calls ActiveSpell#ready -> precast -> cast -> afterCast
++    The precast method is called before the cast method. If it returns false, the cast method is not called and the spell
++    is not cast. In the same way, the afterCast method will only be called if the cast method returned true.
++
++
++    A queue is used so that spells are cast in a consistent order and to limit the amount of spells that can be cast per tick globally.
++    If we can ensure that all damage is handled using the queue, we could even run the queue in a separate thread. T
++    he queue adds a slight delay to the cast process, even when its empty, but that is not noticeable for players and
++    could be easily hidden by adding animations, if needed.
++
++    The current implementation only works for spells that are actively cast by a SpellCaster. Passive spells likely
++    would be implemented using some sort of "trigger" that listens to events and then runs the usual queue/precast/cast/afterCast process.
++
++    Spells should be implemented by extending this class and overriding the precast, cast and afterCast methods.
++     This class will only exist once. Casting will create an instance of ActiveSpell, which should be used to handle all casting-related logic.
++
++     */
++
++
++    public SpellbookSpell queue(SpellCaster caster) {
++        return queue.addToQueue(getActiveSpell(caster));
++    }
++
++    public SpellbookSpell getActiveSpell(SpellCaster caster) {
++        SpellbookSpell spellbookSpell;
++        try {
++            spellbookSpell = spellClass.getDeclaredConstructor(SpellCaster.class, SpellData.class).newInstance(caster, this);
++        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
++            spellbookAPI.getServer().getLogger().warning("Could not create class for spell " + id + ": " + spellClass.getName());
++            throw new RuntimeException(e);
++        }
++        return spellbookSpell;
++    }
++
++    public String getId() {
++        return id;
++    }
++
++    @NotNull
++    @Override
++    public String getName() {
++        return name;
++    }
++
++    public List<String> getDescription() {
++        return description;
++    }
++
++    public int getCooldown() {
++        return cooldown;
++    }
++
++    public SpellbookAPI getSpellbook() {
++        return spellbookAPI;
++    }
++
++    @Override
++    public void save(@NotNull File file) throws IOException {
++        super.save(file);
++    }
++
++    @Override
++    public void load(@NotNull File file) throws IOException, InvalidConfigurationException {
++        super.load(file);
++        String className = getString("class");
++        spellbookAPI.getServer().getLogger().info("de.erethon.spellbook.spells." + className);
++        try {
++            spellClass = (Class<? extends SpellbookSpell>) Class.forName("de.erethon.spellbook.spells." + className);
++        } catch (ClassNotFoundException e) {
++            spellbookAPI.getServer().getLogger().warning("Could not find class for spell " + id + ": " + className);
++            throw new RuntimeException(e);
++        }
++        cooldown = getInt("cooldown", 0);
++
++    }
++}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..19002440487399185470ffe3e343d728cb2fa54e
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
+@@ -0,0 +1,68 @@
++package de.erethon.spellbook.api;
++
++public class SpellEffect {
++
++    SpellCaster target;
++    EffectData data;
++
++    private int ticksLeft;
++    private int stacks;
++
++    public SpellEffect(EffectData data, SpellCaster target, int duration) {
++        this.data = data;
++        this.target = target;
++        this.ticksLeft = duration;
++    }
++
++    public void tick() {
++        ticksLeft--;
++    }
++
++    public void add(int duration, int stacks) {
++        if (data.getStackMode() == EffectData.StackMode.PROLONG) {
++            this.ticksLeft += duration;
++        } else if (data.getStackMode() == EffectData.StackMode.INTENSIFY) {
++            this.stacks += stacks;
++        }
++        onApply();
++    }
++
++    public boolean canAdd(int duration, int newStacks) {
++        return ticksLeft + duration <= data.getMaxDuration() && stacks + newStacks <= data.getMaxStacks();
++    }
++
++    public void onApply() { // Mostly useful for stat buffs/debuffs
++    }
++
++    public void onRemove() { // Mostly useful for stat buffs/debuffs
++    }
++
++    public void onDamage() { // For effects that block 1 attack and get removed after that
++    }
++
++    public void onAttack() { // For effects that add something to the attack
++    }
++
++    public void onCast() { // For effects that prevent you from casting spells or that do something when you cast a spell
++    }
++
++    public boolean shouldRemove() {
++        return ticksLeft <= 0;
++    }
++
++    public SpellCaster getTarget() {
++        return target;
++    }
++
++    public EffectData getData() {
++        return data;
++    }
++
++    @Override
++    public boolean equals(Object obj) {
++        if (obj instanceof SpellEffect other) {
++            return other.getData().equals(getData());
++        }
++        return false;
++    }
++}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellLibrary.java b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..99b89cb680f8e90d7db48f1a019431d298e58cb2
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
+@@ -0,0 +1,73 @@
++package de.erethon.spellbook.api;
++
++import org.bukkit.configuration.InvalidConfigurationException;
++
++import java.io.File;
++import java.io.IOException;
++import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.List;
++
++public class SpellLibrary {
++
++    private final SpellbookAPI spellbookAPI;
++    private final HashMap<String, SpellData> loadedSpells = new HashMap<>();
++    private final HashMap<String, EffectData> loadedEffects = new HashMap<>();
++
++    public SpellLibrary(SpellbookAPI spellbookAPI) {
++        this.spellbookAPI = spellbookAPI;
++    }
++
++    public HashMap<String, SpellData> getLoaded() {
++        return loadedSpells;
++    }
++
++    public SpellData getSpellByID(String id) {
++        return loadedSpells.get(id);
++    }
++
++    public void loadSpells(File spellFolder) {
++        for (File f : getFilesForFolder(spellFolder)) {
++            if (!f.getName().endsWith(".yml")) {
++                continue;
++            }
++            String id = f.getName().replace(".yml", "");
++            if (f.getName().contains("effect")) {
++                spellbookAPI.getServer().getLogger().info("Loading effect " + id);
++                EffectData effectData = new EffectData(spellbookAPI, id);
++                try {
++                    effectData.load(f);
++                } catch (IOException | InvalidConfigurationException e) {
++                    throw new RuntimeException(e);
++                }
++                loadedEffects.put(id, effectData);
++                continue;
++            }
++            spellbookAPI.getServer().getLogger().info("Loading spell " + id);
++            SpellData spellData = new SpellData(spellbookAPI, id);
++            try {
++                spellData.load(f);
++            } catch (IOException | InvalidConfigurationException e) {
++                throw new RuntimeException(e);
++            }
++            loadedSpells.put(id, spellData);
++        }
++        spellbookAPI.getServer().getLogger().info("Loaded " + loadedSpells.size() + " spells.");
++        spellbookAPI.getServer().getLogger().info("Loaded " + loadedEffects.size() + " effects.");
++    }
++
++    public static List<File> getFilesForFolder(File folder) {
++        List<File> files = new ArrayList<>();
++        if (!folder.isDirectory()) {
++            throw new IllegalArgumentException("File \"" + folder.getName() + "\" is not a directory");
++        }
++        for (File file : folder.listFiles()) {
++            if (file.isDirectory()) {
++                files.addAll(getFilesForFolder(file));
++            } else {
++                files.add(file);
++            }
++        }
++        return files;
++    }
++}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellQueue.java b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..cbe82bd8e37100ab4b4dbdc0e56ffacd21db7096
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
+@@ -0,0 +1,82 @@
++package de.erethon.spellbook.api;
++
++import com.destroystokyo.paper.event.server.ServerTickEndEvent;
++import org.bukkit.Server;
++import org.bukkit.event.EventHandler;
++
++import java.util.ArrayList;
++import java.util.Iterator;
++import java.util.List;
++
++public class SpellQueue {
++
++    SpellbookAPI spellbookAPI;
++    private final List<SpellbookSpell> queue = new ArrayList<>();
++    private final List<SpellbookSpell> activeSpells = new ArrayList<>();
++
++    private final Server server;
++
++    public SpellQueue(SpellbookAPI spellbookAPI) {
++        this.spellbookAPI = spellbookAPI;
++        this.server = spellbookAPI.getServer();
++    }
++
++    @EventHandler
++    public void onTick(ServerTickEndEvent event) {
++        if (event.getTimeRemaining() < 0) { // Don't execute spells if the tick is already over 50ms
++            return;
++        }
++        run();
++    }
++
++    // IDEA: Move Spellbook into Papyrus.
++
++    public void run() {
++        int maxSpellsPerTickQueue = updateMaxSpellsPerTick();
++        int i = 0;
++        Iterator<SpellbookSpell> activeSpellIterator = activeSpells.iterator();
++        while (activeSpellIterator.hasNext()) {
++            SpellbookSpell spell = activeSpellIterator.next();
++            if (spell.shouldRemove()) {
++                activeSpellIterator.remove();
++            } else {
++                spell.tick();
++            }
++        }
++        Iterator<SpellbookSpell> queueIterator = queue.iterator();
++        while (queueIterator.hasNext()) {
++            SpellbookSpell spell = queueIterator.next();
++            spell.ready();
++            queueIterator.remove();
++            activeSpells.add(spell);
++            i++;
++            if (i >= maxSpellsPerTickQueue) {
++                spellbookAPI.getServer().getLogger().warning("Queue overflow! Queue size " + queue.size() + "/" + maxSpellsPerTickQueue + " | Tick time: " + server.getAverageTickTime());
++                break;
++            }
++        }
++    }
++
++    private int updateMaxSpellsPerTick() {
++        double tickTime = server.getAverageTickTime();
++        if (tickTime > 50.0) {
++            return 2;
++        }
++        if (tickTime > 40.0) {
++            return 4;
++        }
++        if (tickTime > 30.0) {
++            return 8;
++        }
++        if (tickTime > 20.0) {
++            return 16;
++        }
++        return 32;
++    }
++
++    public SpellbookSpell addToQueue(SpellbookSpell spell) {
++        queue.add(spell);
++        return spell;
++    }
++
++}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java b/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..7cef585882e884b2334e8753f0d39b81c9ab3a0a
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java
+@@ -0,0 +1,47 @@
++package de.erethon.spellbook.api;
++
++import org.bukkit.Bukkit;
++import org.bukkit.Server;
++
++import java.io.File;
++
++public class SpellbookAPI {
++    private static SpellbookAPI instance;
++    public static File SPELLS;
++    private final SpellQueue queue;
++    private final SpellLibrary library;
++    private final Server server;
++
++    public SpellbookAPI(Server server) {
++        instance = this;
++        this.server = server;
++
++        SPELLS = new File(Bukkit.getPluginsFolder(), "Spellbook");
++        if (!SPELLS.exists()) {
++            SPELLS.mkdir();
++        }
++
++        queue = new SpellQueue(this);
++
++        library = new SpellLibrary(this);
++        library.loadSpells(SPELLS);
++
++    }
++
++    public Server getServer() {
++        return server;
++    }
++
++    public static SpellbookAPI getInstance() {
++        return instance;
++    }
++
++    public SpellLibrary getLibrary() {
++        return library;
++    }
++
++    public SpellQueue getQueue() {
++        return queue;
++    }
++
++}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..7cfe46dc1a9723259500baa5ade538a53e10b5ab
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
+@@ -0,0 +1,112 @@
++package de.erethon.spellbook.api;
++
++import java.util.UUID;
++
++public abstract class SpellbookSpell {
++
++    SpellbookAPI spellbookAPI = SpellbookAPI.getInstance();
++    protected final UUID uuid;
++
++    protected final SpellData data;
++    protected final SpellCaster caster;
++
++    protected int keepAliveTicks = 0;
++    private int currentTicks = 0;
++
++    protected int tickInterval = 1;
++    private int currentTickInterval = 0;
++
++    private boolean failed = false;
++
++    public SpellbookSpell(SpellCaster caster, SpellData spellData) {
++        this.data = spellData;
++        this.caster = caster;
++        uuid = UUID.randomUUID();
++    }
++
++
++    /**
++     * This should be used to check for prerequisites for the spell, such as mana, target, location, etc.
++     *
++     * @return true if the spell can be cast, false otherwise
++     */
++    protected boolean onPrecast() {
++        return true;
++    }
++
++    /**
++     * This should be used to implement the spell itself.
++     *
++     * @return true if the spell was successfully cast, false otherwise
++     */
++    protected boolean onCast() {
++        return true;
++    }
++
++    /**
++     * This should be used do execute code after the spell was cast, like removing mana.
++     */
++    protected void onAfterCast() {
++    }
++
++    protected void onTick() {
++    }
++
++    protected void onTickFinish() {
++    }
++
++    public void ready() {
++        if (onPrecast()) {
++            if (onCast()) {
++                onAfterCast();
++            } else {
++                failed = true;
++            }
++        } else {
++            failed = true;
++        }
++    }
++
++    public void tick() {
++        if (failed) {
++            return;
++        }
++        currentTicks++;
++        if (currentTickInterval >= tickInterval) {
++            currentTickInterval = 0;
++            onTick();
++        } else {
++            currentTickInterval++;
++        }
++        if (shouldRemove()) {
++            onTickFinish();
++        }
++    }
++
++
++    public boolean shouldRemove() {
++        if (failed) {
++            return true;
++        }
++        if (keepAliveTicks < 0) {
++            return false;
++        }
++        return currentTicks >= keepAliveTicks;
++    }
++
++    public SpellData getData() {
++        return data;
++    }
++
++    public SpellCaster getCaster() {
++        return caster;
++    }
++
++    public UUID getUuid() {
++        return uuid;
++    }
++
++    public String getId() {
++        return data.getId();
++    }
++}
+diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
+index 8fa8922ad2fb0ea8f770368faff61e56e9761df9..f9894d4d9a5317da1dfaff4761ec81ea583ceadf 100644
+--- a/src/main/java/org/bukkit/entity/LivingEntity.java
++++ b/src/main/java/org/bukkit/entity/LivingEntity.java
+@@ -4,6 +4,8 @@ import java.util.Collection;
+ import java.util.List;
+ import java.util.Set;
+ import java.util.UUID;
++
++import de.erethon.spellbook.api.SpellCaster;
+ import org.bukkit.FluidCollisionMode;
+ import org.bukkit.Location;
+ import org.bukkit.Material;
+@@ -23,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
+ /**
+  * Represents a living entity, such as a monster or player
+  */
+-public interface LivingEntity extends Attributable, Damageable, ProjectileSource {
++public interface LivingEntity extends Attributable, Damageable, ProjectileSource, SpellCaster {
+ 
+     /**
+      * Gets the height of the living entity's eyes above its Location.

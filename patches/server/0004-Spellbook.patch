@@ -1,0 +1,174 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: malfrador <malfrador@gmail.com>
+Date: Fri, 5 Aug 2022 22:03:37 +0200
+Subject: [PATCH] Spellbook
+
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 29354a30d11fa49fa2ae924de7e53d111391fe54..936c4a3c650c2139a38970bc712c79e00405f0d9 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -1469,6 +1469,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+         long endTime = System.nanoTime();
+         long remaining = (TICK_TIME - (endTime - lastTick)) - catchupTime;
+         new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.tickCount, ((double)(endTime - lastTick) / 1000000D), remaining).callEvent();
++        server.getSpellbookAPI().getQueue().run(); // Papyrus - Spellbook
+         // Paper end
+         this.profiler.push("tallying");
+         long l = this.tickTimes[this.tickCount % 100] = Util.getNanos() - i;
+diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..228e5b025f57eea5e8ee79e0b01ada8b54eb998f 100644
+--- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
++++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+@@ -498,6 +498,7 @@ public abstract class LivingEntity extends Entity {
+         }
+ 
+         this.tickEffects();
++        getBukkitLivingEntity().tick(); // Papyrus - Spellbook tick
+         this.animStepO = this.animStep;
+         this.yBodyRotO = this.yBodyRot;
+         this.yHeadRotO = this.yHeadRot;
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 81fd066ddcdc3eadb1a531f00bea7b6ce1ed4bbe..7a3fabca0244b1cb871ca03b41f309a168840a40 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -13,6 +13,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
+ import com.mojang.brigadier.tree.CommandNode;
+ import com.mojang.brigadier.tree.LiteralCommandNode;
+ import com.mojang.serialization.Lifecycle;
++import de.erethon.spellbook.api.SpellbookAPI;
+ import io.netty.buffer.ByteBuf;
+ import io.netty.buffer.ByteBufOutputStream;
+ import io.netty.buffer.Unpooled;
+@@ -285,6 +286,9 @@ public final class CraftServer implements Server {
+     private final io.papermc.paper.logging.SysoutCatcher sysoutCatcher = new io.papermc.paper.logging.SysoutCatcher(); // Paper
+     private final CraftPotionBrewer potionBrewer = new CraftPotionBrewer(); // Paper
+ 
++    // Papyrus start
++    private final SpellbookAPI spellbookAPI;
++
+     static {
+         ConfigurationSerialization.registerClass(CraftOfflinePlayer.class);
+         ConfigurationSerialization.registerClass(CraftPlayerProfile.class);
+@@ -370,7 +374,13 @@ public final class CraftServer implements Server {
+             MapPalette.setMapColorCache(new CraftMapColorCache(this.logger));
+         }
+         datapackManager = new io.papermc.paper.datapack.PaperDatapackManager(console.getPackRepository()); // Paper
++        spellbookAPI = new SpellbookAPI(this); // Papyrus start - Spellbook
++    }
++
++    public SpellbookAPI getSpellbookAPI() {
++        return spellbookAPI;
+     }
++    // Papyrus end
+ 
+     public boolean getCommandBlockOverride(String command) {
+         return this.overrideAllCommandBlockCommands || this.commandsConfiguration.getStringList("command-block-overrides").contains(command);
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
+index c022751e3b45469cc0ad6732e2d6ff08918bafa4..46bb16f3adef28d5ab4adca1bb964c4333c17356 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
+@@ -3,12 +3,12 @@ package org.bukkit.craftbukkit.entity;
+ import com.destroystokyo.paper.entity.TargetEntityInfo;
+ import com.google.common.base.Preconditions;
+ import com.google.common.collect.Sets;
+-import java.util.ArrayList;
+-import java.util.Collection;
+-import java.util.Iterator;
+-import java.util.List;
+-import java.util.Set;
+-import java.util.UUID;
++
++import java.util.*;
++
++import de.erethon.spellbook.api.SpellData;
++import de.erethon.spellbook.api.SpellEffect;
++import de.erethon.spellbook.api.SpellbookSpell;
+ import net.minecraft.server.level.ServerPlayer;
+ import net.minecraft.world.InteractionHand;
+ import net.minecraft.world.damagesource.DamageSource;
+@@ -87,6 +87,19 @@ import org.bukkit.util.Vector;
+ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+     private CraftEntityEquipment equipment;
+ 
++
++    // Papyrus start
++    private Set<SpellData> unlockedSpellData = new HashSet<>();
++    private Set<SpellData> passiveSpells = new HashSet<>();
++    private final SpellData[] assignedSlots = new SpellData[8];
++
++    Map<SpellData, Long> usedSpells = new LinkedHashMap<>();
++    Set<SpellEffect> effects = new HashSet<>();
++    Set<SpellbookSpell> runningPassiveSpells = new HashSet<>();
++    private int maxEnergy = 0;
++    private int energy = 0;
++    // Papyrus end
++
+     public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
+         super(server, entity);
+ 
+@@ -920,4 +933,64 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+         throw new IllegalArgumentException(entityCategory + " is an unrecognized entity category");
+     }
+     // Paper end
++
++    // Papyrus start - Spellbook
++
++    @Override
++    public Map<SpellData, Long> getUsedSpells() {
++        return usedSpells;
++    }
++
++    @Override
++    public Set<SpellEffect> getEffects() {
++        return effects;
++    }
++
++    @Override
++    public Set<SpellbookSpell> getPassiveSpells() {
++        return runningPassiveSpells;
++    }
++
++    @Override
++    public Set<SpellData> getUnlockedSpells() {
++        return unlockedSpellData;
++    }
++
++    @Override
++    public Set<SpellData> getUnlockedPassives() {
++        return passiveSpells;
++    }
++
++    @Override
++    public int getEnergy() {
++        return energy;
++    }
++
++    @Override
++    public int setEnergy(int e) {
++        return energy = Math.min(e, maxEnergy);
++    }
++
++    @Override
++    public int getMaxEnergy() {
++        return maxEnergy;
++    }
++
++    @Override
++    public int setMaxEnergy(int e) {
++        return maxEnergy = e;
++    }
++
++    @Override
++    public int addEnergy(int e) {
++        energy = Math.min(energy + e, maxEnergy);
++        return energy;
++    }
++
++    @Override
++    public int removeEnergy(int e) {
++        energy = Math.max(energy - e, 0);
++        return energy;
++    }
++    // Papyrus end
+ }
