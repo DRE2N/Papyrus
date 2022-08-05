@@ -313,21 +313,23 @@ index 0000000000000000000000000000000000000000..0a38c0e41a3e0ded01e312e31e6acfc0
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..19002440487399185470ffe3e343d728cb2fa54e
+index 0000000000000000000000000000000000000000..df105d715e6a7fa6ab345ca9de44eca45e77a14e
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
-@@ -0,0 +1,68 @@
+@@ -0,0 +1,70 @@
 +package de.erethon.spellbook.api;
++
++import org.bukkit.entity.LivingEntity;
 +
 +public class SpellEffect {
 +
-+    SpellCaster target;
++    LivingEntity target;
 +    EffectData data;
 +
 +    private int ticksLeft;
 +    private int stacks;
 +
-+    public SpellEffect(EffectData data, SpellCaster target, int duration) {
++    public SpellEffect(EffectData data, LivingEntity target, int duration) {
 +        this.data = data;
 +        this.target = target;
 +        this.ticksLeft = duration;
@@ -466,10 +468,10 @@ index 0000000000000000000000000000000000000000..99b89cb680f8e90d7db48f1a019431d2
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellQueue.java b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..cbe82bd8e37100ab4b4dbdc0e56ffacd21db7096
+index 0000000000000000000000000000000000000000..ba256409e734c65feeb1f4f25ae8b3d08ef3bfef
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,72 @@
 +package de.erethon.spellbook.api;
 +
 +import com.destroystokyo.paper.event.server.ServerTickEndEvent;
@@ -492,16 +494,6 @@ index 0000000000000000000000000000000000000000..cbe82bd8e37100ab4b4dbdc0e56ffacd
 +        this.spellbookAPI = spellbookAPI;
 +        this.server = spellbookAPI.getServer();
 +    }
-+
-+    @EventHandler
-+    public void onTick(ServerTickEndEvent event) {
-+        if (event.getTimeRemaining() < 0) { // Don't execute spells if the tick is already over 50ms
-+            return;
-+        }
-+        run();
-+    }
-+
-+    // IDEA: Move Spellbook into Papyrus.
 +
 +    public void run() {
 +        int maxSpellsPerTickQueue = updateMaxSpellsPerTick();
@@ -607,11 +599,13 @@ index 0000000000000000000000000000000000000000..7cef585882e884b2334e8753f0d39b81
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..7cfe46dc1a9723259500baa5ade538a53e10b5ab
+index 0000000000000000000000000000000000000000..3f749246555ae390f67bae160fc738994b2531f4
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
-@@ -0,0 +1,112 @@
+@@ -0,0 +1,114 @@
 +package de.erethon.spellbook.api;
++
++import org.bukkit.entity.LivingEntity;
 +
 +import java.util.UUID;
 +
@@ -621,7 +615,7 @@ index 0000000000000000000000000000000000000000..7cfe46dc1a9723259500baa5ade538a5
 +    protected final UUID uuid;
 +
 +    protected final SpellData data;
-+    protected final SpellCaster caster;
++    protected final LivingEntity caster;
 +
 +    protected int keepAliveTicks = 0;
 +    private int currentTicks = 0;
@@ -631,7 +625,7 @@ index 0000000000000000000000000000000000000000..7cfe46dc1a9723259500baa5ade538a5
 +
 +    private boolean failed = false;
 +
-+    public SpellbookSpell(SpellCaster caster, SpellData spellData) {
++    public SpellbookSpell(LivingEntity caster, SpellData spellData) {
 +        this.data = spellData;
 +        this.caster = caster;
 +        uuid = UUID.randomUUID();
@@ -711,7 +705,7 @@ index 0000000000000000000000000000000000000000..7cfe46dc1a9723259500baa5ade538a5
 +        return data;
 +    }
 +
-+    public SpellCaster getCaster() {
++    public LivingEntity getCaster() {
 +        return caster;
 +    }
 +
