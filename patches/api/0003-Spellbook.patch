@@ -44,7 +44,7 @@ index 0000000000000000000000000000000000000000..379e96edce4520a733064044eb357f30
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/EffectData.java b/src/main/java/de/erethon/spellbook/api/EffectData.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..3fc3789a07a1555c21c1944fa8fa7f7d77c4b622
+index 0000000000000000000000000000000000000000..791c877cb0e375f4b48052c9f4fb0199a2cb0684
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/EffectData.java
 @@ -0,0 +1,87 @@
@@ -124,7 +124,7 @@ index 0000000000000000000000000000000000000000..3fc3789a07a1555c21c1944fa8fa7f7d
 +        super.load(file);
 +        String className = getString("class");
 +        try {
-+            effectClass = (Class<? extends SpellEffect>) Class.forName("de.erethon.spellbook.spells." + className, true, classLoader);
++            effectClass = (Class<? extends SpellEffect>) Class.forName("de.erethon.spellbook.effects." + className, true, classLoader);
 +        } catch (ClassNotFoundException e1) {
 +            spellbookAPI.getServer().getLogger().warning("Could not find class for effect " + id + ": " + className);
 +            throw new RuntimeException(e1);
