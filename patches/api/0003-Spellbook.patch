@@ -6,10 +6,10 @@ Subject: [PATCH] Spellbook
 
 diff --git a/src/main/java/de/erethon/spellbook/api/EffectData.java b/src/main/java/de/erethon/spellbook/api/EffectData.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..2de5a56b7cbfc56e99a405765cb38f2bdea14ffb
+index 0000000000000000000000000000000000000000..3fc3789a07a1555c21c1944fa8fa7f7d77c4b622
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/EffectData.java
-@@ -0,0 +1,83 @@
+@@ -0,0 +1,87 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.configuration.InvalidConfigurationException;
@@ -91,11 +91,15 @@ index 0000000000000000000000000000000000000000..2de5a56b7cbfc56e99a405765cb38f2b
 +            spellbookAPI.getServer().getLogger().warning("Could not find class for effect " + id + ": " + className);
 +            throw new RuntimeException(e1);
 +        }
++        maxStacks = getInt("maxStacks", 1);
++        maxDuration = getInt("maxDuration", 10);
++        isPositive = getBoolean("positive", true);
++        stackMode = StackMode.valueOf(getString("stackMode", "INTENSIFY").toUpperCase());
 +    }
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..2a8f78f62a24cb07a8b00ef63797fc8930e519d5
+index 0000000000000000000000000000000000000000..bfc14504606a7c1924ee29a61722c9bb95ab1487
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 @@ -0,0 +1,120 @@
@@ -171,7 +175,7 @@ index 0000000000000000000000000000000000000000..2a8f78f62a24cb07a8b00ef63797fc89
 +    default void addEffect(EffectData data, int duration, int stacks) {
 +        SpellEffect effect = data.getActiveEffect((LivingEntity) this, duration, stacks);
 +        if (getEffects().contains(effect)) {
-+            SpellEffect oldEffect = getEffects().stream().filter(e -> e.getData().equals(effect.getData())).findFirst().get();
++            SpellEffect oldEffect = getEffects().stream().filter(e -> e.data.equals(effect.data)).findFirst().get();
 +            if (oldEffect.canAdd(duration, stacks)) {
 +                oldEffect.add(duration, stacks);
 +            }
@@ -182,11 +186,11 @@ index 0000000000000000000000000000000000000000..2a8f78f62a24cb07a8b00ef63797fc89
 +    }
 +
 +    default void removeEffect(EffectData effect) {
-+        getEffects().removeIf(e -> e.getData().equals(effect));
++        getEffects().removeIf(e -> e.data.equals(effect));
 +    }
 +
 +    default boolean hasEffect(EffectData effect) {
-+        return getEffects().stream().anyMatch(e -> e.getData().equals(effect));
++        return getEffects().stream().anyMatch(e -> e.data.equals(effect));
 +    }
 +
 +    default int calculateCooldown(SpellData spellData) {
@@ -336,21 +340,21 @@ index 0000000000000000000000000000000000000000..d8453120f69e7e998be4c6aef5a12df0
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..5176defe1a56b51eb71374b4e2321dfe5e751251
+index 0000000000000000000000000000000000000000..fa1ecacc8dbdb9f7933718c7d7b043d50dd323cc
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
-@@ -0,0 +1,74 @@
+@@ -0,0 +1,66 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.entity.LivingEntity;
 +
 +public class SpellEffect {
 +
-+    LivingEntity target;
-+    EffectData data;
++    protected final LivingEntity target;
++    public final EffectData data;
 +
-+    private int ticksLeft;
-+    private int stacks;
++    protected int ticksLeft;
++    protected int stacks;
 +
 +    public SpellEffect(EffectData data, LivingEntity target, int duration) {
 +        this.data = data;
@@ -398,18 +402,10 @@ index 0000000000000000000000000000000000000000..5176defe1a56b51eb71374b4e2321dfe
 +        return ticksLeft <= 0;
 +    }
 +
-+    public SpellCaster getTarget() {
-+        return target;
-+    }
-+
-+    public EffectData getData() {
-+        return data;
-+    }
-+
 +    @Override
 +    public boolean equals(Object obj) {
 +        if (obj instanceof SpellEffect other) {
-+            return other.getData().equals(getData());
++            return other.data.equals(data);
 +        }
 +        return false;
 +    }
