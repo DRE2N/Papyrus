@@ -19,7 +19,7 @@ index 29354a30d11fa49fa2ae924de7e53d111391fe54..d6a1c4cb488a4d9a743ae55bbab92f8d
          // Paper end
          this.profiler.push("tallying");
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..228e5b025f57eea5e8ee79e0b01ada8b54eb998f 100644
+index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..356428503e5755becec6f0bec2087280c34a0224 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -498,6 +498,7 @@ public abstract class LivingEntity extends Entity {
@@ -30,6 +30,38 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..228e5b025f57eea5e8ee79e0b01ada8b
          this.animStepO = this.animStep;
          this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
+@@ -1398,6 +1399,7 @@ public abstract class LivingEntity extends Entity {
+         playHurtSound(source);
+         level.broadcastEntityEvent(this, (byte) 2); // hurt animation
+         setHealth((float) (getHealth() - Math.max(finalDmg, 0)));
++        getBukkitLivingEntity().onDamage();
+         return true;
+     }
+     @Override
+diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
+index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..30214d5d341f0fc95961d46079c06de31a957bd2 100644
+--- a/src/main/java/net/minecraft/world/entity/Mob.java
++++ b/src/main/java/net/minecraft/world/entity/Mob.java
+@@ -1630,6 +1630,7 @@ public abstract class Mob extends LivingEntity {
+ 
+             this.doEnchantDamageEffects(this, target);
+             this.setLastHurtMob(target);
++            getBukkitMob().onAttack();
+         }
+ 
+         return flag;
+diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
+index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..0ba930b38e4ef96f55f94259afb8c1f42b9359b9 100644
+--- a/src/main/java/net/minecraft/world/entity/player/Player.java
++++ b/src/main/java/net/minecraft/world/entity/player/Player.java
+@@ -1260,6 +1260,7 @@ public abstract class Player extends LivingEntity {
+         }
+         float damage = (float) (getAttributeValue(Attributes.ATTACK_DAMAGE) + getAttributeValue(type.getAdvAttr()));
+         target.hurt(DamageSource.playerAttack(this), damage, type);
++        getBukkitEntity().onAttack();
+     }
+ 
+     public void attack(Entity target) {
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 index 81fd066ddcdc3eadb1a531f00bea7b6ce1ed4bbe..378818feb7b24c8d48adcfa0996784a768b31f05 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java

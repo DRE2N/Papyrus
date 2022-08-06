@@ -95,10 +95,10 @@ index 0000000000000000000000000000000000000000..2de5a56b7cbfc56e99a405765cb38f2b
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..20a488df1bb2fea09d61120a786c86de694ccc56
+index 0000000000000000000000000000000000000000..2a8f78f62a24cb07a8b00ef63797fc8930e519d5
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-@@ -0,0 +1,105 @@
+@@ -0,0 +1,120 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.Location;
@@ -114,6 +114,9 @@ index 0000000000000000000000000000000000000000..20a488df1bb2fea09d61120a786c86de
 +            return;
 +        }
 +        spellData.queue((LivingEntity) this);
++        for (SpellEffect effect : getEffects()) {
++            effect.onCast();
++        }
 +    }
 +
 +    Location getLocation();
@@ -144,8 +147,19 @@ index 0000000000000000000000000000000000000000..20a488df1bb2fea09d61120a786c86de
 +        }
 +    }
 +
++    default void onDamage() {
++        for (SpellEffect effect : getEffects()) {
++            effect.onDamage();
++        }
++    }
++
++    default void onAttack() {
++        for (SpellEffect effect : getEffects()) {
++            effect.onAttack();
++        }
++    }
++
 +    default void addPassiveSpell(SpellbookSpell spell) {
-+        System.out.println("Added passive spell " + spell.getId());
 +        getPassiveSpells().add(spell);
 +        spell.ready();
 +    }
@@ -163,6 +177,7 @@ index 0000000000000000000000000000000000000000..20a488df1bb2fea09d61120a786c86de
 +            }
 +        } else {
 +            getEffects().add(effect);
++            effect.onApply();
 +        }
 +    }
 +
@@ -321,10 +336,10 @@ index 0000000000000000000000000000000000000000..d8453120f69e7e998be4c6aef5a12df0
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..df105d715e6a7fa6ab345ca9de44eca45e77a14e
+index 0000000000000000000000000000000000000000..5176defe1a56b51eb71374b4e2321dfe5e751251
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
-@@ -0,0 +1,70 @@
+@@ -0,0 +1,74 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.entity.LivingEntity;
@@ -345,6 +360,7 @@ index 0000000000000000000000000000000000000000..df105d715e6a7fa6ab345ca9de44eca4
 +
 +    public void tick() {
 +        ticksLeft--;
++        onTick();
 +    }
 +
 +    public void add(int duration, int stacks) {
@@ -358,6 +374,9 @@ index 0000000000000000000000000000000000000000..df105d715e6a7fa6ab345ca9de44eca4
 +
 +    public boolean canAdd(int duration, int newStacks) {
 +        return ticksLeft + duration <= data.getMaxDuration() && stacks + newStacks <= data.getMaxStacks();
++    }
++
++    public void onTick() {
 +    }
 +
 +    public void onApply() { // Mostly useful for stat buffs/debuffs
