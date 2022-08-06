@@ -457,10 +457,10 @@ index 0000000000000000000000000000000000000000..4d918cec8e8afd45a133c5ba6c268aef
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellLibrary.java b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..c0306be7eb5e0a54295544824a216b3c4893a1eb
+index 0000000000000000000000000000000000000000..f7dec50648bf38e62f97f3e69aea2afb0ab0b21b
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
-@@ -0,0 +1,93 @@
+@@ -0,0 +1,109 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.Bukkit;
@@ -489,12 +489,23 @@ index 0000000000000000000000000000000000000000..c0306be7eb5e0a54295544824a216b3c
 +        return loadedSpells;
 +    }
 +
++    public HashMap<String, EffectData> getLoadedEffects() {
++        return loadedEffects;
++    }
++
 +    public SpellData getSpellByID(String id) {
 +        return loadedSpells.get(id);
 +    }
 +
 +    public EffectData getEffectByID(String id) {
 +        return loadedEffects.get(id);
++    }
++
++    public void reload() {
++        spellbookAPI.getQueue().clear();
++        loadedEffects.clear();
++        loadedSpells.clear();
++        loadSpells(SpellbookAPI.SPELLS);
 +    }
 +
 +    public void loadSpells(File spellFolder) {
@@ -506,21 +517,11 @@ index 0000000000000000000000000000000000000000..c0306be7eb5e0a54295544824a216b3c
 +        ClassLoader classLoader = plugin.getClass().getClassLoader();
 +        try {
 +            for (File f : getFilesForFolder(spellFolder)) {
-+                if (!f.getName().endsWith(".yml")) {
++                if (!f.getName().endsWith(".yml") || f.getAbsolutePath().contains("effects")) {
 +                    continue;
 +                }
 +                String id = f.getName().replace(".yml", "");
-+                if (f.getName().contains("effect") || f.getName().contains("Effect")) {
-+                    spellbookAPI.getServer().getLogger().info("Loading effect " + id);
-+                    EffectData effectData = new EffectData(spellbookAPI, id, classLoader);
-+                    try {
-+                        effectData.load(f);
-+                    } catch (IOException | InvalidConfigurationException e) {
-+                        throw new RuntimeException(e);
-+                    }
-+                    loadedEffects.put(id, effectData);
-+                    continue;
-+                }
++
 +                spellbookAPI.getServer().getLogger().info("Loading spell " + id);
 +                SpellData spellData = new SpellData(spellbookAPI, id, classLoader);
 +                try {
@@ -531,10 +532,25 @@ index 0000000000000000000000000000000000000000..c0306be7eb5e0a54295544824a216b3c
 +                loadedSpells.put(id, spellData);
 +            }
 +            spellbookAPI.getServer().getLogger().info("Loaded " + loadedSpells.size() + " spells.");
++
++            for (File f : getFilesForFolder(new File(spellFolder, "effects"))) {
++                if (!f.getName().endsWith(".yml")) {
++                    continue;
++                }
++                String id = f.getName().replace(".yml", "");
++                spellbookAPI.getServer().getLogger().info("Loading effect " + id);
++                EffectData effectData = new EffectData(spellbookAPI, id, classLoader);
++                try {
++                    effectData.load(f);
++                } catch (IOException | InvalidConfigurationException e) {
++                    throw new RuntimeException(e);
++                }
++                loadedEffects.put(id, effectData);
++            }
 +            spellbookAPI.getServer().getLogger().info("Loaded " + loadedEffects.size() + " effects.");
 +
 +        } catch (Exception e) {
-+            spellbookAPI.getServer().getLogger().log(Level.SEVERE, "An error occurred while loading spells: " + e.getMessage());
++            spellbookAPI.getServer().getLogger().log(Level.SEVERE, "An error occurred while loading spells/effects: " + e.getMessage());
 +            e.printStackTrace();
 +        }
 +    }
@@ -556,10 +572,10 @@ index 0000000000000000000000000000000000000000..c0306be7eb5e0a54295544824a216b3c
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellQueue.java b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..4e86291ab9c1c6a2484000f474797a3bbc52580b
+index 0000000000000000000000000000000000000000..8c414f1195afda60f89c6596183f77cdb9c6d194
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
-@@ -0,0 +1,85 @@
+@@ -0,0 +1,90 @@
 +package de.erethon.spellbook.api;
 +
 +import com.destroystokyo.paper.event.server.ServerTickEndEvent;
@@ -642,6 +658,11 @@ index 0000000000000000000000000000000000000000..4e86291ab9c1c6a2484000f474797a3b
 +    public SpellbookSpell addToQueue(SpellbookSpell spell) {
 +        queue.add(spell);
 +        return spell;
++    }
++
++    public void clear() {
++        queue.clear();
++        activeSpells.clear();
 +    }
 +
 +}
