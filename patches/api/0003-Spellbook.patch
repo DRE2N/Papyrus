@@ -6,14 +6,15 @@ Subject: [PATCH] Spellbook
 
 diff --git a/src/main/java/de/erethon/spellbook/api/EffectData.java b/src/main/java/de/erethon/spellbook/api/EffectData.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..531da0b20a7414326fed12987b10c4715b94df56
+index 0000000000000000000000000000000000000000..2de5a56b7cbfc56e99a405765cb38f2bdea14ffb
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/EffectData.java
-@@ -0,0 +1,79 @@
+@@ -0,0 +1,83 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.configuration.InvalidConfigurationException;
 +import org.bukkit.configuration.file.YamlConfiguration;
++import org.bukkit.entity.LivingEntity;
 +import org.jetbrains.annotations.NotNull;
 +
 +import java.io.File;
@@ -38,11 +39,14 @@ index 0000000000000000000000000000000000000000..531da0b20a7414326fed12987b10c471
 +
 +    private boolean isPositive;
 +    private Class<? extends SpellEffect> effectClass;
++    private final ClassLoader classLoader;
 +
-+    public EffectData(SpellbookAPI spellbookAPI, String id) {
++
++    public EffectData(SpellbookAPI spellbookAPI, String id, ClassLoader classLoader) {
 +        this.spellbookAPI = spellbookAPI;
 +        this.id = id;
 +        queue = spellbookAPI.getQueue();
++        this.classLoader = classLoader;
 +        spellbookAPI.getServer().getLogger().info("Created new SpellData with " + spellbookAPI.getClass().getName());
 +    }
 +
@@ -66,10 +70,10 @@ index 0000000000000000000000000000000000000000..531da0b20a7414326fed12987b10c471
 +        return isPositive;
 +    }
 +
-+    public SpellEffect getActiveEffect(SpellCaster target, int duration, int stack) {
++    public SpellEffect getActiveEffect(LivingEntity target, int duration, int stack) {
 +        SpellEffect spellEffect;
 +        try {
-+            spellEffect = effectClass.getDeclaredConstructor(EffectData.class, SpellCaster.class, Integer.class, Integer.class).newInstance(this, target, duration, stack);
++            spellEffect = effectClass.getDeclaredConstructor(EffectData.class, LivingEntity.class, Integer.class, Integer.class).newInstance(this, target, duration, stack);
 +        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 +            spellbookAPI.getServer().getLogger().warning("Could not create class for effect " + id + ": " + effectClass.getName());
 +            throw new RuntimeException(e);
@@ -82,7 +86,7 @@ index 0000000000000000000000000000000000000000..531da0b20a7414326fed12987b10c471
 +        super.load(file);
 +        String className = getString("class");
 +        try {
-+            effectClass = (Class<? extends SpellEffect>) Class.forName("de.erethon.spellbook.spells." + className);
++            effectClass = (Class<? extends SpellEffect>) Class.forName("de.erethon.spellbook.spells." + className, true, classLoader);
 +        } catch (ClassNotFoundException e1) {
 +            spellbookAPI.getServer().getLogger().warning("Could not find class for effect " + id + ": " + className);
 +            throw new RuntimeException(e1);
@@ -91,13 +95,14 @@ index 0000000000000000000000000000000000000000..531da0b20a7414326fed12987b10c471
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..4ebb9aaa10368f63ef4cd1b063c1bafedc81cab1
+index 0000000000000000000000000000000000000000..20a488df1bb2fea09d61120a786c86de694ccc56
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,105 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.Location;
++import org.bukkit.entity.LivingEntity;
 +
 +import java.util.Iterator;
 +import java.util.Map;
@@ -106,9 +111,9 @@ index 0000000000000000000000000000000000000000..4ebb9aaa10368f63ef4cd1b063c1bafe
 +public interface SpellCaster {
 +    default void cast(SpellData spellData) {
 +        if (!canCast(spellData)) {
-+            spellData.queue(this);
++            return;
 +        }
-+        spellData.queue(this);
++        spellData.queue((LivingEntity) this);
 +    }
 +
 +    Location getLocation();
@@ -150,7 +155,7 @@ index 0000000000000000000000000000000000000000..4ebb9aaa10368f63ef4cd1b063c1bafe
 +    }
 +
 +    default void addEffect(EffectData data, int duration, int stacks) {
-+        SpellEffect effect = data.getActiveEffect(this, duration, stacks);
++        SpellEffect effect = data.getActiveEffect((LivingEntity) this, duration, stacks);
 +        if (getEffects().contains(effect)) {
 +            SpellEffect oldEffect = getEffects().stream().filter(e -> e.getData().equals(effect.getData())).findFirst().get();
 +            if (oldEffect.canAdd(duration, stacks)) {
@@ -201,14 +206,15 @@ index 0000000000000000000000000000000000000000..4ebb9aaa10368f63ef4cd1b063c1bafe
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellData.java b/src/main/java/de/erethon/spellbook/api/SpellData.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..0a38c0e41a3e0ded01e312e31e6acfc026174b46
+index 0000000000000000000000000000000000000000..d8453120f69e7e998be4c6aef5a12df086817773
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellData.java
-@@ -0,0 +1,106 @@
+@@ -0,0 +1,109 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.configuration.InvalidConfigurationException;
 +import org.bukkit.configuration.file.YamlConfiguration;
++import org.bukkit.entity.LivingEntity;
 +import org.jetbrains.annotations.NotNull;
 +
 +import java.io.File;
@@ -227,10 +233,12 @@ index 0000000000000000000000000000000000000000..0a38c0e41a3e0ded01e312e31e6acfc0
 +    private List<String> description = new ArrayList<>();
 +
 +    private Class<? extends SpellbookSpell> spellClass;
++    private final ClassLoader classLoader;
 +
-+    public SpellData(SpellbookAPI spellbookAPI, String id) {
++    public SpellData(SpellbookAPI spellbookAPI, String id, ClassLoader classLoader) {
 +        this.spellbookAPI = spellbookAPI;
 +        this.id = id;
++        this.classLoader = classLoader;
 +        queue = spellbookAPI.getQueue();
 +        spellbookAPI.getServer().getLogger().info("Created new SpellData with " + spellbookAPI.getClass().getName());
 +    }
@@ -254,14 +262,14 @@ index 0000000000000000000000000000000000000000..0a38c0e41a3e0ded01e312e31e6acfc0
 +     */
 +
 +
-+    public SpellbookSpell queue(SpellCaster caster) {
++    public SpellbookSpell queue(LivingEntity caster) {
 +        return queue.addToQueue(getActiveSpell(caster));
 +    }
 +
-+    public SpellbookSpell getActiveSpell(SpellCaster caster) {
++    public SpellbookSpell getActiveSpell(LivingEntity caster) {
 +        SpellbookSpell spellbookSpell;
 +        try {
-+            spellbookSpell = spellClass.getDeclaredConstructor(SpellCaster.class, SpellData.class).newInstance(caster, this);
++            spellbookSpell = spellClass.getDeclaredConstructor(LivingEntity.class, SpellData.class).newInstance(caster, this);
 +        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 +            spellbookAPI.getServer().getLogger().warning("Could not create class for spell " + id + ": " + spellClass.getName());
 +            throw new RuntimeException(e);
@@ -302,7 +310,7 @@ index 0000000000000000000000000000000000000000..0a38c0e41a3e0ded01e312e31e6acfc0
 +        String className = getString("class");
 +        spellbookAPI.getServer().getLogger().info("de.erethon.spellbook.spells." + className);
 +        try {
-+            spellClass = (Class<? extends SpellbookSpell>) Class.forName("de.erethon.spellbook.spells." + className);
++            spellClass = (Class<? extends SpellbookSpell>) Class.forName("de.erethon.spellbook.spells." + className, true, classLoader);
 +        } catch (ClassNotFoundException e) {
 +            spellbookAPI.getServer().getLogger().warning("Could not find class for spell " + id + ": " + className);
 +            throw new RuntimeException(e);
@@ -389,19 +397,23 @@ index 0000000000000000000000000000000000000000..df105d715e6a7fa6ab345ca9de44eca4
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellLibrary.java b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..99b89cb680f8e90d7db48f1a019431d298e58cb2
+index 0000000000000000000000000000000000000000..628b32599a37257365df19a119af4e43a99d0374
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
-@@ -0,0 +1,73 @@
+@@ -0,0 +1,89 @@
 +package de.erethon.spellbook.api;
 +
++import org.bukkit.Bukkit;
 +import org.bukkit.configuration.InvalidConfigurationException;
++import org.bukkit.plugin.Plugin;
++import org.bukkit.plugin.java.PluginClassLoader;
 +
 +import java.io.File;
 +import java.io.IOException;
 +import java.util.ArrayList;
 +import java.util.HashMap;
 +import java.util.List;
++import java.util.logging.Level;
 +
 +public class SpellLibrary {
 +
@@ -422,33 +434,45 @@ index 0000000000000000000000000000000000000000..99b89cb680f8e90d7db48f1a019431d2
 +    }
 +
 +    public void loadSpells(File spellFolder) {
-+        for (File f : getFilesForFolder(spellFolder)) {
-+            if (!f.getName().endsWith(".yml")) {
-+                continue;
-+            }
-+            String id = f.getName().replace(".yml", "");
-+            if (f.getName().contains("effect")) {
-+                spellbookAPI.getServer().getLogger().info("Loading effect " + id);
-+                EffectData effectData = new EffectData(spellbookAPI, id);
++        Plugin plugin = Bukkit.getPluginManager().getPlugin("Hecate"); // TODO: maybe don't assume its always there
++        if (plugin == null) {
++            spellbookAPI.getServer().getLogger().warning("Could not load spells due to Spellbook plugin missing.");
++            return;
++        }
++        ClassLoader classLoader = plugin.getClass().getClassLoader();
++        try {
++            for (File f : getFilesForFolder(spellFolder)) {
++                if (!f.getName().endsWith(".yml")) {
++                    continue;
++                }
++                String id = f.getName().replace(".yml", "");
++                if (f.getName().contains("effect")) {
++                    spellbookAPI.getServer().getLogger().info("Loading effect " + id);
++                    EffectData effectData = new EffectData(spellbookAPI, id, classLoader);
++                    try {
++                        effectData.load(f);
++                    } catch (IOException | InvalidConfigurationException e) {
++                        throw new RuntimeException(e);
++                    }
++                    loadedEffects.put(id, effectData);
++                    continue;
++                }
++                spellbookAPI.getServer().getLogger().info("Loading spell " + id);
++                SpellData spellData = new SpellData(spellbookAPI, id, classLoader);
 +                try {
-+                    effectData.load(f);
++                    spellData.load(f);
 +                } catch (IOException | InvalidConfigurationException e) {
 +                    throw new RuntimeException(e);
 +                }
-+                loadedEffects.put(id, effectData);
-+                continue;
++                loadedSpells.put(id, spellData);
 +            }
-+            spellbookAPI.getServer().getLogger().info("Loading spell " + id);
-+            SpellData spellData = new SpellData(spellbookAPI, id);
-+            try {
-+                spellData.load(f);
-+            } catch (IOException | InvalidConfigurationException e) {
-+                throw new RuntimeException(e);
-+            }
-+            loadedSpells.put(id, spellData);
++            spellbookAPI.getServer().getLogger().info("Loaded " + loadedSpells.size() + " spells.");
++            spellbookAPI.getServer().getLogger().info("Loaded " + loadedEffects.size() + " effects.");
++
++        } catch (Exception e) {
++            spellbookAPI.getServer().getLogger().log(Level.SEVERE, "An error occurred while loading spells: " + e.getMessage());
++            e.printStackTrace();
 +        }
-+        spellbookAPI.getServer().getLogger().info("Loaded " + loadedSpells.size() + " spells.");
-+        spellbookAPI.getServer().getLogger().info("Loaded " + loadedEffects.size() + " effects.");
 +    }
 +
 +    public static List<File> getFilesForFolder(File folder) {
@@ -468,10 +492,10 @@ index 0000000000000000000000000000000000000000..99b89cb680f8e90d7db48f1a019431d2
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellQueue.java b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..ba256409e734c65feeb1f4f25ae8b3d08ef3bfef
+index 0000000000000000000000000000000000000000..4e86291ab9c1c6a2484000f474797a3bbc52580b
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
-@@ -0,0 +1,72 @@
+@@ -0,0 +1,85 @@
 +package de.erethon.spellbook.api;
 +
 +import com.destroystokyo.paper.event.server.ServerTickEndEvent;
@@ -481,6 +505,7 @@ index 0000000000000000000000000000000000000000..ba256409e734c65feeb1f4f25ae8b3d0
 +import java.util.ArrayList;
 +import java.util.Iterator;
 +import java.util.List;
++import java.util.logging.Level;
 +
 +public class SpellQueue {
 +
@@ -501,18 +526,30 @@ index 0000000000000000000000000000000000000000..ba256409e734c65feeb1f4f25ae8b3d0
 +        Iterator<SpellbookSpell> activeSpellIterator = activeSpells.iterator();
 +        while (activeSpellIterator.hasNext()) {
 +            SpellbookSpell spell = activeSpellIterator.next();
-+            if (spell.shouldRemove()) {
-+                activeSpellIterator.remove();
-+            } else {
-+                spell.tick();
++            try {
++                if (spell.shouldRemove()) {
++                    activeSpellIterator.remove();
++                } else {
++                    spell.tick();
++                }
++            } catch (Exception e) {
++                server.getLogger().log(Level.SEVERE, "An error occurred while executing " + spell.getId() + " for " + spell.getCaster().getName() + ": " + e.getMessage());
++                e.printStackTrace();
 +            }
 +        }
++
++
 +        Iterator<SpellbookSpell> queueIterator = queue.iterator();
 +        while (queueIterator.hasNext()) {
 +            SpellbookSpell spell = queueIterator.next();
-+            spell.ready();
-+            queueIterator.remove();
-+            activeSpells.add(spell);
++            try {
++                spell.ready();
++                queueIterator.remove();
++                activeSpells.add(spell);
++            } catch (Exception e) {
++                server.getLogger().log(Level.SEVERE, "An error occurred while readying " + spell.getId() + " for " + spell.getCaster().getName() + ": " + e.getMessage());
++                e.printStackTrace();
++            }
 +            i++;
 +            if (i >= maxSpellsPerTickQueue) {
 +                spellbookAPI.getServer().getLogger().warning("Queue overflow! Queue size " + queue.size() + "/" + maxSpellsPerTickQueue + " | Tick time: " + server.getAverageTickTime());
@@ -546,10 +583,10 @@ index 0000000000000000000000000000000000000000..ba256409e734c65feeb1f4f25ae8b3d0
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java b/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..7cef585882e884b2334e8753f0d39b81c9ab3a0a
+index 0000000000000000000000000000000000000000..633828d54c4b67d82bbd400870e7b73a65e5ee5a
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,45 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.Bukkit;
@@ -576,8 +613,6 @@ index 0000000000000000000000000000000000000000..7cef585882e884b2334e8753f0d39b81
 +        queue = new SpellQueue(this);
 +
 +        library = new SpellLibrary(this);
-+        library.loadSpells(SPELLS);
-+
 +    }
 +
 +    public Server getServer() {
@@ -717,8 +752,28 @@ index 0000000000000000000000000000000000000000..3f749246555ae390f67bae160fc73899
 +        return data.getId();
 +    }
 +}
+diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
+index 56e261efa654e4a6872ccea28f0461df13845d13..62c5606ffdd3fb824141d868eaece2b404f3b22d 100644
+--- a/src/main/java/org/bukkit/Server.java
++++ b/src/main/java/org/bukkit/Server.java
+@@ -13,6 +13,7 @@ import java.util.Set;
+ import java.util.UUID;
+ import java.util.function.Consumer;
+ import java.util.logging.Logger;
++import de.erethon.spellbook.api.SpellbookAPI;
+ import org.bukkit.Warning.WarningState;
+ import org.bukkit.advancement.Advancement;
+ import org.bukkit.block.data.BlockData;
+@@ -2105,4 +2106,7 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+      */
+     @NotNull org.bukkit.potion.PotionBrewer getPotionBrewer();
+     // Paper end
++    // Papyrus start
++    SpellbookAPI getSpellbookAPI();
++    // Papyrus end
+ }
 diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
-index 8fa8922ad2fb0ea8f770368faff61e56e9761df9..f9894d4d9a5317da1dfaff4761ec81ea583ceadf 100644
+index 8fa8922ad2fb0ea8f770368faff61e56e9761df9..0c560c57f09329435b9de06b9698a5f651151a30 100644
 --- a/src/main/java/org/bukkit/entity/LivingEntity.java
 +++ b/src/main/java/org/bukkit/entity/LivingEntity.java
 @@ -4,6 +4,8 @@ import java.util.Collection;
@@ -739,3 +794,72 @@ index 8fa8922ad2fb0ea8f770368faff61e56e9761df9..f9894d4d9a5317da1dfaff4761ec81ea
  
      /**
       * Gets the height of the living entity's eyes above its Location.
+@@ -909,4 +911,7 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+      */
+     void setHurtDirection(float hurtDirection);
+     // Paper end
++    // Papyrus start
++    void sendMessage(String msg);
++    void sendActionbar(String msg);
+ }
+diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
+index 3fcfe8651a9c422fa9c8ff77556477f1461424cf..dc7269032c49a703559c8061144d973a7cfdc706 100644
+--- a/src/main/java/org/bukkit/entity/Player.java
++++ b/src/main/java/org/bukkit/entity/Player.java
+@@ -944,29 +944,6 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+         return banEntry;
+     }
+ 
+-    /**
+-     * Sends an Action Bar message to the client.
+-     *
+-     * Use Section symbols for legacy color codes to send formatting.
+-     *
+-     * @param message The message to send
+-     * @deprecated use {@link #sendActionBar(Component)}
+-     */
+-    @Deprecated
+-    public void sendActionBar(@NotNull String message);
+-
+-    /**
+-     * Sends an Action Bar message to the client.
+-     *
+-     * Use supplied alternative character to the section symbol to represent legacy color codes.
+-     *
+-     * @param alternateChar Alternate symbol such as '&amp;'
+-     * @param message The message to send
+-     * @deprecated use {@link #sendActionBar(Component)}
+-     */
+-    @Deprecated
+-    public void sendActionBar(char alternateChar, @NotNull String message);
+-
+     /**
+      * Sends an Action Bar message to the client.
+      *
+@@ -1003,7 +980,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+     /**
+      * Sends an array of components as a single message to the specified screen position of this player
+      *
+-     * @deprecated This is unlikely the API you want to use. See {@link #sendActionBar(String)} for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
++     * @deprecated This is unlikely the API you want to use. See or a more proper Action Bar API. This deprecated API may send unsafe items to the client.
+      * @param position the screen position
+      * @param components the components to send
+      */
+@@ -2641,7 +2618,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+         /**
+          * Sends the component to the specified screen position of this player
+          *
+-         * @deprecated This is unlikely the API you want to use. See {@link #sendActionBar(String)} for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
++         * @deprecated This is unlikely the API you want to use. for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
+          * @param position the screen position
+          * @param component the components to send
+          * @deprecated use {@code sendMessage} methods that accept {@link net.kyori.adventure.text.Component}
+@@ -2654,7 +2631,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+         /**
+          * Sends an array of components as a single message to the specified screen position of this player
+          *
+-         * @deprecated This is unlikely the API you want to use. See {@link #sendActionBar(String)} for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
++         * @deprecated This is unlikely the API you want to use. See  for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
+          * @param position the screen position
+          * @param components the components to send
+          * @deprecated use {@code sendMessage} methods that accept {@link net.kyori.adventure.text.Component}
