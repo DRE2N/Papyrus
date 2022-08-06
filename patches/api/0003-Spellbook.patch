@@ -44,7 +44,7 @@ index 0000000000000000000000000000000000000000..379e96edce4520a733064044eb357f30
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/EffectData.java b/src/main/java/de/erethon/spellbook/api/EffectData.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..fc45e16fe05477f93859c1316e95b48e15d84723
+index 0000000000000000000000000000000000000000..139cb902b1385f605082974c63030c6728353c1d
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/EffectData.java
 @@ -0,0 +1,87 @@
@@ -108,10 +108,10 @@ index 0000000000000000000000000000000000000000..fc45e16fe05477f93859c1316e95b48e
 +        return isPositive;
 +    }
 +
-+    public SpellEffect getActiveEffect(LivingEntity target, int duration, int stack) {
++    public SpellEffect getActiveEffect(LivingEntity caster, LivingEntity target, int duration, int stack) {
 +        SpellEffect spellEffect;
 +        try {
-+            spellEffect = effectClass.getDeclaredConstructor(EffectData.class, LivingEntity.class, int.class, int.class).newInstance(this, target, duration, stack);
++            spellEffect = effectClass.getDeclaredConstructor(EffectData.class, LivingEntity.class, LivingEntity.class, int.class, int.class).newInstance(this, caster, target, duration, stack);
 +        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 +            spellbookAPI.getServer().getLogger().warning("Could not create class for effect " + id + ": " + effectClass.getName());
 +            throw new RuntimeException(e);
@@ -137,12 +137,13 @@ index 0000000000000000000000000000000000000000..fc45e16fe05477f93859c1316e95b48e
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..bfc14504606a7c1924ee29a61722c9bb95ab1487
+index 0000000000000000000000000000000000000000..5fb9dcf91ed2b830f70cb70ec73cd3748ab30aa6
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-@@ -0,0 +1,120 @@
+@@ -0,0 +1,124 @@
 +package de.erethon.spellbook.api;
 +
++import org.bukkit.Bukkit;
 +import org.bukkit.Location;
 +import org.bukkit.entity.LivingEntity;
 +
@@ -210,14 +211,17 @@ index 0000000000000000000000000000000000000000..bfc14504606a7c1924ee29a61722c9bb
 +        getPassiveSpells().remove(spell);
 +    }
 +
-+    default void addEffect(EffectData data, int duration, int stacks) {
-+        SpellEffect effect = data.getActiveEffect((LivingEntity) this, duration, stacks);
-+        if (getEffects().contains(effect)) {
++    default void addEffect(LivingEntity caster, EffectData data, int duration, int stacks) {
++        SpellEffect effect = data.getActiveEffect(caster, (LivingEntity) this, duration, stacks);
++        if (hasEffect(data)) {
++            Bukkit.getLogger().info("Found existing " + data.getClass().getName());
 +            SpellEffect oldEffect = getEffects().stream().filter(e -> e.data.equals(effect.data)).findFirst().get();
 +            if (oldEffect.canAdd(duration, stacks)) {
++                Bukkit.getLogger().info("Extended existing " + data.getClass().getName());
 +                oldEffect.add(duration, stacks);
 +            }
 +        } else {
++            Bukkit.getLogger().info("Added new " + data.getClass().getName());
 +            getEffects().add(effect);
 +            effect.onApply();
 +        }
@@ -378,10 +382,10 @@ index 0000000000000000000000000000000000000000..d8453120f69e7e998be4c6aef5a12df0
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..8e5b9002ff0a7d21bef8bf9bd88b41e0f6ecc4b0
+index 0000000000000000000000000000000000000000..4d918cec8e8afd45a133c5ba6c268aefe94a1339
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
-@@ -0,0 +1,67 @@
+@@ -0,0 +1,69 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.entity.LivingEntity;
@@ -389,13 +393,15 @@ index 0000000000000000000000000000000000000000..8e5b9002ff0a7d21bef8bf9bd88b41e0
 +public class SpellEffect {
 +
 +    protected final LivingEntity target;
++    protected final LivingEntity caster;
 +    public final EffectData data;
 +
 +    protected int ticksLeft;
 +    protected int stacks;
 +
-+    public SpellEffect(EffectData data, LivingEntity target, int duration, int stacks) {
++    public SpellEffect(EffectData data, LivingEntity caster, LivingEntity target, int duration, int stacks) {
 +        this.data = data;
++        this.caster = caster;
 +        this.target = target;
 +        this.ticksLeft = duration;
 +        this.stacks = stacks;
