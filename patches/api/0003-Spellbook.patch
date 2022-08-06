@@ -450,10 +450,10 @@ index 0000000000000000000000000000000000000000..fa1ecacc8dbdb9f7933718c7d7b043d5
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellLibrary.java b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..628b32599a37257365df19a119af4e43a99d0374
+index 0000000000000000000000000000000000000000..c0306be7eb5e0a54295544824a216b3c4893a1eb
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,93 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.Bukkit;
@@ -486,6 +486,10 @@ index 0000000000000000000000000000000000000000..628b32599a37257365df19a119af4e43
 +        return loadedSpells.get(id);
 +    }
 +
++    public EffectData getEffectByID(String id) {
++        return loadedEffects.get(id);
++    }
++
 +    public void loadSpells(File spellFolder) {
 +        Plugin plugin = Bukkit.getPluginManager().getPlugin("Hecate"); // TODO: maybe don't assume its always there
 +        if (plugin == null) {
@@ -499,7 +503,7 @@ index 0000000000000000000000000000000000000000..628b32599a37257365df19a119af4e43
 +                    continue;
 +                }
 +                String id = f.getName().replace(".yml", "");
-+                if (f.getName().contains("effect")) {
++                if (f.getName().contains("effect") || f.getName().contains("Effect")) {
 +                    spellbookAPI.getServer().getLogger().info("Loading effect " + id);
 +                    EffectData effectData = new EffectData(spellbookAPI, id, classLoader);
 +                    try {
