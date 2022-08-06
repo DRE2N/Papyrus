@@ -5,10 +5,18 @@ Subject: [PATCH] Spellbook
 
 
 diff --git a/src/main/java/de/erethon/spellbook/api/EffectData.java b/src/main/java/de/erethon/spellbook/api/EffectData.java
-index 531da0b20a7414326fed12987b10c4715b94df56..cc9f7fee55c973894aa65ece145eb14413eaace8 100644
+index 531da0b20a7414326fed12987b10c4715b94df56..2de5a56b7cbfc56e99a405765cb38f2bdea14ffb 100644
 --- a/src/main/java/de/erethon/spellbook/api/EffectData.java
 +++ b/src/main/java/de/erethon/spellbook/api/EffectData.java
-@@ -26,11 +26,14 @@ public class EffectData extends YamlConfiguration {
+@@ -2,6 +2,7 @@ package de.erethon.spellbook.api;
+ 
+ import org.bukkit.configuration.InvalidConfigurationException;
+ import org.bukkit.configuration.file.YamlConfiguration;
++import org.bukkit.entity.LivingEntity;
+ import org.jetbrains.annotations.NotNull;
+ 
+ import java.io.File;
+@@ -26,11 +27,14 @@ public class EffectData extends YamlConfiguration {
  
      private boolean isPositive;
      private Class<? extends SpellEffect> effectClass;
@@ -24,7 +32,20 @@ index 531da0b20a7414326fed12987b10c4715b94df56..cc9f7fee55c973894aa65ece145eb144
          spellbookAPI.getServer().getLogger().info("Created new SpellData with " + spellbookAPI.getClass().getName());
      }
  
-@@ -70,7 +73,7 @@ public class EffectData extends YamlConfiguration {
+@@ -54,10 +58,10 @@ public class EffectData extends YamlConfiguration {
+         return isPositive;
+     }
+ 
+-    public SpellEffect getActiveEffect(SpellCaster target, int duration, int stack) {
++    public SpellEffect getActiveEffect(LivingEntity target, int duration, int stack) {
+         SpellEffect spellEffect;
+         try {
+-            spellEffect = effectClass.getDeclaredConstructor(EffectData.class, SpellCaster.class, Integer.class, Integer.class).newInstance(this, target, duration, stack);
++            spellEffect = effectClass.getDeclaredConstructor(EffectData.class, LivingEntity.class, Integer.class, Integer.class).newInstance(this, target, duration, stack);
+         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+             spellbookAPI.getServer().getLogger().warning("Could not create class for effect " + id + ": " + effectClass.getName());
+             throw new RuntimeException(e);
+@@ -70,7 +74,7 @@ public class EffectData extends YamlConfiguration {
          super.load(file);
          String className = getString("class");
          try {
@@ -33,11 +54,52 @@ index 531da0b20a7414326fed12987b10c4715b94df56..cc9f7fee55c973894aa65ece145eb144
          } catch (ClassNotFoundException e1) {
              spellbookAPI.getServer().getLogger().warning("Could not find class for effect " + id + ": " + className);
              throw new RuntimeException(e1);
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
+index 4ebb9aaa10368f63ef4cd1b063c1bafedc81cab1..20a488df1bb2fea09d61120a786c86de694ccc56 100644
+--- a/src/main/java/de/erethon/spellbook/api/SpellCaster.java
++++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
+@@ -1,6 +1,7 @@
+ package de.erethon.spellbook.api;
+ 
+ import org.bukkit.Location;
++import org.bukkit.entity.LivingEntity;
+ 
+ import java.util.Iterator;
+ import java.util.Map;
+@@ -9,9 +10,9 @@ import java.util.Set;
+ public interface SpellCaster {
+     default void cast(SpellData spellData) {
+         if (!canCast(spellData)) {
+-            spellData.queue(this);
++            return;
+         }
+-        spellData.queue(this);
++        spellData.queue((LivingEntity) this);
+     }
+ 
+     Location getLocation();
+@@ -53,7 +54,7 @@ public interface SpellCaster {
+     }
+ 
+     default void addEffect(EffectData data, int duration, int stacks) {
+-        SpellEffect effect = data.getActiveEffect(this, duration, stacks);
++        SpellEffect effect = data.getActiveEffect((LivingEntity) this, duration, stacks);
+         if (getEffects().contains(effect)) {
+             SpellEffect oldEffect = getEffects().stream().filter(e -> e.getData().equals(effect.getData())).findFirst().get();
+             if (oldEffect.canAdd(duration, stacks)) {
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellData.java b/src/main/java/de/erethon/spellbook/api/SpellData.java
-index 0a38c0e41a3e0ded01e312e31e6acfc026174b46..3863a714c6e90ecb129f277f43c70709320a7f1e 100644
+index 0a38c0e41a3e0ded01e312e31e6acfc026174b46..d8453120f69e7e998be4c6aef5a12df086817773 100644
 --- a/src/main/java/de/erethon/spellbook/api/SpellData.java
 +++ b/src/main/java/de/erethon/spellbook/api/SpellData.java
-@@ -20,10 +20,12 @@ public class SpellData extends YamlConfiguration {
+@@ -2,6 +2,7 @@ package de.erethon.spellbook.api;
+ 
+ import org.bukkit.configuration.InvalidConfigurationException;
+ import org.bukkit.configuration.file.YamlConfiguration;
++import org.bukkit.entity.LivingEntity;
+ import org.jetbrains.annotations.NotNull;
+ 
+ import java.io.File;
+@@ -20,10 +21,12 @@ public class SpellData extends YamlConfiguration {
      private List<String> description = new ArrayList<>();
  
      private Class<? extends SpellbookSpell> spellClass;
@@ -51,7 +113,25 @@ index 0a38c0e41a3e0ded01e312e31e6acfc026174b46..3863a714c6e90ecb129f277f43c70709
          queue = spellbookAPI.getQueue();
          spellbookAPI.getServer().getLogger().info("Created new SpellData with " + spellbookAPI.getClass().getName());
      }
-@@ -95,7 +97,7 @@ public class SpellData extends YamlConfiguration {
+@@ -47,14 +50,14 @@ public class SpellData extends YamlConfiguration {
+      */
+ 
+ 
+-    public SpellbookSpell queue(SpellCaster caster) {
++    public SpellbookSpell queue(LivingEntity caster) {
+         return queue.addToQueue(getActiveSpell(caster));
+     }
+ 
+-    public SpellbookSpell getActiveSpell(SpellCaster caster) {
++    public SpellbookSpell getActiveSpell(LivingEntity caster) {
+         SpellbookSpell spellbookSpell;
+         try {
+-            spellbookSpell = spellClass.getDeclaredConstructor(SpellCaster.class, SpellData.class).newInstance(caster, this);
++            spellbookSpell = spellClass.getDeclaredConstructor(LivingEntity.class, SpellData.class).newInstance(caster, this);
+         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+             spellbookAPI.getServer().getLogger().warning("Could not create class for spell " + id + ": " + spellClass.getName());
+             throw new RuntimeException(e);
+@@ -95,7 +98,7 @@ public class SpellData extends YamlConfiguration {
          String className = getString("class");
          spellbookAPI.getServer().getLogger().info("de.erethon.spellbook.spells." + className);
          try {
