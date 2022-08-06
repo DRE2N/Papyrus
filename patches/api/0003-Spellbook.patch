@@ -4,6 +4,44 @@ Date: Fri, 5 Aug 2022 21:44:15 +0200
 Subject: [PATCH] Spellbook
 
 
+diff --git a/src/main/java/de/erethon/papyrus/DamageType.java b/src/main/java/de/erethon/papyrus/DamageType.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..379e96edce4520a733064044eb357f3041c4ddf0
+--- /dev/null
++++ b/src/main/java/de/erethon/papyrus/DamageType.java
+@@ -0,0 +1,32 @@
++package de.erethon.papyrus;
++
++
++import org.bukkit.attribute.Attribute;
++
++public enum DamageType {
++
++    AIR(Attribute.ADV_AIR, Attribute.RES_AIR),
++    EARTH(Attribute.ADV_EARTH, Attribute.RES_EARTH),
++    FIRE(Attribute.ADV_FIRE, Attribute.RES_FIRE),
++    MAGIC(Attribute.ADV_MAGIC, Attribute.RES_MAGIC),
++    PHYSICAL(Attribute.ADV_PHYSICAL, Attribute.RES_PHYSICAL),
++    WATER(Attribute.ADV_WATER, Attribute.RES_WATER),
++    PURE(Attribute.ADV_PURE, Attribute.RES_PURE);
++
++    private final Attribute advAttr;
++    private final Attribute resAttr;
++
++    DamageType(Attribute advAttr, Attribute resAttr) {
++        this.advAttr = advAttr;
++        this.resAttr = resAttr;
++    }
++
++    public Attribute getAdvAttr() {
++        return this.advAttr;
++    }
++
++
++    public Attribute getResAttr() {
++        return this.resAttr;
++    }
++}
 diff --git a/src/main/java/de/erethon/spellbook/api/EffectData.java b/src/main/java/de/erethon/spellbook/api/EffectData.java
 new file mode 100644
 index 0000000000000000000000000000000000000000..3fc3789a07a1555c21c1944fa8fa7f7d77c4b622
@@ -787,6 +825,35 @@ index 56e261efa654e4a6872ccea28f0461df13845d13..62c5606ffdd3fb824141d868eaece2b4
 +    SpellbookAPI getSpellbookAPI();
 +    // Papyrus end
  }
+diff --git a/src/main/java/org/bukkit/entity/Damageable.java b/src/main/java/org/bukkit/entity/Damageable.java
+index fc4d3bcd9b16097086fef7975274d825b65adb10..0ada5e125ee88a606399b6437baa1af45ae25b19 100644
+--- a/src/main/java/org/bukkit/entity/Damageable.java
++++ b/src/main/java/org/bukkit/entity/Damageable.java
+@@ -1,5 +1,6 @@
+ package org.bukkit.entity;
+ 
++import de.erethon.papyrus.DamageType;
+ import org.bukkit.attribute.Attribute;
+ import org.jetbrains.annotations.Nullable;
+ 
+@@ -13,6 +14,8 @@ public interface Damageable extends Entity {
+      * @param amount Amount of damage to deal
+      */
+     void damage(double amount);
++    void damage(double amount, DamageType type);
++
+ 
+     /**
+      * Deals the given amount of damage to this entity, from a specified
+@@ -23,6 +26,8 @@ public interface Damageable extends Entity {
+      */
+     void damage(double amount, @Nullable Entity source);
+ 
++    void damage(double amount, Entity source, DamageType type);
++
+     /**
+      * Gets the entity's health from 0 to {@link #getMaxHealth()}, where 0 is dead.
+      *
 diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
 index 8fa8922ad2fb0ea8f770368faff61e56e9761df9..0c560c57f09329435b9de06b9698a5f651151a30 100644
 --- a/src/main/java/org/bukkit/entity/LivingEntity.java
