@@ -137,10 +137,10 @@ index 0000000000000000000000000000000000000000..139cb902b1385f605082974c63030c67
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..5fb9dcf91ed2b830f70cb70ec73cd3748ab30aa6
+index 0000000000000000000000000000000000000000..3bed754082eb03f166fc0ce11c82aa2bbb832fe1
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-@@ -0,0 +1,124 @@
+@@ -0,0 +1,132 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.Bukkit;
@@ -209,6 +209,14 @@ index 0000000000000000000000000000000000000000..5fb9dcf91ed2b830f70cb70ec73cd374
 +
 +    default void removePassiveSpell(SpellbookSpell spell) {
 +        getPassiveSpells().remove(spell);
++    }
++
++    default void addSpell(SpellData spell) {
++        getUnlockedSpells().add(spell);
++    }
++
++    default void removeSpell(SpellData spell) {
++        getUnlockedSpells().remove(spell);
 +    }
 +
 +    default void addEffect(LivingEntity caster, EffectData data, int duration, int stacks) {
