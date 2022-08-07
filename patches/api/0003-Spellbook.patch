@@ -580,7 +580,7 @@ index 0000000000000000000000000000000000000000..f7dec50648bf38e62f97f3e69aea2afb
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellQueue.java b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..bcfcc926e8704e91853a5278dddf8931693808e9
+index 0000000000000000000000000000000000000000..37f926f06fe53db15e03d6525696d5f6dc47d95f
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
 @@ -0,0 +1,107 @@
@@ -621,7 +621,7 @@ index 0000000000000000000000000000000000000000..bcfcc926e8704e91853a5278dddf8931
 +        while (activeSpellIterator.hasNext()) {
 +            currentActiveSpells++;
 +            if (currentActiveSpells >= maxActiveSpellsPerTick) {
-+                spellbookAPI.getServer().getLogger().warning("Active spell queue overflow! " + currentActiveSpells + "/" + maxActiveSpellsPerTick + " | Tick time: " + server.getAverageTickTime());
++                spellbookAPI.getServer().getLogger().warning("Active spell queue overflow! " + activeSpells.size() + "/" + maxActiveSpellsPerTick + " | Tick time: " + server.getAverageTickTime());
 +                break;
 +            }
 +            SpellbookSpell spell = activeSpellIterator.next();
@@ -642,7 +642,7 @@ index 0000000000000000000000000000000000000000..bcfcc926e8704e91853a5278dddf8931
 +        while (queueIterator.hasNext()) {
 +            currentSpells++;
 +            if (currentSpells >= maxSpellsPerTick) {
-+                spellbookAPI.getServer().getLogger().warning("New spell queue overflow! " + currentSpells + "/" + maxSpellsPerTick + " | Tick time: " + server.getAverageTickTime());
++                spellbookAPI.getServer().getLogger().warning("New spell queue overflow! " + queue.size() + "/" + maxSpellsPerTick + " | Tick time: " + server.getAverageTickTime());
 +                break;
 +            }
 +            SpellbookSpell spell = queueIterator.next();
