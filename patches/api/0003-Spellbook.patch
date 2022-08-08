@@ -137,10 +137,10 @@ index 0000000000000000000000000000000000000000..139cb902b1385f605082974c63030c67
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..3bed754082eb03f166fc0ce11c82aa2bbb832fe1
+index 0000000000000000000000000000000000000000..3758b2e372ca4408a1636bbb97c90c304936a5f1
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-@@ -0,0 +1,132 @@
+@@ -0,0 +1,147 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.Bukkit;
@@ -169,6 +169,7 @@ index 0000000000000000000000000000000000000000..3bed754082eb03f166fc0ce11c82aa2b
 +    Set<SpellEffect> getEffects();
 +
 +    Set<SpellbookSpell> getPassiveSpells();
++    Set<SpellbookSpell> getActiveSpells();
 +
 +    Set<SpellData> getUnlockedSpells();
 +    Set<SpellData> getUnlockedPassives();
@@ -190,15 +191,21 @@ index 0000000000000000000000000000000000000000..3bed754082eb03f166fc0ce11c82aa2b
 +        }
 +    }
 +
-+    default void onDamage() {
++    default void onDamage(SpellCaster damager) {
 +        for (SpellEffect effect : getEffects()) {
-+            effect.onDamage();
++            effect.onDamage(damager);
++        }
++        for (SpellbookSpell spell : getActiveSpells()) {
++            spell.onDamage(damager);
 +        }
 +    }
 +
-+    default void onAttack() {
++    default void onAttack(SpellCaster target) {
 +        for (SpellEffect effect : getEffects()) {
-+            effect.onAttack();
++            effect.onAttack(target);
++        }
++        for (SpellbookSpell spell : getActiveSpells()) {
++            spell.onAttack(target);
 +        }
 +    }
 +
@@ -217,6 +224,14 @@ index 0000000000000000000000000000000000000000..3bed754082eb03f166fc0ce11c82aa2b
 +
 +    default void removeSpell(SpellData spell) {
 +        getUnlockedSpells().remove(spell);
++    }
++
++    default void addActiveSpell(SpellbookSpell spell) {
++        getActiveSpells().add(spell);
++    }
++
++    default void removeActiveSpell(SpellbookSpell spell) {
++        getActiveSpells().remove(spell);
 +    }
 +
 +    default void addEffect(LivingEntity caster, EffectData data, int duration, int stacks) {
@@ -390,7 +405,7 @@ index 0000000000000000000000000000000000000000..d8453120f69e7e998be4c6aef5a12df0
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..4d918cec8e8afd45a133c5ba6c268aefe94a1339
+index 0000000000000000000000000000000000000000..747eaafc43e48bb3124ac9930cd7ca5a64b4365b
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 @@ -0,0 +1,69 @@
@@ -442,10 +457,10 @@ index 0000000000000000000000000000000000000000..4d918cec8e8afd45a133c5ba6c268aef
 +    public void onRemove() { // Mostly useful for stat buffs/debuffs
 +    }
 +
-+    public void onDamage() { // For effects that block 1 attack and get removed after that
++    public void onDamage(SpellCaster damager) { // For effects that block 1 attack and get removed after that
 +    }
 +
-+    public void onAttack() { // For effects that add something to the attack
++    public void onAttack(SpellCaster target) { // For effects that add something to the attack
 +    }
 +
 +    public void onCast() { // For effects that prevent you from casting spells or that do something when you cast a spell
@@ -580,10 +595,10 @@ index 0000000000000000000000000000000000000000..f7dec50648bf38e62f97f3e69aea2afb
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellQueue.java b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..37f926f06fe53db15e03d6525696d5f6dc47d95f
+index 0000000000000000000000000000000000000000..0f221af25a34a581a8b2a99dba83668f64b2e0dc
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
-@@ -0,0 +1,107 @@
+@@ -0,0 +1,108 @@
 +package de.erethon.spellbook.api;
 +
 +import com.destroystokyo.paper.event.server.ServerTickEndEvent;
@@ -650,6 +665,7 @@ index 0000000000000000000000000000000000000000..37f926f06fe53db15e03d6525696d5f6
 +                spell.ready();
 +                queueIterator.remove();
 +                activeSpells.add(spell);
++                spell.getCaster().addActiveSpell(spell);
 +            } catch (Exception e) {
 +                server.getLogger().log(Level.SEVERE, "An error occurred while readying " + spell.getId() + " for " + spell.getCaster().getName() + ": " + e.getMessage());
 +                e.printStackTrace();
@@ -744,10 +760,10 @@ index 0000000000000000000000000000000000000000..633828d54c4b67d82bbd400870e7b73a
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..3f749246555ae390f67bae160fc738994b2531f4
+index 0000000000000000000000000000000000000000..b2ce8cc165ad385f0965d8de00b0b1ca013ec784
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,121 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.entity.LivingEntity;
@@ -807,6 +823,12 @@ index 0000000000000000000000000000000000000000..3f749246555ae390f67bae160fc73899
 +    protected void onTickFinish() {
 +    }
 +
++    protected void onDamage(SpellCaster attacker) {
++    }
++
++    protected void onAttack(SpellCaster target) {
++    }
++
 +    public void ready() {
 +        if (onPrecast()) {
 +            if (onCast()) {
@@ -832,6 +854,7 @@ index 0000000000000000000000000000000000000000..3f749246555ae390f67bae160fc73899
 +        }
 +        if (shouldRemove()) {
 +            onTickFinish();
++            caster.getActiveSpells().remove(this);
 +        }
 +    }
 +

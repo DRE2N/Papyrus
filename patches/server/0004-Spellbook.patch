@@ -148,19 +148,21 @@ index c7e2081fbd557417daa707da1c2e8604fc9faa1e..50a80b766c5dedb1b961642f2f0cba58
              return false;
          } else {
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..96f7ccfa2c712f8e8312f05fc1dee00e1511c1fb 100644
+index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..bbce29b3bcbfe0a38451361c06b4ea08fb535a7c 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-@@ -15,7 +15,7 @@ import java.util.*;
+@@ -15,8 +15,9 @@ import java.util.*;
  import java.util.function.Predicate;
  import javax.annotation.Nullable;
  
 -import de.erethon.papyrus.DamageType;
 +import de.erethon.papyrus.CraftDamageType;
  import de.erethon.papyrus.PapyrusUtils;
++import de.erethon.spellbook.api.SpellCaster;
  import net.kyori.adventure.text.Component;
  import net.minecraft.BlockUtil;
-@@ -62,7 +62,6 @@ import net.minecraft.world.InteractionHand;
+ import net.minecraft.advancements.CriteriaTriggers;
+@@ -62,7 +63,6 @@ import net.minecraft.world.InteractionHand;
  import net.minecraft.world.damagesource.CombatRules;
  import net.minecraft.world.damagesource.CombatTracker;
  import net.minecraft.world.damagesource.DamageSource;
@@ -168,7 +170,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..96f7ccfa2c712f8e8312f05fc1dee00e
  import net.minecraft.world.effect.MobEffect;
  import net.minecraft.world.effect.MobEffectInstance;
  import net.minecraft.world.effect.MobEffectUtil;
-@@ -76,9 +75,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+@@ -76,9 +76,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
  import net.minecraft.world.entity.ai.attributes.Attributes;
  import net.minecraft.world.entity.ai.attributes.DefaultAttributes;
  import net.minecraft.world.entity.ai.targeting.TargetingConditions;
@@ -178,7 +180,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..96f7ccfa2c712f8e8312f05fc1dee00e
  import net.minecraft.world.entity.boss.wither.WitherBoss;
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.projectile.AbstractArrow;
-@@ -103,7 +100,6 @@ import net.minecraft.world.level.block.state.BlockState;
+@@ -103,7 +101,6 @@ import net.minecraft.world.level.block.state.BlockState;
  import net.minecraft.world.level.gameevent.GameEvent;
  import net.minecraft.world.level.material.Fluid;
  import net.minecraft.world.level.material.FluidState;
@@ -186,7 +188,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..96f7ccfa2c712f8e8312f05fc1dee00e
  import net.minecraft.world.level.storage.loot.LootContext;
  import net.minecraft.world.level.storage.loot.LootTable;
  import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
-@@ -250,7 +246,7 @@ public abstract class LivingEntity extends Entity {
+@@ -250,7 +247,7 @@ public abstract class LivingEntity extends Entity {
      public org.bukkit.craftbukkit.entity.CraftLivingEntity getBukkitLivingEntity() { return (org.bukkit.craftbukkit.entity.CraftLivingEntity) super.getBukkitEntity(); } // Paper
      public boolean silentDeath = false; // Paper - mark entity as dying silently for cancellable death event
  
@@ -195,7 +197,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..96f7ccfa2c712f8e8312f05fc1dee00e
  
      @Override
      public float getBukkitYaw() {
-@@ -498,6 +494,7 @@ public abstract class LivingEntity extends Entity {
+@@ -498,6 +495,7 @@ public abstract class LivingEntity extends Entity {
          }
  
          this.tickEffects();
@@ -203,7 +205,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..96f7ccfa2c712f8e8312f05fc1dee00e
          this.animStepO = this.animStep;
          this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
-@@ -1338,7 +1335,7 @@ public abstract class LivingEntity extends Entity {
+@@ -1338,7 +1336,7 @@ public abstract class LivingEntity extends Entity {
      // Papyrus start - rewrite damage system
  
      @Override
@@ -212,11 +214,13 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..96f7ccfa2c712f8e8312f05fc1dee00e
          if (isInvulnerable() || isRemoved() || dead || getHealth() <= 0F || isInvulnerableTo(source) || level.isClientSide) {
              return false;
          }
-@@ -1398,11 +1395,12 @@ public abstract class LivingEntity extends Entity {
+@@ -1398,11 +1396,14 @@ public abstract class LivingEntity extends Entity {
          playHurtSound(source);
          level.broadcastEntityEvent(this, (byte) 2); // hurt animation
          setHealth((float) (getHealth() - Math.max(finalDmg, 0)));
-+        getBukkitLivingEntity().onDamage();
++        if (source.getEntity() instanceof LivingEntity entity) {
++            getBukkitLivingEntity().onDamage((SpellCaster) entity);
++        }
          return true;
      }
      @Override
@@ -227,19 +231,20 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..96f7ccfa2c712f8e8312f05fc1dee00e
      }
      // Papyrus end
 diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
-index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..0b0317515660b7e9931367e02bc83daf82096065 100644
+index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..de3c0c739cc388290d0721f64190255033399a49 100644
 --- a/src/main/java/net/minecraft/world/entity/Mob.java
 +++ b/src/main/java/net/minecraft/world/entity/Mob.java
-@@ -10,7 +10,7 @@ import java.util.Optional;
+@@ -10,7 +10,8 @@ import java.util.Optional;
  import java.util.UUID;
  import javax.annotation.Nullable;
  
 -import de.erethon.papyrus.DamageType;
 +import de.erethon.papyrus.CraftDamageType;
++import de.erethon.spellbook.api.SpellCaster;
  import net.minecraft.core.BlockPos;
  import net.minecraft.core.NonNullList;
  import net.minecraft.core.Vec3i;
-@@ -1592,7 +1592,7 @@ public abstract class Mob extends LivingEntity {
+@@ -1592,7 +1593,7 @@ public abstract class Mob extends LivingEntity {
          return doHurtTarget(target, attackDamageType);
      }
  
@@ -248,28 +253,31 @@ index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..0b0317515660b7e9931367e02bc83daf
          float dmg = (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE);
          float knockback = (float) this.getAttributeValue(Attributes.ATTACK_KNOCKBACK);
  
-@@ -1630,6 +1630,7 @@ public abstract class Mob extends LivingEntity {
+@@ -1630,6 +1631,9 @@ public abstract class Mob extends LivingEntity {
  
              this.doEnchantDamageEffects(this, target);
              this.setLastHurtMob(target);
-+            getBukkitMob().onAttack();
++            if (target instanceof LivingEntity entity) {
++                getBukkitMob().onAttack((SpellCaster) entity);
++            }
          }
  
          return flag;
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
-index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..8f6258c29989be729aadcf94a46b58bf618e1e0e 100644
+index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..eb469afdedff1520ac005bd38cba3b0f0090901e 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
 +++ b/src/main/java/net/minecraft/world/entity/player/Player.java
-@@ -18,7 +18,7 @@ import java.util.OptionalInt;
+@@ -18,7 +18,8 @@ import java.util.OptionalInt;
  import java.util.function.Predicate;
  import javax.annotation.Nullable;
  
 -import de.erethon.papyrus.DamageType;
 +import de.erethon.papyrus.CraftDamageType;
++import de.erethon.spellbook.api.SpellCaster;
  import net.minecraft.SharedConstants;
  import net.minecraft.Util;
  import net.minecraft.advancements.CriteriaTriggers;
-@@ -1254,12 +1254,13 @@ public abstract class Player extends LivingEntity {
+@@ -1254,12 +1255,15 @@ public abstract class Player extends LivingEntity {
      }
  
      // Papyrus - combat rework
@@ -280,11 +288,13 @@ index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..8f6258c29989be729aadcf94a46b58bf
          }
          float damage = (float) (getAttributeValue(Attributes.ATTACK_DAMAGE) + getAttributeValue(type.getAdvAttr()));
          target.hurt(DamageSource.playerAttack(this), damage, type);
-+        getBukkitEntity().onAttack();
++        if (target instanceof LivingEntity entity) {
++            getBukkitEntity().onAttack((SpellCaster) entity);
++        }
      }
  
      public void attack(Entity target) {
-@@ -1472,7 +1473,7 @@ public abstract class Player extends LivingEntity {
+@@ -1472,7 +1476,7 @@ public abstract class Player extends LivingEntity {
  
      @Override
      protected void doAutoAttackOnTouch(LivingEntity target) {
@@ -372,7 +382,7 @@ index a407e802164603c74ec1f4ad3c98bc50398954bc..c7fdecbcd6eb7571a09883637bee4150
      public double getHealth() {
          return this.getParent().getHealth();
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
-index c022751e3b45469cc0ad6732e2d6ff08918bafa4..b6f5271d350dc385904ae3688b38292eda896a0c 100644
+index c022751e3b45469cc0ad6732e2d6ff08918bafa4..2dcc2add6171a775f7846151d990bb193a48fa6f 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
 @@ -3,12 +3,15 @@ package org.bukkit.craftbukkit.entity;
@@ -405,7 +415,7 @@ index c022751e3b45469cc0ad6732e2d6ff08918bafa4..b6f5271d350dc385904ae3688b38292e
  import org.bukkit.entity.DragonFireball;
  import org.bukkit.entity.Egg;
  import org.bukkit.entity.EnderPearl;
-@@ -87,6 +91,20 @@ import org.bukkit.util.Vector;
+@@ -87,6 +91,21 @@ import org.bukkit.util.Vector;
  public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      private CraftEntityEquipment equipment;
  
@@ -413,6 +423,7 @@ index c022751e3b45469cc0ad6732e2d6ff08918bafa4..b6f5271d350dc385904ae3688b38292e
 +    // Papyrus start
 +    private Set<SpellData> unlockedSpellData = new HashSet<>();
 +    private Set<SpellData> passiveSpells = new HashSet<>();
++    private Set<SpellbookSpell> activeSpells = new HashSet<>();
 +    private final SpellData[] assignedSlots = new SpellData[8];
 +
 +    Map<SpellData, Long> usedSpells = new LinkedHashMap<>();
@@ -426,7 +437,7 @@ index c022751e3b45469cc0ad6732e2d6ff08918bafa4..b6f5271d350dc385904ae3688b38292e
      public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
          super(server, entity);
  
-@@ -345,11 +363,21 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -345,11 +364,21 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      // Paper End - Bee Stinger API
      @Override
      public void damage(double amount) {
@@ -449,7 +460,7 @@ index c022751e3b45469cc0ad6732e2d6ff08918bafa4..b6f5271d350dc385904ae3688b38292e
          Preconditions.checkState(!this.getHandle().generation, "Cannot damage entity during world generation");
  
          DamageSource reason = DamageSource.GENERIC;
-@@ -359,8 +387,12 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -359,8 +388,12 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
          } else if (source instanceof LivingEntity) {
              reason = DamageSource.mobAttack(((CraftLivingEntity) source).getHandle());
          }
@@ -463,7 +474,7 @@ index c022751e3b45469cc0ad6732e2d6ff08918bafa4..b6f5271d350dc385904ae3688b38292e
      }
  
      @Override
-@@ -904,6 +936,20 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -904,6 +937,20 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
          getHandle().hurtDir = hurtDirection;
      }
  
@@ -484,7 +495,7 @@ index c022751e3b45469cc0ad6732e2d6ff08918bafa4..b6f5271d350dc385904ae3688b38292e
      public static MobType fromBukkitEntityCategory(EntityCategory entityCategory) {
          switch (entityCategory) {
              case NONE:
-@@ -920,4 +966,64 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -920,4 +967,69 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
          throw new IllegalArgumentException(entityCategory + " is an unrecognized entity category");
      }
      // Paper end
@@ -504,6 +515,11 @@ index c022751e3b45469cc0ad6732e2d6ff08918bafa4..b6f5271d350dc385904ae3688b38292e
 +    @Override
 +    public Set<SpellbookSpell> getPassiveSpells() {
 +        return runningPassiveSpells;
++    }
++
++    @Override
++    public Set<SpellbookSpell> getActiveSpells() {
++        return activeSpells;
 +    }
 +
 +    @Override
