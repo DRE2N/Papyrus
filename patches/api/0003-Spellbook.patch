@@ -137,7 +137,7 @@ index 0000000000000000000000000000000000000000..139cb902b1385f605082974c63030c67
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..ca37b9ff30f99051b6a49d4e7f8d586d3301d486
+index 0000000000000000000000000000000000000000..47235b9513cc9a8754adfc771bdfbc2a19a4233e
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 @@ -0,0 +1,150 @@
@@ -192,7 +192,7 @@ index 0000000000000000000000000000000000000000..ca37b9ff30f99051b6a49d4e7f8d586d
 +        }
 +    }
 +
-+    default double onDamage(SpellCaster damager, double damage, DamageType type) {
++    default double onDamage(LivingEntity damager, double damage, DamageType type) {
 +        for (SpellbookSpell spell : getActiveSpells()) {
 +            damage = spell.onDamage(damager, damage, type);
 +        }
@@ -202,7 +202,7 @@ index 0000000000000000000000000000000000000000..ca37b9ff30f99051b6a49d4e7f8d586d
 +        return Math.max(damage, 0);
 +    }
 +
-+    default double onAttack(SpellCaster target, double damage, DamageType type) {
++    default double onAttack(LivingEntity target, double damage, DamageType type) {
 +        for (SpellbookSpell spell : getActiveSpells()) {
 +            damage = spell.onAttack(target, damage, type);
 +        }
@@ -408,7 +408,7 @@ index 0000000000000000000000000000000000000000..d8453120f69e7e998be4c6aef5a12df0
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..d68c722342acf9075ce26132e9ccf5e7c70fcfaa
+index 0000000000000000000000000000000000000000..3419154ba614e20a4934cc9779146a0ce1716e5c
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 @@ -0,0 +1,72 @@
@@ -461,11 +461,11 @@ index 0000000000000000000000000000000000000000..d68c722342acf9075ce26132e9ccf5e7
 +    public void onRemove() { // Mostly useful for stat buffs/debuffs
 +    }
 +
-+    public double onDamage(SpellCaster damager, double damage, DamageType type) { // For effects that block 1 attack and get removed after that
++    public double onDamage(LivingEntity damager, double damage, DamageType type) { // For effects that block 1 attack and get removed after that
 +        return damage;
 +    }
 +
-+    public double onAttack(SpellCaster target, double damage, DamageType type) { // For effects that add something to the attack
++    public double onAttack(LivingEntity target, double damage, DamageType type) { // For effects that add something to the attack
 +        return damage;
 +    }
 +
@@ -766,7 +766,7 @@ index 0000000000000000000000000000000000000000..633828d54c4b67d82bbd400870e7b73a
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..749ee03ca670bd27fbbcc9e70bb369b74edb3ea0
+index 0000000000000000000000000000000000000000..3b44bcaf8418551dad33233c0579ec5ffb9b1ebd
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 @@ -0,0 +1,124 @@
@@ -830,11 +830,11 @@ index 0000000000000000000000000000000000000000..749ee03ca670bd27fbbcc9e70bb369b7
 +    protected void onTickFinish() {
 +    }
 +
-+    public double onDamage(SpellCaster attacker, double damage, DamageType type) {
++    public double onDamage(LivingEntity attacker, double damage, DamageType type) {
 +        return damage;
 +    }
 +
-+    public double onAttack(SpellCaster target, double damage, DamageType type) {
++    public double onAttack(LivingEntity target, double damage, DamageType type) {
 +        return damage;
 +    }
 +

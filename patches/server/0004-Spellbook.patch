@@ -152,7 +152,7 @@ index c7e2081fbd557417daa707da1c2e8604fc9faa1e..50a80b766c5dedb1b961642f2f0cba58
              return false;
          } else {
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..753454b4f51c53be2bacf0bebafe09c0f5bc7a7b 100644
+index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..a5c25e45b8cc534edb067d64a81ab6ef391dce9c 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -15,8 +15,9 @@ import java.util.*;
@@ -223,7 +223,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..753454b4f51c53be2bacf0bebafe09c0
          playHurtSound(source);
          level.broadcastEntityEvent(this, (byte) 2); // hurt animation
 +        if (source.getEntity() instanceof LivingEntity entity) {
-+            finalDmg = getBukkitLivingEntity().onDamage((SpellCaster) entity, finalDmg,type.getApiDamageType());
++            finalDmg = getBukkitLivingEntity().onDamage(entity.getBukkitLivingEntity(), finalDmg,type.getApiDamageType());
 +        }
          setHealth((float) (getHealth() - Math.max(finalDmg, 0)));
          return true;
@@ -236,7 +236,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..753454b4f51c53be2bacf0bebafe09c0
      }
      // Papyrus end
 diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
-index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..009bbc4cebb2027c35e00aedf07e0180b4a3b87f 100644
+index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..347d4f49718f169ab1db3caa5352c6e3d753d03d 100644
 --- a/src/main/java/net/minecraft/world/entity/Mob.java
 +++ b/src/main/java/net/minecraft/world/entity/Mob.java
 @@ -10,7 +10,8 @@ import java.util.Optional;
@@ -263,13 +263,13 @@ index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..009bbc4cebb2027c35e00aedf07e0180
          }
          dmg = (float) (dmg + getAttributeValue(type.getAdvAttr()));
 +        if (target instanceof LivingEntity entity) {
-+            dmg = (float) getBukkitLivingEntity().onAttack((SpellCaster) entity, dmg, type.getApiDamageType());
++            dmg = (float) getBukkitLivingEntity().onAttack(entity.getBukkitLivingEntity(), dmg, type.getApiDamageType());
 +        }
          boolean flag = target.hurt(DamageSource.mobAttack(this), dmg, type);
  
          if (flag) {
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
-index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..e2c8bfea684c24b41f7d0e43fc5d146c4941a701 100644
+index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..d483087d50f31fdf1dcfb03e0e868120e0b6fa47 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
 +++ b/src/main/java/net/minecraft/world/entity/player/Player.java
 @@ -18,7 +18,8 @@ import java.util.OptionalInt;
@@ -293,7 +293,7 @@ index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..e2c8bfea684c24b41f7d0e43fc5d146c
          }
          float damage = (float) (getAttributeValue(Attributes.ATTACK_DAMAGE) + getAttributeValue(type.getAdvAttr()));
 +        if (target instanceof LivingEntity entity) {
-+            damage = (float) getBukkitEntity().onAttack((SpellCaster) entity, damage, type.getApiDamageType());
++            damage = (float) getBukkitEntity().onAttack(entity.getBukkitLivingEntity(), damage, type.getApiDamageType());
 +        }
          target.hurt(DamageSource.playerAttack(this), damage, type);
      }
