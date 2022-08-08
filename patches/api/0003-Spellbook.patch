@@ -137,12 +137,13 @@ index 0000000000000000000000000000000000000000..139cb902b1385f605082974c63030c67
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..3758b2e372ca4408a1636bbb97c90c304936a5f1
+index 0000000000000000000000000000000000000000..ca37b9ff30f99051b6a49d4e7f8d586d3301d486
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-@@ -0,0 +1,147 @@
+@@ -0,0 +1,150 @@
 +package de.erethon.spellbook.api;
 +
++import de.erethon.papyrus.DamageType;
 +import org.bukkit.Bukkit;
 +import org.bukkit.Location;
 +import org.bukkit.entity.LivingEntity;
@@ -191,22 +192,24 @@ index 0000000000000000000000000000000000000000..3758b2e372ca4408a1636bbb97c90c30
 +        }
 +    }
 +
-+    default void onDamage(SpellCaster damager) {
-+        for (SpellEffect effect : getEffects()) {
-+            effect.onDamage(damager);
-+        }
++    default double onDamage(SpellCaster damager, double damage, DamageType type) {
 +        for (SpellbookSpell spell : getActiveSpells()) {
-+            spell.onDamage(damager);
++            damage = spell.onDamage(damager, damage, type);
 +        }
++        for (SpellEffect effect : getEffects()) {
++            damage = effect.onDamage(damager, damage, type);
++        }
++        return Math.max(damage, 0);
 +    }
 +
-+    default void onAttack(SpellCaster target) {
-+        for (SpellEffect effect : getEffects()) {
-+            effect.onAttack(target);
-+        }
++    default double onAttack(SpellCaster target, double damage, DamageType type) {
 +        for (SpellbookSpell spell : getActiveSpells()) {
-+            spell.onAttack(target);
++            damage = spell.onAttack(target, damage, type);
 +        }
++        for (SpellEffect effect : getEffects()) {
++            damage = effect.onAttack(target, damage, type);
++        }
++        return Math.max(damage, 0);
 +    }
 +
 +    default void addPassiveSpell(SpellbookSpell spell) {
@@ -405,12 +408,13 @@ index 0000000000000000000000000000000000000000..d8453120f69e7e998be4c6aef5a12df0
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..747eaafc43e48bb3124ac9930cd7ca5a64b4365b
+index 0000000000000000000000000000000000000000..d68c722342acf9075ce26132e9ccf5e7c70fcfaa
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
-@@ -0,0 +1,69 @@
+@@ -0,0 +1,72 @@
 +package de.erethon.spellbook.api;
 +
++import de.erethon.papyrus.DamageType;
 +import org.bukkit.entity.LivingEntity;
 +
 +public class SpellEffect {
@@ -457,10 +461,12 @@ index 0000000000000000000000000000000000000000..747eaafc43e48bb3124ac9930cd7ca5a
 +    public void onRemove() { // Mostly useful for stat buffs/debuffs
 +    }
 +
-+    public void onDamage(SpellCaster damager) { // For effects that block 1 attack and get removed after that
++    public double onDamage(SpellCaster damager, double damage, DamageType type) { // For effects that block 1 attack and get removed after that
++        return damage;
 +    }
 +
-+    public void onAttack(SpellCaster target) { // For effects that add something to the attack
++    public double onAttack(SpellCaster target, double damage, DamageType type) { // For effects that add something to the attack
++        return damage;
 +    }
 +
 +    public void onCast() { // For effects that prevent you from casting spells or that do something when you cast a spell
@@ -760,12 +766,13 @@ index 0000000000000000000000000000000000000000..633828d54c4b67d82bbd400870e7b73a
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..b2ce8cc165ad385f0965d8de00b0b1ca013ec784
+index 0000000000000000000000000000000000000000..749ee03ca670bd27fbbcc9e70bb369b74edb3ea0
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
-@@ -0,0 +1,121 @@
+@@ -0,0 +1,124 @@
 +package de.erethon.spellbook.api;
 +
++import de.erethon.papyrus.DamageType;
 +import org.bukkit.entity.LivingEntity;
 +
 +import java.util.UUID;
@@ -823,10 +830,12 @@ index 0000000000000000000000000000000000000000..b2ce8cc165ad385f0965d8de00b0b1ca
 +    protected void onTickFinish() {
 +    }
 +
-+    protected void onDamage(SpellCaster attacker) {
++    public double onDamage(SpellCaster attacker, double damage, DamageType type) {
++        return damage;
 +    }
 +
-+    protected void onAttack(SpellCaster target) {
++    public double onAttack(SpellCaster target, double damage, DamageType type) {
++        return damage;
 +    }
 +
 +    public void ready() {

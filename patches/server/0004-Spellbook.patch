@@ -6,10 +6,10 @@ Subject: [PATCH] Spellbook
 
 diff --git a/src/main/java/de/erethon/papyrus/CraftDamageType.java b/src/main/java/de/erethon/papyrus/CraftDamageType.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..0f5567f33f40db7b50610cff7bcc5bc4966b7ef6
+index 0000000000000000000000000000000000000000..3004a15bd02ff5557beba43407e883a20e66bf0c
 --- /dev/null
 +++ b/src/main/java/de/erethon/papyrus/CraftDamageType.java
-@@ -0,0 +1,40 @@
+@@ -0,0 +1,44 @@
 +package de.erethon.papyrus;
 +
 +import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -48,6 +48,10 @@ index 0000000000000000000000000000000000000000..0f5567f33f40db7b50610cff7bcc5bc4
 +
 +    public static CraftDamageType ofAPI(DamageType type) {
 +        return Arrays.stream(values()).filter(crafttype -> crafttype.apiDamageType == type).findFirst().orElse(null);
++    }
++
++    public DamageType getApiDamageType() {
++        return apiDamageType;
 +    }
 +}
 diff --git a/src/main/java/de/erethon/papyrus/DamageType.java b/src/main/java/de/erethon/papyrus/DamageType.java
@@ -148,7 +152,7 @@ index c7e2081fbd557417daa707da1c2e8604fc9faa1e..50a80b766c5dedb1b961642f2f0cba58
              return false;
          } else {
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..bbce29b3bcbfe0a38451361c06b4ea08fb535a7c 100644
+index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..753454b4f51c53be2bacf0bebafe09c0f5bc7a7b 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -15,8 +15,9 @@ import java.util.*;
@@ -214,13 +218,14 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..bbce29b3bcbfe0a38451361c06b4ea08
          if (isInvulnerable() || isRemoved() || dead || getHealth() <= 0F || isInvulnerableTo(source) || level.isClientSide) {
              return false;
          }
-@@ -1398,11 +1396,14 @@ public abstract class LivingEntity extends Entity {
+@@ -1397,12 +1395,15 @@ public abstract class LivingEntity extends Entity {
+         invulnerableTime = (int) getAttribute(Attributes.COMBAT_HURTINVUL).getValue();
          playHurtSound(source);
          level.broadcastEntityEvent(this, (byte) 2); // hurt animation
-         setHealth((float) (getHealth() - Math.max(finalDmg, 0)));
 +        if (source.getEntity() instanceof LivingEntity entity) {
-+            getBukkitLivingEntity().onDamage((SpellCaster) entity);
++            finalDmg = getBukkitLivingEntity().onDamage((SpellCaster) entity, finalDmg,type.getApiDamageType());
 +        }
+         setHealth((float) (getHealth() - Math.max(finalDmg, 0)));
          return true;
      }
      @Override
@@ -231,7 +236,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..bbce29b3bcbfe0a38451361c06b4ea08
      }
      // Papyrus end
 diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
-index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..de3c0c739cc388290d0721f64190255033399a49 100644
+index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..009bbc4cebb2027c35e00aedf07e0180b4a3b87f 100644
 --- a/src/main/java/net/minecraft/world/entity/Mob.java
 +++ b/src/main/java/net/minecraft/world/entity/Mob.java
 @@ -10,7 +10,8 @@ import java.util.Optional;
@@ -253,18 +258,18 @@ index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..de3c0c739cc388290d0721f641902550
          float dmg = (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE);
          float knockback = (float) this.getAttributeValue(Attributes.ATTACK_KNOCKBACK);
  
-@@ -1630,6 +1631,9 @@ public abstract class Mob extends LivingEntity {
- 
-             this.doEnchantDamageEffects(this, target);
-             this.setLastHurtMob(target);
-+            if (target instanceof LivingEntity entity) {
-+                getBukkitMob().onAttack((SpellCaster) entity);
-+            }
+@@ -1614,6 +1615,9 @@ public abstract class Mob extends LivingEntity {
+             // CraftBukkit end
          }
+         dmg = (float) (dmg + getAttributeValue(type.getAdvAttr()));
++        if (target instanceof LivingEntity entity) {
++            dmg = (float) getBukkitLivingEntity().onAttack((SpellCaster) entity, dmg, type.getApiDamageType());
++        }
+         boolean flag = target.hurt(DamageSource.mobAttack(this), dmg, type);
  
-         return flag;
+         if (flag) {
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
-index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..eb469afdedff1520ac005bd38cba3b0f0090901e 100644
+index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..e2c8bfea684c24b41f7d0e43fc5d146c4941a701 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
 +++ b/src/main/java/net/minecraft/world/entity/player/Player.java
 @@ -18,7 +18,8 @@ import java.util.OptionalInt;
@@ -277,7 +282,7 @@ index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..eb469afdedff1520ac005bd38cba3b0f
  import net.minecraft.SharedConstants;
  import net.minecraft.Util;
  import net.minecraft.advancements.CriteriaTriggers;
-@@ -1254,12 +1255,15 @@ public abstract class Player extends LivingEntity {
+@@ -1254,11 +1255,14 @@ public abstract class Player extends LivingEntity {
      }
  
      // Papyrus - combat rework
@@ -287,13 +292,12 @@ index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..eb469afdedff1520ac005bd38cba3b0f
              return;
          }
          float damage = (float) (getAttributeValue(Attributes.ATTACK_DAMAGE) + getAttributeValue(type.getAdvAttr()));
-         target.hurt(DamageSource.playerAttack(this), damage, type);
 +        if (target instanceof LivingEntity entity) {
-+            getBukkitEntity().onAttack((SpellCaster) entity);
++            damage = (float) getBukkitEntity().onAttack((SpellCaster) entity, damage, type.getApiDamageType());
 +        }
+         target.hurt(DamageSource.playerAttack(this), damage, type);
      }
  
-     public void attack(Entity target) {
 @@ -1472,7 +1476,7 @@ public abstract class Player extends LivingEntity {
  
      @Override
