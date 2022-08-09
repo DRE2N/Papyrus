@@ -92,6 +92,34 @@ index 0cbc67c143dbbe8d8bc1ebf2ea384f6851cf8658..00000000000000000000000000000000
 -        return this.resAttr;
 -    }
 -}
+diff --git a/src/main/java/de/erethon/papyrus/EntityAttachment.java b/src/main/java/de/erethon/papyrus/EntityAttachment.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..6650bb2ffb961035a7e598990097621c80b2c7ae
+--- /dev/null
++++ b/src/main/java/de/erethon/papyrus/EntityAttachment.java
+@@ -0,0 +1,22 @@
++package de.erethon.papyrus;
++
++import net.minecraft.world.entity.Entity;
++
++public class EntityAttachment {
++
++    public String id;
++    public double dx;
++    public double dy;
++    public double dz;
++    public float dyaw;
++    public float dpitch;
++    public Entity entity;
++
++    public EntityAttachment(double dx, double dy, double dz, Entity entity, String id) {
++        this.dx = dx;
++        this.dy = dy;
++        this.dz = dz;
++        this.entity = entity;
++        this.id = id;
++    }
++}
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
 index 29354a30d11fa49fa2ae924de7e53d111391fe54..d6a1c4cb488a4d9a743ae55bbab92f8d78d2ad13 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
@@ -130,19 +158,127 @@ index 1f1c986b34bec3ccee969674786454a2b7ac20e3..4a0165a7efe666d3df07e39347d7e46d
  
      }
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index c7e2081fbd557417daa707da1c2e8604fc9faa1e..50a80b766c5dedb1b961642f2f0cba58f1e0b163 100644
+index c7e2081fbd557417daa707da1c2e8604fc9faa1e..802748d0af5957f7ea3cfa5416452b21e4a820df 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
-@@ -7,7 +7,7 @@ import com.google.common.collect.Lists;
+@@ -7,7 +7,8 @@ import com.google.common.collect.Lists;
  import com.google.common.collect.Sets;
  import com.google.common.collect.UnmodifiableIterator;
  import com.mojang.logging.LogUtils;
 -import de.erethon.papyrus.DamageType;
 +import de.erethon.papyrus.CraftDamageType;
++import de.erethon.papyrus.EntityAttachment;
  import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
  import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
  import java.util.Arrays;
-@@ -2007,7 +2007,7 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -400,6 +401,8 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+     private UUID originWorld;
+     public boolean freezeLocked = false; // Paper - Freeze Tick Lock API
+ 
++    public Set<EntityAttachment> attachedEntities = new HashSet<>(); // Papyrus - Entity attachments
++
+     public void setOrigin(@javax.annotation.Nonnull Location location) {
+         this.origin = location.toVector();
+         this.originWorld = location.getWorld().getUID();
+@@ -702,6 +705,9 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+ 
+     public void remove(Entity.RemovalReason reason) {
+         this.setRemoved(reason);
++        for (EntityAttachment attachment : attachedEntities) {
++            attachment.entity.remove(reason);
++        }
+     }
+ 
+     public void onClientRemoval() {}
+@@ -766,6 +772,11 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+ 
+         this.setYRot(yaw % 360.0F);
+         this.setXRot(pitch % 360.0F);
++        // Papyrus - Attachments
++        for (EntityAttachment attached : attachedEntities) {
++            attached.entity.setYRot((yaw + attached.dyaw) % 360.0F);
++            attached.entity.setXRot((pitch + attached.dpitch) % 360.0F);
++        }
+     }
+ 
+     public final void setPos(Vec3 pos) {
+@@ -803,6 +814,9 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+ 
+     public void tick() {
+         this.baseTick();
++        for (EntityAttachment attached : attachedEntities) {
++            attached.entity.tick();
++        }
+     }
+ 
+     // CraftBukkit start
+@@ -883,6 +897,9 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+ 
+         this.firstTick = false;
+         this.level.getProfiler().pop();
++        for (EntityAttachment attached : attachedEntities) {
++            attached.entity.baseTick();
++        }
+     }
+ 
+     public void setSharedFlagOnFire(boolean onFire) {
+@@ -1041,6 +1058,11 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+             this.moveStartZ = this.getZ();
+             this.moveVector = movement;
+         }
++        // Papyrus - attachments
++        for (EntityAttachment attached : attachedEntities) {
++            Vec3 rel = new Vec3(movement.x + attached.dx, movement.y + attached.dy, movement.z + attached.dz);
++            attached.entity.move(movementType, rel);
++        }
+         try {
+         // Paper end - detailed watchdog information
+         if (this.noPhysics) {
+@@ -1838,6 +1860,10 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+         Vec3 vec3d1 = Entity.getInputVector(movementInput, speed, this.getYRot());
+ 
+         this.setDeltaMovement(this.getDeltaMovement().add(vec3d1));
++        // Papyrus - Attachments
++        for (EntityAttachment attached : attachedEntities) {
++            attached.entity.setDeltaMovement(this.getDeltaMovement().add(vec3d1));
++        }
+     }
+ 
+     private static Vec3 getInputVector(Vec3 movementInput, float speed, float yaw) {
+@@ -1867,6 +1893,10 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+         this.yRotO = this.getYRot();
+         this.xRotO = this.getXRot();
+         this.setYHeadRot(yaw); // Paper - Update head rotation
++        // Papyrus - Attachments
++        for (EntityAttachment attached : attachedEntities) {
++            attached.entity.absMoveTo(x + attached.dx, y + attached.dy, z + attached.dz, yaw + attached.dyaw, pitch + attached.dpitch);
++        }
+     }
+ 
+     public void absMoveTo(double x, double y, double z) {
+@@ -1878,6 +1908,10 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+         this.zo = d4;
+         this.setPos(d3, y, d4);
+         if (this.valid) this.level.getChunk((int) Math.floor(this.getX()) >> 4, (int) Math.floor(this.getZ()) >> 4); // CraftBukkit
++        // Papyrus - Attachments
++        for (EntityAttachment attached : attachedEntities) {
++            attached.entity.absMoveTo(x + attached.dx, y + attached.dy, z + attached.dz);
++        }
+     }
+ 
+     public void moveTo(Vec3 pos) {
+@@ -1906,6 +1940,10 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+         this.setOldPosAndRot();
+         this.reapplyPosition();
+         this.setYHeadRot(yaw); // Paper - Update head rotation
++        // Papyrus - Attachments
++        for (EntityAttachment attached : attachedEntities) {
++            attached.entity.moveTo(x + attached.dx, y + attached.dy, z + attached.dz, yaw + attached.dyaw, pitch + attached.dpitch);
++        }
+     }
+ 
+     public final void setOldPosAndRot() {
+@@ -2007,7 +2045,7 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
      }
  
      // Papyrus - combat rework
@@ -151,22 +287,92 @@ index c7e2081fbd557417daa707da1c2e8604fc9faa1e..50a80b766c5dedb1b961642f2f0cba58
          if (this.isInvulnerableTo(source)) {
              return false;
          } else {
+@@ -4527,4 +4565,71 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+         return ((ServerChunkCache) level.getChunkSource()).isPositionTicking(this);
+     }
+     // Paper end
++
++    // Papyrus start
++    public void addAttachment(Entity entity, String id) {
++        entity.noPhysics = true;
++        entity.setInvulnerable(true);
++        entity.setSilent(true);
++        if (entity instanceof net.minecraft.world.entity.LivingEntity living) {
++            living.collides = false;
++            if (living instanceof Mob mob) {
++                mob.setNoAi(true);
++            }
++        }
++        EntityAttachment attachment = new EntityAttachment(0, 0, 0, entity, id);
++        attachedEntities.add(attachment);
++    }
++
++    public void addAttachment(Entity entity, String id, double dx, double dy, double dz) {
++        entity.noPhysics = true;
++        entity.setInvulnerable(true);
++        entity.setSilent(true);
++        if (entity instanceof net.minecraft.world.entity.LivingEntity living) {
++            living.collides = false;
++            if (living instanceof Mob mob) {
++                mob.setNoAi(true);
++            }
++        }
++        EntityAttachment attachment = new EntityAttachment(dx, dy, dz, entity, id);
++        attachedEntities.add(attachment);
++    }
++
++    public void removeAttachment(Entity entity) {
++        Iterator<EntityAttachment> itr = attachedEntities.iterator();
++        while (itr.hasNext()) {
++            EntityAttachment attachment = itr.next();
++            if (attachment.entity == entity) {
++                itr.remove();
++            }
++        }
++    }
++
++    public void removeAttachment(String id) {
++        Iterator<EntityAttachment> itr = attachedEntities.iterator();
++        while (itr.hasNext()) {
++            EntityAttachment attachment = itr.next();
++            if (attachment.id.equals(id)) {
++                itr.remove();
++            }
++        }
++    }
++
++    public EntityAttachment getAttachment(Entity entity) {
++        for (EntityAttachment attached : attachedEntities) {
++            if (attached.entity == entity) {
++                return attached;
++            }
++        }
++        return null;
++    }
++
++    public EntityAttachment getAttachment(String id) {
++        for (EntityAttachment attached : attachedEntities) {
++            if (attached.id.equals(id)) {
++                return attached;
++            }
++        }
++        return null;
++    }
+ }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..a5c25e45b8cc534edb067d64a81ab6ef391dce9c 100644
+index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..fad5dad8220eb2e010f01cb03042bbf45eec52b3 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-@@ -15,8 +15,9 @@ import java.util.*;
+@@ -15,7 +15,7 @@ import java.util.*;
  import java.util.function.Predicate;
  import javax.annotation.Nullable;
  
 -import de.erethon.papyrus.DamageType;
 +import de.erethon.papyrus.CraftDamageType;
  import de.erethon.papyrus.PapyrusUtils;
-+import de.erethon.spellbook.api.SpellCaster;
  import net.kyori.adventure.text.Component;
  import net.minecraft.BlockUtil;
- import net.minecraft.advancements.CriteriaTriggers;
-@@ -62,7 +63,6 @@ import net.minecraft.world.InteractionHand;
+@@ -62,7 +62,6 @@ import net.minecraft.world.InteractionHand;
  import net.minecraft.world.damagesource.CombatRules;
  import net.minecraft.world.damagesource.CombatTracker;
  import net.minecraft.world.damagesource.DamageSource;
@@ -174,7 +380,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..a5c25e45b8cc534edb067d64a81ab6ef
  import net.minecraft.world.effect.MobEffect;
  import net.minecraft.world.effect.MobEffectInstance;
  import net.minecraft.world.effect.MobEffectUtil;
-@@ -76,9 +76,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+@@ -76,9 +75,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
  import net.minecraft.world.entity.ai.attributes.Attributes;
  import net.minecraft.world.entity.ai.attributes.DefaultAttributes;
  import net.minecraft.world.entity.ai.targeting.TargetingConditions;
@@ -184,7 +390,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..a5c25e45b8cc534edb067d64a81ab6ef
  import net.minecraft.world.entity.boss.wither.WitherBoss;
  import net.minecraft.world.entity.item.ItemEntity;
  import net.minecraft.world.entity.projectile.AbstractArrow;
-@@ -103,7 +101,6 @@ import net.minecraft.world.level.block.state.BlockState;
+@@ -103,7 +100,6 @@ import net.minecraft.world.level.block.state.BlockState;
  import net.minecraft.world.level.gameevent.GameEvent;
  import net.minecraft.world.level.material.Fluid;
  import net.minecraft.world.level.material.FluidState;
@@ -192,7 +398,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..a5c25e45b8cc534edb067d64a81ab6ef
  import net.minecraft.world.level.storage.loot.LootContext;
  import net.minecraft.world.level.storage.loot.LootTable;
  import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
-@@ -250,7 +247,7 @@ public abstract class LivingEntity extends Entity {
+@@ -250,7 +246,7 @@ public abstract class LivingEntity extends Entity {
      public org.bukkit.craftbukkit.entity.CraftLivingEntity getBukkitLivingEntity() { return (org.bukkit.craftbukkit.entity.CraftLivingEntity) super.getBukkitEntity(); } // Paper
      public boolean silentDeath = false; // Paper - mark entity as dying silently for cancellable death event
  
@@ -201,7 +407,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..a5c25e45b8cc534edb067d64a81ab6ef
  
      @Override
      public float getBukkitYaw() {
-@@ -498,6 +495,7 @@ public abstract class LivingEntity extends Entity {
+@@ -498,6 +494,7 @@ public abstract class LivingEntity extends Entity {
          }
  
          this.tickEffects();
@@ -209,7 +415,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..a5c25e45b8cc534edb067d64a81ab6ef
          this.animStepO = this.animStep;
          this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
-@@ -1338,7 +1336,7 @@ public abstract class LivingEntity extends Entity {
+@@ -1338,7 +1335,7 @@ public abstract class LivingEntity extends Entity {
      // Papyrus start - rewrite damage system
  
      @Override
@@ -218,7 +424,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..a5c25e45b8cc534edb067d64a81ab6ef
          if (isInvulnerable() || isRemoved() || dead || getHealth() <= 0F || isInvulnerableTo(source) || level.isClientSide) {
              return false;
          }
-@@ -1397,12 +1395,15 @@ public abstract class LivingEntity extends Entity {
+@@ -1397,12 +1394,15 @@ public abstract class LivingEntity extends Entity {
          invulnerableTime = (int) getAttribute(Attributes.COMBAT_HURTINVUL).getValue();
          playHurtSound(source);
          level.broadcastEntityEvent(this, (byte) 2); // hurt animation
@@ -236,7 +442,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..a5c25e45b8cc534edb067d64a81ab6ef
      }
      // Papyrus end
 diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
-index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..347d4f49718f169ab1db3caa5352c6e3d753d03d 100644
+index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..0d5fd88ae8d57b081aeef5cec43d42d0c9139207 100644
 --- a/src/main/java/net/minecraft/world/entity/Mob.java
 +++ b/src/main/java/net/minecraft/world/entity/Mob.java
 @@ -10,7 +10,8 @@ import java.util.Optional;
@@ -249,6 +455,15 @@ index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..347d4f49718f169ab1db3caa5352c6e3
  import net.minecraft.core.BlockPos;
  import net.minecraft.core.NonNullList;
  import net.minecraft.core.Vec3i;
+@@ -171,7 +172,7 @@ public abstract class Mob extends LivingEntity {
+     protected void registerGoals() {}
+ 
+     public static AttributeSupplier.Builder createMobAttributes() {
+-        return LivingEntity.createLivingAttributes().add(Attributes.FOLLOW_RANGE, 16.0D).add(Attributes.ATTACK_KNOCKBACK);
++        return LivingEntity.createLivingAttributes().add(Attributes.FOLLOW_RANGE, 16.0D).add(Attributes.ATTACK_KNOCKBACK).add(Attributes.ATTACK_SPEED, 80.0);
+     }
+ 
+     protected PathNavigation createNavigation(Level world) {
 @@ -1592,7 +1593,7 @@ public abstract class Mob extends LivingEntity {
          return doHurtTarget(target, attackDamageType);
      }
@@ -268,6 +483,44 @@ index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..347d4f49718f169ab1db3caa5352c6e3
          boolean flag = target.hurt(DamageSource.mobAttack(this), dmg, type);
  
          if (flag) {
+diff --git a/src/main/java/net/minecraft/world/entity/ai/goal/MeleeAttackGoal.java b/src/main/java/net/minecraft/world/entity/ai/goal/MeleeAttackGoal.java
+index e6cf828a267f694d3f23e578b62c8f8146f22afb..b0e8f6af3d3f7fa330ff44620bc7344715b01ee8 100644
+--- a/src/main/java/net/minecraft/world/entity/ai/goal/MeleeAttackGoal.java
++++ b/src/main/java/net/minecraft/world/entity/ai/goal/MeleeAttackGoal.java
+@@ -5,6 +5,7 @@ import net.minecraft.world.InteractionHand;
+ import net.minecraft.world.entity.EntitySelector;
+ import net.minecraft.world.entity.LivingEntity;
+ import net.minecraft.world.entity.PathfinderMob;
++import net.minecraft.world.entity.ai.attributes.Attributes;
+ import net.minecraft.world.entity.player.Player;
+ import net.minecraft.world.level.pathfinder.Path;
+ 
+@@ -18,7 +19,7 @@ public class MeleeAttackGoal extends Goal {
+     private double pathedTargetZ;
+     private int ticksUntilNextPathRecalculation;
+     private int ticksUntilNextAttack;
+-    private final int attackInterval = 20;
++    private final int attackInterval; // Papyrus - use attackspeed
+     private long lastCanUseCheck;
+     private static final long COOLDOWN_BETWEEN_CAN_USE_CHECKS = 20L;
+ 
+@@ -27,6 +28,7 @@ public class MeleeAttackGoal extends Goal {
+         this.speedModifier = speed;
+         this.followingTargetEvenIfNotSeen = pauseWhenMobIdle;
+         this.setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.LOOK));
++        attackInterval = Math.max(100 - (int) mob.getAttribute(Attributes.ATTACK_SPEED).getValue(), 0); // Papyrus - attackspeed
+     }
+ 
+     @Override
+@@ -133,7 +135,7 @@ public class MeleeAttackGoal extends Goal {
+     }
+ 
+     protected void resetAttackCooldown() {
+-        this.ticksUntilNextAttack = this.adjustedTickDelay(20);
++        this.ticksUntilNextAttack = attackInterval;
+     }
+ 
+     protected boolean isTimeToAttack() {
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
 index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..d483087d50f31fdf1dcfb03e0e868120e0b6fa47 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
