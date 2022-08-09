@@ -390,12 +390,14 @@ index 0000000000000000000000000000000000000000..f1d9367400225cf9064ef0aa87efbee8
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellData.java b/src/main/java/de/erethon/spellbook/api/SpellData.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..d8453120f69e7e998be4c6aef5a12df086817773
+index 0000000000000000000000000000000000000000..6de36125587ea7216784a6030e70164fd5727f10
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellData.java
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,114 @@
 +package de.erethon.spellbook.api;
 +
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.minimessage.MiniMessage;
 +import org.bukkit.configuration.InvalidConfigurationException;
 +import org.bukkit.configuration.file.YamlConfiguration;
 +import org.bukkit.entity.LivingEntity;
@@ -410,11 +412,12 @@ index 0000000000000000000000000000000000000000..d8453120f69e7e998be4c6aef5a12df0
 +public class SpellData extends YamlConfiguration {
 +
 +    SpellbookAPI spellbookAPI;
++    MiniMessage miniMessage = MiniMessage.miniMessage();
 +    SpellQueue queue;
 +    private int cooldown;
-+    private String id;
-+    private String name;
-+    private List<String> description = new ArrayList<>();
++    private final String id;
++    private Component name;
++    private final List<Component> description = new ArrayList<>();
 +
 +    private Class<? extends SpellbookSpell> spellClass;
 +    private final ClassLoader classLoader;
@@ -466,12 +469,11 @@ index 0000000000000000000000000000000000000000..d8453120f69e7e998be4c6aef5a12df0
 +    }
 +
 +    @NotNull
-+    @Override
-+    public String getName() {
++    public Component getDisplayName() {
 +        return name;
 +    }
 +
-+    public List<String> getDescription() {
++    public List<Component> getDescription() {
 +        return description;
 +    }
 +
@@ -500,7 +502,10 @@ index 0000000000000000000000000000000000000000..d8453120f69e7e998be4c6aef5a12df0
 +            throw new RuntimeException(e);
 +        }
 +        cooldown = getInt("cooldown", 0);
-+
++        name = miniMessage.deserialize(getString("name", "<color:#ff0000>[Invalid name]"));
++        for (String entry : getStringList("description")) {
++            description.add(miniMessage.deserialize(entry));
++        }
 +    }
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
