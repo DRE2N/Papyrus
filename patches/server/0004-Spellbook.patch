@@ -643,7 +643,7 @@ index b7bc64818387288955d0723cd071d4203bd2f121..90720fb4d41e066dbebd4d755bd182bc
          this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
          this.goalSelector.addGoal(3, new RandomLookAroundGoal(this));
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
-index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..7eeaf4718cf90ac513dbd18931628af35466613d 100644
+index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..5573ab722d04c3a1f606f453da37cb0ae52c1f72 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
 +++ b/src/main/java/net/minecraft/world/entity/player/Player.java
 @@ -18,7 +18,8 @@ import java.util.OptionalInt;
@@ -656,7 +656,7 @@ index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..7eeaf4718cf90ac513dbd18931628af3
  import net.minecraft.SharedConstants;
  import net.minecraft.Util;
  import net.minecraft.advancements.CriteriaTriggers;
-@@ -1254,11 +1255,18 @@ public abstract class Player extends LivingEntity {
+@@ -1254,12 +1255,21 @@ public abstract class Player extends LivingEntity {
      }
  
      // Papyrus - combat rework
@@ -666,6 +666,7 @@ index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..7eeaf4718cf90ac513dbd18931628af3
              return;
          }
          float damage = (float) (getAttributeValue(Attributes.ATTACK_DAMAGE) + getAttributeValue(type.getAdvAttr()));
++        damage = damage * getAttackStrengthScale(0.5f);
 +        if (target instanceof LivingEntity entity) {
 +            damage = (float) getBukkitEntity().onAttack(entity.getBukkitLivingEntity(), damage, type.getApiDamageType());
 +        }
@@ -674,9 +675,29 @@ index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..7eeaf4718cf90ac513dbd18931628af3
 +            damage = (float) (damage + getAttributeValue(Attributes.STAT_CRITDMG));
 +        }
          target.hurt(DamageSource.playerAttack(this), damage, type);
++        resetAttackStrengthTicker();
      }
  
-@@ -1472,7 +1480,7 @@ public abstract class Player extends LivingEntity {
+     public void attack(Entity target) {
+@@ -1274,13 +1284,13 @@ public abstract class Player extends LivingEntity {
+                     f1 = EnchantmentHelper.getDamageBonus(this.getMainHandItem(), MobType.UNDEFINED);
+                 }
+ 
+-                float f2 = this.getAttackStrengthScale(0.5F);
++                float scaled = this.getAttackStrengthScale(0.5F);
+ 
+-                f *= 0.2F + f2 * f2 * 0.8F;
+-                f1 *= f2;
++                f *= 0.2F + scaled * scaled * 0.8F;
++                f1 *= scaled;
+                 // this.resetAttackCooldown(); // CraftBukkit - Moved to EntityLiving to reset the cooldown after the damage is dealt
+                 if (f > 0.0F || f1 > 0.0F) {
+-                    boolean flag = f2 > 0.9F;
++                    boolean flag = scaled > 0.9F;
+                     boolean flag1 = false;
+                     byte b0 = 0;
+                     int i = b0 + EnchantmentHelper.getKnockbackBonus(this);
+@@ -1472,7 +1482,7 @@ public abstract class Player extends LivingEntity {
  
      @Override
      protected void doAutoAttackOnTouch(LivingEntity target) {
