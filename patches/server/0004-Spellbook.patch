@@ -442,7 +442,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..fad5dad8220eb2e010f01cb03042bbf4
      }
      // Papyrus end
 diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
-index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..0d5fd88ae8d57b081aeef5cec43d42d0c9139207 100644
+index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..92d4bb443add343c46d2c56153d3919f0232e105 100644
 --- a/src/main/java/net/minecraft/world/entity/Mob.java
 +++ b/src/main/java/net/minecraft/world/entity/Mob.java
 @@ -10,7 +10,8 @@ import java.util.Optional;
@@ -473,12 +473,16 @@ index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..0d5fd88ae8d57b081aeef5cec43d42d0
          float dmg = (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE);
          float knockback = (float) this.getAttributeValue(Attributes.ATTACK_KNOCKBACK);
  
-@@ -1614,6 +1615,9 @@ public abstract class Mob extends LivingEntity {
+@@ -1614,6 +1615,13 @@ public abstract class Mob extends LivingEntity {
              // CraftBukkit end
          }
          dmg = (float) (dmg + getAttributeValue(type.getAdvAttr()));
 +        if (target instanceof LivingEntity entity) {
 +            dmg = (float) getBukkitLivingEntity().onAttack(entity.getBukkitLivingEntity(), dmg, type.getApiDamageType());
++        }
++        int crit = random.nextIntBetweenInclusive(0, 100);
++        if (crit < getAttributeValue(Attributes.STAT_CRITCHANCE)) {
++            dmg = (float) (dmg + getAttributeValue(Attributes.STAT_CRITDMG));
 +        }
          boolean flag = target.hurt(DamageSource.mobAttack(this), dmg, type);
  
@@ -639,7 +643,7 @@ index b7bc64818387288955d0723cd071d4203bd2f121..90720fb4d41e066dbebd4d755bd182bc
          this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
          this.goalSelector.addGoal(3, new RandomLookAroundGoal(this));
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
-index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..d483087d50f31fdf1dcfb03e0e868120e0b6fa47 100644
+index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..7eeaf4718cf90ac513dbd18931628af35466613d 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
 +++ b/src/main/java/net/minecraft/world/entity/player/Player.java
 @@ -18,7 +18,8 @@ import java.util.OptionalInt;
@@ -652,7 +656,7 @@ index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..d483087d50f31fdf1dcfb03e0e868120
  import net.minecraft.SharedConstants;
  import net.minecraft.Util;
  import net.minecraft.advancements.CriteriaTriggers;
-@@ -1254,11 +1255,14 @@ public abstract class Player extends LivingEntity {
+@@ -1254,11 +1255,18 @@ public abstract class Player extends LivingEntity {
      }
  
      // Papyrus - combat rework
@@ -665,10 +669,14 @@ index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..d483087d50f31fdf1dcfb03e0e868120
 +        if (target instanceof LivingEntity entity) {
 +            damage = (float) getBukkitEntity().onAttack(entity.getBukkitLivingEntity(), damage, type.getApiDamageType());
 +        }
++        int crit = random.nextIntBetweenInclusive(0, 100);
++        if (crit < getAttributeValue(Attributes.STAT_CRITCHANCE)) {
++            damage = (float) (damage + getAttributeValue(Attributes.STAT_CRITDMG));
++        }
          target.hurt(DamageSource.playerAttack(this), damage, type);
      }
  
-@@ -1472,7 +1476,7 @@ public abstract class Player extends LivingEntity {
+@@ -1472,7 +1480,7 @@ public abstract class Player extends LivingEntity {
  
      @Override
      protected void doAutoAttackOnTouch(LivingEntity target) {
