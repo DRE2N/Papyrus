@@ -484,7 +484,7 @@ index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..0d5fd88ae8d57b081aeef5cec43d42d0
  
          if (flag) {
 diff --git a/src/main/java/net/minecraft/world/entity/ai/goal/MeleeAttackGoal.java b/src/main/java/net/minecraft/world/entity/ai/goal/MeleeAttackGoal.java
-index e6cf828a267f694d3f23e578b62c8f8146f22afb..b0e8f6af3d3f7fa330ff44620bc7344715b01ee8 100644
+index e6cf828a267f694d3f23e578b62c8f8146f22afb..16606e607d4b16b40895fefd1b235f1779de772a 100644
 --- a/src/main/java/net/minecraft/world/entity/ai/goal/MeleeAttackGoal.java
 +++ b/src/main/java/net/minecraft/world/entity/ai/goal/MeleeAttackGoal.java
 @@ -5,6 +5,7 @@ import net.minecraft.world.InteractionHand;
@@ -500,18 +500,18 @@ index e6cf828a267f694d3f23e578b62c8f8146f22afb..b0e8f6af3d3f7fa330ff44620bc73447
      private int ticksUntilNextPathRecalculation;
      private int ticksUntilNextAttack;
 -    private final int attackInterval = 20;
-+    private final int attackInterval; // Papyrus - use attackspeed
++    private int attackInterval = 20; // Papyrus - use attackspeed
      private long lastCanUseCheck;
      private static final long COOLDOWN_BETWEEN_CAN_USE_CHECKS = 20L;
  
-@@ -27,6 +28,7 @@ public class MeleeAttackGoal extends Goal {
-         this.speedModifier = speed;
-         this.followingTargetEvenIfNotSeen = pauseWhenMobIdle;
-         this.setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.LOOK));
-+        attackInterval = Math.max(100 - (int) mob.getAttribute(Attributes.ATTACK_SPEED).getValue(), 0); // Papyrus - attackspeed
-     }
- 
-     @Override
+@@ -96,6 +97,7 @@ public class MeleeAttackGoal extends Goal {
+     public void tick() {
+         LivingEntity livingEntity = this.mob.getTarget();
+         if (livingEntity != null) {
++            attackInterval = Math.max(100 - (int) mob.getAttribute(Attributes.ATTACK_SPEED).getValue(), 0); // Papyrus - attackspeed
+             this.mob.getLookControl().setLookAt(livingEntity, 30.0F, 30.0F);
+             double d = this.mob.distanceToSqr(livingEntity.getX(), livingEntity.getY(), livingEntity.getZ());
+             this.ticksUntilNextPathRecalculation = Math.max(this.ticksUntilNextPathRecalculation - 1, 0);
 @@ -133,7 +135,7 @@ public class MeleeAttackGoal extends Goal {
      }
  
@@ -521,6 +521,123 @@ index e6cf828a267f694d3f23e578b62c8f8146f22afb..b0e8f6af3d3f7fa330ff44620bc73447
      }
  
      protected boolean isTimeToAttack() {
+@@ -145,7 +147,7 @@ public class MeleeAttackGoal extends Goal {
+     }
+ 
+     protected int getAttackInterval() {
+-        return this.adjustedTickDelay(20);
++        return attackInterval;
+     }
+ 
+     protected double getAttackReachSqr(LivingEntity entity) {
+diff --git a/src/main/java/net/minecraft/world/entity/ai/goal/RangedCrossbowAttackGoal.java b/src/main/java/net/minecraft/world/entity/ai/goal/RangedCrossbowAttackGoal.java
+index 749ab8537ac30a3c6536b703989d5f22bace0f1e..d256474e099f93f03d66b7e492c637e38cb25f42 100644
+--- a/src/main/java/net/minecraft/world/entity/ai/goal/RangedCrossbowAttackGoal.java
++++ b/src/main/java/net/minecraft/world/entity/ai/goal/RangedCrossbowAttackGoal.java
+@@ -4,6 +4,7 @@ import java.util.EnumSet;
+ import net.minecraft.util.TimeUtil;
+ import net.minecraft.util.valueproviders.UniformInt;
+ import net.minecraft.world.entity.LivingEntity;
++import net.minecraft.world.entity.ai.attributes.Attributes;
+ import net.minecraft.world.entity.monster.CrossbowAttackMob;
+ import net.minecraft.world.entity.monster.Monster;
+ import net.minecraft.world.entity.monster.RangedAttackMob;
+@@ -112,7 +113,7 @@ public class RangedCrossbowAttackGoal<T extends Monster & RangedAttackMob & Cros
+                 if (i >= CrossbowItem.getChargeDuration(itemStack)) {
+                     this.mob.releaseUsingItem();
+                     this.crossbowState = RangedCrossbowAttackGoal.CrossbowState.CHARGED;
+-                    this.attackDelay = 20 + this.mob.getRandom().nextInt(20);
++                    this.attackDelay = Math.max(100 - (int) mob.getAttribute(Attributes.ATTACK_SPEED).getValue(), 0); // Papyrus - attack speed
+                     this.mob.setChargingCrossbow(false);
+                 }
+             } else if (this.crossbowState == RangedCrossbowAttackGoal.CrossbowState.CHARGED) {
+diff --git a/src/main/java/net/minecraft/world/entity/animal/SnowGolem.java b/src/main/java/net/minecraft/world/entity/animal/SnowGolem.java
+index 35e53663e4a6c4d56ec4577d08e7b040cc0c720f..50188050e709dcbc5783f88e685b39705db41869 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/SnowGolem.java
++++ b/src/main/java/net/minecraft/world/entity/animal/SnowGolem.java
+@@ -56,7 +56,7 @@ public class SnowGolem extends AbstractGolem implements Shearable, RangedAttackM
+ 
+     @Override
+     protected void registerGoals() {
+-        this.goalSelector.addGoal(1, new RangedAttackGoal(this, 1.25D, 20, 10.0F));
++        this.goalSelector.addGoal(1, new RangedAttackGoal(this, 1.25D, Math.max(100 - (int) getAttribute(Attributes.ATTACK_SPEED).getValue(), 0), 10.0F)); // Papyrus - attack speed
+         this.goalSelector.addGoal(2, new WaterAvoidingRandomStrollGoal(this, 1.0D, 1.0000001E-5F));
+         this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 6.0F));
+         this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
+diff --git a/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java b/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java
+index 5ffae9d3be22b5e78645da57a6bd0e7350749ef1..3ed54c289736d09a61cefd60875395ad3404e779 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java
++++ b/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java
+@@ -125,7 +125,7 @@ public class Llama extends AbstractChestedHorse implements RangedAttackMob {
+         this.goalSelector.addGoal(0, new FloatGoal(this));
+         this.goalSelector.addGoal(1, new RunAroundLikeCrazyGoal(this, 1.2D));
+         this.goalSelector.addGoal(2, new LlamaFollowCaravanGoal(this, 2.0999999046325684D));
+-        this.goalSelector.addGoal(3, new RangedAttackGoal(this, 1.25D, 40, 20.0F));
++        this.goalSelector.addGoal(3, new RangedAttackGoal(this, 1.25D, Math.max(100 - (int) getAttribute(Attributes.ATTACK_SPEED).getValue(), 0), 20.0F)); // Papyrus - attack speed
+         this.goalSelector.addGoal(3, new PanicGoal(this, 1.2D));
+         this.goalSelector.addGoal(4, new BreedGoal(this, 1.0D));
+         this.goalSelector.addGoal(5, new TemptGoal(this, 1.25D, Ingredient.of(Items.HAY_BLOCK), false));
+diff --git a/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java b/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java
+index 4fb40aa91e0961f1974c74c88fa68359e4ad6b16..63ffe0077375b5a1d2935a8c1bc848c772dee444 100644
+--- a/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java
++++ b/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java
+@@ -111,7 +111,7 @@ public class WitherBoss extends Monster implements PowerableMob, RangedAttackMob
+     @Override
+     protected void registerGoals() {
+         this.goalSelector.addGoal(0, new WitherBoss.WitherDoNothingGoal());
+-        this.goalSelector.addGoal(2, new RangedAttackGoal(this, 1.0D, 40, 20.0F));
++        this.goalSelector.addGoal(2, new RangedAttackGoal(this, 1.0D, Math.max(100 - (int) getAttribute(Attributes.ATTACK_SPEED).getValue(), 0), 20.0F)); // Papyrus - attack speed
+         this.goalSelector.addGoal(5, new WaterAvoidingRandomFlyingGoal(this, 1.0D));
+         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
+         this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
+diff --git a/src/main/java/net/minecraft/world/entity/monster/AbstractSkeleton.java b/src/main/java/net/minecraft/world/entity/monster/AbstractSkeleton.java
+index b8abee145fc92faddef98da913eca7715b6bfc03..e9b8f2ff35a03422fdec8efa41b48ad5ba36d163 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/AbstractSkeleton.java
++++ b/src/main/java/net/minecraft/world/entity/monster/AbstractSkeleton.java
+@@ -47,7 +47,7 @@ import net.minecraft.world.level.block.state.BlockState;
+ 
+ public abstract class AbstractSkeleton extends Monster implements RangedAttackMob {
+ 
+-    private final RangedBowAttackGoal<AbstractSkeleton> bowGoal = new RangedBowAttackGoal<>(this, 1.0D, 20, 15.0F);
++    private final RangedBowAttackGoal<AbstractSkeleton> bowGoal = new RangedBowAttackGoal<>(this, 1.0D, Math.max(100 - (int) getAttribute(Attributes.ATTACK_SPEED).getValue(), 0), 15.0F); // Papyrus - attack speed
+     private final MeleeAttackGoal meleeGoal = new MeleeAttackGoal(this, 1.2D, false) {
+         @Override
+         public void stop() {
+@@ -184,7 +184,7 @@ public abstract class AbstractSkeleton extends Monster implements RangedAttackMo
+                     b0 = 40;
+                 }
+ 
+-                this.bowGoal.setMinAttackInterval(b0);
++                //this.bowGoal.setMinAttackInterval(b0); Papyrus - don't change interval
+                 this.goalSelector.addGoal(4, this.bowGoal);
+             } else {
+                 this.goalSelector.addGoal(4, this.meleeGoal);
+diff --git a/src/main/java/net/minecraft/world/entity/monster/Illusioner.java b/src/main/java/net/minecraft/world/entity/monster/Illusioner.java
+index 86f7fdd42461db151221d2c0d5cff6953392fa80..98a30c0540f69d3fd2df8174012a49fb02a21bd8 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/Illusioner.java
++++ b/src/main/java/net/minecraft/world/entity/monster/Illusioner.java
+@@ -66,7 +66,7 @@ public class Illusioner extends SpellcasterIllager implements RangedAttackMob {
+         this.goalSelector.addGoal(1, new SpellcasterIllager.SpellcasterCastingSpellGoal());
+         this.goalSelector.addGoal(4, new Illusioner.IllusionerMirrorSpellGoal());
+         this.goalSelector.addGoal(5, new Illusioner.IllusionerBlindnessSpellGoal());
+-        this.goalSelector.addGoal(6, new RangedBowAttackGoal<>(this, 0.5D, 20, 15.0F));
++        this.goalSelector.addGoal(6, new RangedBowAttackGoal<>(this, 0.5D, Math.max(100 - (int) getAttribute(Attributes.ATTACK_SPEED).getValue(), 0), 15.0F)); // Papyrus - attack speed
+         this.goalSelector.addGoal(8, new RandomStrollGoal(this, 0.6D));
+         this.goalSelector.addGoal(9, new LookAtPlayerGoal(this, Player.class, 3.0F, 1.0F));
+         this.goalSelector.addGoal(10, new LookAtPlayerGoal(this, Mob.class, 8.0F));
+diff --git a/src/main/java/net/minecraft/world/entity/monster/Witch.java b/src/main/java/net/minecraft/world/entity/monster/Witch.java
+index b7bc64818387288955d0723cd071d4203bd2f121..90720fb4d41e066dbebd4d755bd182bc5d59f81b 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/Witch.java
++++ b/src/main/java/net/minecraft/world/entity/monster/Witch.java
+@@ -64,7 +64,7 @@ public class Witch extends Raider implements RangedAttackMob {
+         });
+         this.attackPlayersGoal = new NearestAttackableWitchTargetGoal<>(this, Player.class, 10, true, false, (Predicate) null);
+         this.goalSelector.addGoal(1, new FloatGoal(this));
+-        this.goalSelector.addGoal(2, new RangedAttackGoal(this, 1.0D, 60, 10.0F));
++        this.goalSelector.addGoal(2, new RangedAttackGoal(this, 1.0D, Math.max(100 - (int) getAttribute(Attributes.ATTACK_SPEED).getValue(), 0), 10.0F)); // Papyrus - attack speed
+         this.goalSelector.addGoal(2, new WaterAvoidingRandomStrollGoal(this, 1.0D));
+         this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
+         this.goalSelector.addGoal(3, new RandomLookAroundGoal(this));
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
 index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..d483087d50f31fdf1dcfb03e0e868120e0b6fa47 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java

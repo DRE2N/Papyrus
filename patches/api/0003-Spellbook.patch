@@ -1081,6 +1081,22 @@ index 56e261efa654e4a6872ccea28f0461df13845d13..62c5606ffdd3fb824141d868eaece2b4
 +    SpellbookAPI getSpellbookAPI();
 +    // Papyrus end
  }
+diff --git a/src/main/java/org/bukkit/attribute/Attribute.java b/src/main/java/org/bukkit/attribute/Attribute.java
+index dc820ba494e92a0fc770703c7d5020cb2af549fd..f7b822600099f614bd4c8ee3d755c25c9cc2c4d5 100644
+--- a/src/main/java/org/bukkit/attribute/Attribute.java
++++ b/src/main/java/org/bukkit/attribute/Attribute.java
+@@ -80,9 +80,8 @@ public enum Attribute implements Keyed, net.kyori.adventure.translation.Translat
+     ADV_FIRE("advantage.fire"),
+     ADV_WATER("advantage.water"),
+ 
+-    STAT_INT("stat.intelligence"),
+-    STAT_AGI("stat.agility"),
+-    STAT_STR("stat.strength"),
++    STAT_CRIT_CHANCE("stat.crit.chance"),
++    STAT_CRIT_DMG("stat.crit.dmg"),
+     STAT_CDR("stat.cooldownreduction"),
+ 
+     COMBAT_HURTINVUL("combat.hurtinvul");
 diff --git a/src/main/java/org/bukkit/entity/Damageable.java b/src/main/java/org/bukkit/entity/Damageable.java
 index fc4d3bcd9b16097086fef7975274d825b65adb10..0ada5e125ee88a606399b6437baa1af45ae25b19 100644
 --- a/src/main/java/org/bukkit/entity/Damageable.java
