@@ -44,10 +44,10 @@ index 0000000000000000000000000000000000000000..379e96edce4520a733064044eb357f30
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/EffectData.java b/src/main/java/de/erethon/spellbook/api/EffectData.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..139cb902b1385f605082974c63030c6728353c1d
+index 0000000000000000000000000000000000000000..27ddf9da8a05df37deb36fbdf8e5d8d5a0f38520
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/EffectData.java
-@@ -0,0 +1,87 @@
+@@ -0,0 +1,91 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.configuration.InvalidConfigurationException;
@@ -117,6 +117,10 @@ index 0000000000000000000000000000000000000000..139cb902b1385f605082974c63030c67
 +            throw new RuntimeException(e);
 +        }
 +        return spellEffect;
++    }
++
++    public Class<? extends SpellEffect> getEffectClass() {
++        return effectClass;
 +    }
 +
 +    @Override
@@ -390,10 +394,10 @@ index 0000000000000000000000000000000000000000..f1d9367400225cf9064ef0aa87efbee8
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellData.java b/src/main/java/de/erethon/spellbook/api/SpellData.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..6de36125587ea7216784a6030e70164fd5727f10
+index 0000000000000000000000000000000000000000..8dd52b94d739808c327759371d1f2010efa3903b
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellData.java
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,118 @@
 +package de.erethon.spellbook.api;
 +
 +import net.kyori.adventure.text.Component;
@@ -483,6 +487,10 @@ index 0000000000000000000000000000000000000000..6de36125587ea7216784a6030e70164f
 +
 +    public SpellbookAPI getSpellbook() {
 +        return spellbookAPI;
++    }
++
++    public Class<? extends SpellbookSpell> getSpellClass() {
++        return spellClass;
 +    }
 +
 +    @Override
