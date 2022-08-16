@@ -202,7 +202,7 @@ index 0000000000000000000000000000000000000000..9597c69b1fd9825abfdedd316c5874b7
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..f1d9367400225cf9064ef0aa87efbee805f80afd
+index 0000000000000000000000000000000000000000..4ea572873ba7ee59be96c6b518257c0fa9ddc5ac
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 @@ -0,0 +1,186 @@
@@ -335,7 +335,7 @@ index 0000000000000000000000000000000000000000..f1d9367400225cf9064ef0aa87efbee8
 +    }
 +
 +    default boolean hasEffect(EffectData effect) {
-+        return getEffects().stream().anyMatch(e -> e.data.equals(effect));
++        return getEffects().stream().anyMatch(e -> e.data == effect);
 +    }
 +
 +    default int calculateCooldown(SpellData spellData) {
@@ -518,10 +518,10 @@ index 0000000000000000000000000000000000000000..8dd52b94d739808c327759371d1f2010
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..70cd42b4f00a21c948aa066e5d88f9190b476406
+index 0000000000000000000000000000000000000000..3e24967d0f266f9c02c0705818826964b2b34404
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,77 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -598,13 +598,6 @@ index 0000000000000000000000000000000000000000..70cd42b4f00a21c948aa066e5d88f919
 +        return ticksLeft <= 0;
 +    }
 +
-+    @Override
-+    public boolean equals(Object obj) {
-+        if (obj instanceof SpellEffect other) {
-+            return other.data.equals(data);
-+        }
-+        return false;
-+    }
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellLibrary.java b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
 new file mode 100644
