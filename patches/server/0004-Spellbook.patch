@@ -6,7 +6,7 @@ Subject: [PATCH] Spellbook
 
 diff --git a/src/main/java/de/erethon/papyrus/CraftDamageType.java b/src/main/java/de/erethon/papyrus/CraftDamageType.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..3004a15bd02ff5557beba43407e883a20e66bf0c
+index 0000000000000000000000000000000000000000..20184e08449c0f6fc37b68093973ac592c1feb93
 --- /dev/null
 +++ b/src/main/java/de/erethon/papyrus/CraftDamageType.java
 @@ -0,0 +1,44 @@
@@ -22,7 +22,7 @@ index 0000000000000000000000000000000000000000..3004a15bd02ff5557beba43407e883a2
 +    AIR(Attributes.ADV_AIR, Attributes.RES_AIR, DamageType.AIR),
 +    EARTH(Attributes.ADV_EARTH, Attributes.RES_EARTH, DamageType.EARTH),
 +    FIRE(Attributes.ADV_FIRE, Attributes.RES_FIRE, DamageType.FIRE),
-+    MAGIC(Attributes.ADV_MAGIC, Attributes.RES_MAGIC, DamageType.FIRE),
++    MAGIC(Attributes.ADV_MAGIC, Attributes.RES_MAGIC, DamageType.MAGIC),
 +    PHYSICAL(Attributes.ADV_PHYSICAL, Attributes.RES_PHYSICAL, DamageType.PHYSICAL),
 +    WATER(Attributes.ADV_WATER, Attributes.RES_WATER, DamageType.WATER),
 +    PURE(Attributes.ADV_PURE, Attributes.RES_PURE, DamageType.PURE);
