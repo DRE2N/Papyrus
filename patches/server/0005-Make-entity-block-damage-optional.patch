@@ -1,0 +1,253 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fyreum <luka.vogel@gmx.de>
+Date: Wed, 17 Aug 2022 14:36:06 +0200
+Subject: [PATCH] Make entity block damage optional
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java b/src/main/java/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
+index 6a08ab40e60b80f8f5c4d3f02da121be9da05111..513479cca91f2beee6c71ad83b8f5920ef3250a0 100644
+--- a/src/main/java/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
++++ b/src/main/java/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
+@@ -126,13 +126,15 @@ public class EndCrystal extends Entity {
+                 this.remove(Entity.RemovalReason.KILLED);
+                 if (!source.isExplosion()) {
+                     // CraftBukkit start
+-                    ExplosionPrimeEvent event = new ExplosionPrimeEvent(this.getBukkitEntity(), 6.0F, false);
++                    // Papyrus start - Make block damage optional
++                    ExplosionPrimeEvent event = new ExplosionPrimeEvent(this.getBukkitEntity(), 6.0F, false, true);
+                     this.level.getCraftServer().getPluginManager().callEvent(event);
+                     if (event.isCancelled()) {
+                         this.unsetRemoved();
+                         return false;
+                     }
+-                    this.level.explode(this, this.getX(), this.getY(), this.getZ(), event.getRadius(), event.getFire(), Explosion.BlockInteraction.DESTROY);
++                    this.level.explode(this, this.getX(), this.getY(), this.getZ(), event.getRadius(), event.getFire(), event.isBlockDamage() ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE);
++                    // Papyrus end
+                     // CraftBukkit end
+                 }
+ 
+diff --git a/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java b/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java
+index 63ffe0077375b5a1d2935a8c1bc848c772dee444..809c67bf08eff5191eb88a7b99bd405de65ebf8f 100644
+--- a/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java
++++ b/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java
+@@ -262,13 +262,16 @@ public class WitherBoss extends Monster implements PowerableMob, RangedAttackMob
+             i = this.getInvulnerableTicks() - 1;
+             this.bossEvent.setProgress(1.0F - (float) i / 220.0F);
+             if (i <= 0) {
+-                Explosion.BlockInteraction explosion_effect = this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE;
++                // Papyrus start - Make block damage optional
++                // Explosion.BlockInteraction explosion_effect = this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE;
+                 // CraftBukkit start
+                 // this.level.explode(this, this.getX(), this.getEyeY(), this.getZ(), 7.0F, false, explosion_effect);
+-                ExplosionPrimeEvent event = new ExplosionPrimeEvent(this.getBukkitEntity(), 7.0F, false);
++                ExplosionPrimeEvent event = new ExplosionPrimeEvent(this.getBukkitEntity(), 7.0F, false, true);
+                 this.level.getCraftServer().getPluginManager().callEvent(event);
+ 
+                 if (!event.isCancelled()) {
++                    Explosion.BlockInteraction explosion_effect = event.isBlockDamage() && this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE;
++                    // Papyrus end
+                     this.level.explode(this, this.getX(), this.getEyeY(), this.getZ(), event.getRadius(), event.getFire(), explosion_effect);
+                 }
+                 // CraftBukkit end
+diff --git a/src/main/java/net/minecraft/world/entity/item/PrimedTnt.java b/src/main/java/net/minecraft/world/entity/item/PrimedTnt.java
+index e09271450cae84f6206a20d6622918fe37380d59..698e820aa5b87ca9bf1f23c95479d196c48f61b7 100644
+--- a/src/main/java/net/minecraft/world/entity/item/PrimedTnt.java
++++ b/src/main/java/net/minecraft/world/entity/item/PrimedTnt.java
+@@ -26,6 +26,7 @@ public class PrimedTnt extends Entity {
+     public LivingEntity owner;
+     public float yield = 4; // CraftBukkit - add field
+     public boolean isIncendiary = false; // CraftBukkit - add field
++    public boolean blockDamage = true; // Papyrus
+ 
+     public PrimedTnt(EntityType<? extends PrimedTnt> type, Level world) {
+         super(type, world);
+diff --git a/src/main/java/net/minecraft/world/entity/monster/Creeper.java b/src/main/java/net/minecraft/world/entity/monster/Creeper.java
+index 8c328d72c42ccaa6891249cc700b70bb34c09545..1b4203df8fd847a23e8be1f4c9d8e611a27596ff 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/Creeper.java
++++ b/src/main/java/net/minecraft/world/entity/monster/Creeper.java
+@@ -46,6 +46,7 @@ import net.minecraft.world.level.gameevent.GameEvent;
+ 
+ // CraftBukkit start
+ import org.bukkit.craftbukkit.event.CraftEventFactory;
++import org.bukkit.entity.Explosive; // Papyrus
+ import org.bukkit.event.entity.CreatureSpawnEvent;
+ import org.bukkit.event.entity.ExplosionPrimeEvent;
+ // CraftBukkit end
+@@ -259,13 +260,17 @@ public class Creeper extends Monster implements PowerableMob {
+ 
+     public void explodeCreeper() {
+         if (!this.level.isClientSide) {
+-            Explosion.BlockInteraction explosion_effect = this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE;
++            // Papyrus start - Make block damage optional
++            // Explosion.BlockInteraction explosion_effect = this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE;
+             float f = this.isPowered() ? 2.0F : 1.0F;
+ 
+             // CraftBukkit start
+-            ExplosionPrimeEvent event = new ExplosionPrimeEvent(this.getBukkitEntity(), this.explosionRadius * f, false);
++            ExplosionPrimeEvent event = new ExplosionPrimeEvent(this.getBukkitEntity(), this.explosionRadius * f, false, true);
+             this.level.getCraftServer().getPluginManager().callEvent(event);
++
+             if (!event.isCancelled()) {
++                Explosion.BlockInteraction explosion_effect = event.isBlockDamage() && this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE;
++                // Papyrus end
+                 this.dead = true;
+                 this.level.explode(this, this.getX(), this.getY(), this.getZ(), event.getRadius(), event.getFire(), explosion_effect);
+                 this.discard();
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/AbstractHurtingProjectile.java b/src/main/java/net/minecraft/world/entity/projectile/AbstractHurtingProjectile.java
+index a603d99430aedb3c242c2833e0cc8a31aba49205..8ad84377719d21c04f37e88ebd219e02cab56e5c 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/AbstractHurtingProjectile.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/AbstractHurtingProjectile.java
+@@ -23,6 +23,7 @@ public abstract class AbstractHurtingProjectile extends Projectile {
+     public double zPower;
+     public float bukkitYield = 1; // CraftBukkit
+     public boolean isIncendiary = true; // CraftBukkit
++    public boolean blockDamage = true; // Papyrus
+ 
+     protected AbstractHurtingProjectile(EntityType<? extends AbstractHurtingProjectile> type, Level world) {
+         super(type, world);
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/LargeFireball.java b/src/main/java/net/minecraft/world/entity/projectile/LargeFireball.java
+index 5237b699e000b4fed99be39b0a7e2daab9c8bf42..c4e28efe6208f1369fdc7f6c7205beb6602a5ac9 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/LargeFireball.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/LargeFireball.java
+@@ -31,15 +31,18 @@ public class LargeFireball extends Fireball {
+     protected void onHit(HitResult hitResult) {
+         super.onHit(hitResult);
+         if (!this.level.isClientSide) {
+-            boolean flag = this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING);
++            // Papyrus start - Make block damage optional
++            // boolean flag = this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING);
+ 
+             // CraftBukkit start - fire ExplosionPrimeEvent
+             ExplosionPrimeEvent event = new ExplosionPrimeEvent((org.bukkit.entity.Explosive) this.getBukkitEntity());
+             this.level.getCraftServer().getPluginManager().callEvent(event);
+ 
+             if (!event.isCancelled()) {
++                Explosion.BlockInteraction explosion_effect = event.isBlockDamage() && this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE;
++                // Papyrus end
+                 // give 'this' instead of (Entity) null so we know what causes the damage
+-                this.level.explode(this, this.getX(), this.getY(), this.getZ(), event.getRadius(), event.getFire(), flag ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE);
++                this.level.explode(this, this.getX(), this.getY(), this.getZ(), event.getRadius(), event.getFire(), explosion_effect);
+             }
+             // CraftBukkit end
+             this.discard();
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/WitherSkull.java b/src/main/java/net/minecraft/world/entity/projectile/WitherSkull.java
+index 2867e841e73a3edfdeb83af9d96e0d0cd4116a68..c17f7ec7860975415f6332a460d138b144978f5e 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/WitherSkull.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/WitherSkull.java
+@@ -20,6 +20,7 @@ import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.material.FluidState;
+ import net.minecraft.world.phys.EntityHitResult;
+ import net.minecraft.world.phys.HitResult;
++import org.bukkit.entity.Explosive;
+ import org.bukkit.event.entity.ExplosionPrimeEvent; // CraftBukkit
+ 
+ public class WitherSkull extends AbstractHurtingProjectile {
+@@ -93,14 +94,17 @@ public class WitherSkull extends AbstractHurtingProjectile {
+     protected void onHit(HitResult hitResult) {
+         super.onHit(hitResult);
+         if (!this.level.isClientSide) {
+-            Explosion.BlockInteraction explosion_effect = this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE;
++            // Papyrus start - Make block damage optional
++            // Explosion.BlockInteraction explosion_effect = this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE;
+ 
+             // CraftBukkit start
+             // this.level.createExplosion(this, this.locX(), this.locY(), this.locZ(), 1.0F, false, explosion_effect);
+-            ExplosionPrimeEvent event = new ExplosionPrimeEvent(this.getBukkitEntity(), 1.0F, false);
++            ExplosionPrimeEvent event = new ExplosionPrimeEvent((Explosive) this.getBukkitEntity());
+             this.level.getCraftServer().getPluginManager().callEvent(event);
+ 
+             if (!event.isCancelled()) {
++                Explosion.BlockInteraction explosion_effect = event.isBlockDamage() && this.level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE;
++                // Papyrus end
+                 this.level.explode(this, this.getX(), this.getY(), this.getZ(), event.getRadius(), event.getFire(), explosion_effect);
+             }
+             // CraftBukkit end
+diff --git a/src/main/java/net/minecraft/world/level/Explosion.java b/src/main/java/net/minecraft/world/level/Explosion.java
+index 01477e7240f9e33d08d416a7d40ee10f3e5d4abf..1c4fbf9dff3545264a74656abe48acb831cc265a 100644
+--- a/src/main/java/net/minecraft/world/level/Explosion.java
++++ b/src/main/java/net/minecraft/world/level/Explosion.java
+@@ -325,20 +325,20 @@ public class Explosion {
+ 
+             boolean cancelled;
+             List<org.bukkit.block.Block> bukkitBlocks;
+-            float yield;
++            float explosionYield; // Papyrus - Rename field
+ 
+             if (explode != null) {
+                 EntityExplodeEvent event = new EntityExplodeEvent(explode, location, blockList, this.blockInteraction == Explosion.BlockInteraction.DESTROY ? 1.0F / this.radius : 1.0F);
+                 this.level.getCraftServer().getPluginManager().callEvent(event);
+                 cancelled = event.isCancelled();
+                 bukkitBlocks = event.blockList();
+-                yield = event.getYield();
++                explosionYield = event.getYield(); // Papyrus - Rename field
+             } else {
+                 BlockExplodeEvent event = new BlockExplodeEvent(location.getBlock(), blockList, this.blockInteraction == Explosion.BlockInteraction.DESTROY ? 1.0F / this.radius : 1.0F);
+                 this.level.getCraftServer().getPluginManager().callEvent(event);
+                 cancelled = event.isCancelled();
+                 bukkitBlocks = event.blockList();
+-                yield = event.getYield();
++                explosionYield = event.getYield(); // Papyrus - Rename field
+             }
+ 
+             this.toBlow.clear();
+@@ -372,8 +372,8 @@ public class Explosion {
+                             BlockEntity tileentity = iblockdata.hasBlockEntity() ? this.level.getBlockEntity(blockposition) : null;
+                             LootContext.Builder loottableinfo_builder = (new LootContext.Builder(worldserver)).withRandom(this.level.random).withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(blockposition)).withParameter(LootContextParams.TOOL, ItemStack.EMPTY).withOptionalParameter(LootContextParams.BLOCK_ENTITY, tileentity).withOptionalParameter(LootContextParams.THIS_ENTITY, this.source);
+ 
+-                            if (this.blockInteraction == Explosion.BlockInteraction.DESTROY || yield < 1.0F) { // CraftBukkit - add yield
+-                                loottableinfo_builder.withParameter(LootContextParams.EXPLOSION_RADIUS, 1.0F / yield); // CraftBukkit - add yield
++                            if (this.blockInteraction == Explosion.BlockInteraction.DESTROY || explosionYield < 1.0F) { // CraftBukkit - add yield // Papyrus - Rename field
++                                loottableinfo_builder.withParameter(LootContextParams.EXPLOSION_RADIUS, 1.0F / explosionYield); // CraftBukkit - add yield // Papyrus - Rename field
+                             }
+ 
+                             iblockdata.spawnAfterBreak(worldserver, blockposition, ItemStack.EMPTY, flag2);
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftFireball.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftFireball.java
+index 2358e0c8a4a135d6deb47100c490a9c145f44827..f40f9758da03d7d6f047ca7f97c363cddde17437 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftFireball.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftFireball.java
+@@ -23,6 +23,20 @@ public class CraftFireball extends AbstractProjectile implements Fireball {
+         return this.getHandle().isIncendiary;
+     }
+ 
++    // Papyrus start - Make block damage optional
++
++    @Override
++    public boolean isBlockDamage() {
++        return this.getHandle().blockDamage;
++    }
++
++    @Override
++    public void setBlockDamage(boolean blockDamage) {
++        this.getHandle().blockDamage = blockDamage;
++    }
++
++    // Papyrus end
++
+     @Override
+     public void setIsIncendiary(boolean isIncendiary) {
+         this.getHandle().isIncendiary = isIncendiary;
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftTNTPrimed.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftTNTPrimed.java
+index 06540d3771949daff641e518219090559f363959..c38ff57db1eea749d59c6564ec9a0b6d0f08dc1d 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftTNTPrimed.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftTNTPrimed.java
+@@ -28,6 +28,20 @@ public class CraftTNTPrimed extends CraftEntity implements TNTPrimed {
+         this.getHandle().isIncendiary = isIncendiary;
+     }
+ 
++    // Papyrus start - Make block damage optional
++
++    @Override
++    public boolean isBlockDamage() {
++        return this.getHandle().blockDamage;
++    }
++
++    @Override
++    public void setBlockDamage(boolean blockDamage) {
++        this.getHandle().blockDamage = blockDamage;
++    }
++
++    // Papyrus end
++
+     @Override
+     public void setYield(float yield) {
+         this.getHandle().yield = yield;
