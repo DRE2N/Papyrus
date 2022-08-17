@@ -360,7 +360,7 @@ index c7e2081fbd557417daa707da1c2e8604fc9faa1e..802748d0af5957f7ea3cfa5416452b21
 +    }
  }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..fad5dad8220eb2e010f01cb03042bbf45eec52b3 100644
+index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..800d737ec50af55afa276f41ae71d986836d7290 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -15,7 +15,7 @@ import java.util.*;
@@ -407,7 +407,19 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..fad5dad8220eb2e010f01cb03042bbf4
  
      @Override
      public float getBukkitYaw() {
-@@ -498,6 +494,7 @@ public abstract class LivingEntity extends Entity {
+@@ -333,7 +329,10 @@ public abstract class LivingEntity extends Entity {
+             .add(Attributes.COMBAT_HURTINVUL)
+             .add(Attributes.STAT_CRITCHANCE)
+             .add(Attributes.STAT_CRITDMG)
+-            .add(Attributes.STAT_ATTACKSPEED)
++            .add(Attributes.STAT_HEALTHREGEN)
++            .add(Attributes.STAT_ENERGYREGEN)
++            .add(Attributes.STAT_CDR)
++            .add(Attributes.STAT_TENACITY)
+             .add(Attributes.RES_AIR)
+             .add(Attributes.RES_EARTH)
+             .add(Attributes.RES_FIRE)
+@@ -498,6 +497,7 @@ public abstract class LivingEntity extends Entity {
          }
  
          this.tickEffects();
@@ -415,7 +427,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..fad5dad8220eb2e010f01cb03042bbf4
          this.animStepO = this.animStep;
          this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
-@@ -1338,7 +1335,7 @@ public abstract class LivingEntity extends Entity {
+@@ -1338,7 +1338,7 @@ public abstract class LivingEntity extends Entity {
      // Papyrus start - rewrite damage system
  
      @Override
@@ -424,7 +436,7 @@ index 1ac5edbb58e7ba831f6c67b719cdf67c5d317c91..fad5dad8220eb2e010f01cb03042bbf4
          if (isInvulnerable() || isRemoved() || dead || getHealth() <= 0F || isInvulnerableTo(source) || level.isClientSide) {
              return false;
          }
-@@ -1397,12 +1394,15 @@ public abstract class LivingEntity extends Entity {
+@@ -1397,12 +1397,15 @@ public abstract class LivingEntity extends Entity {
          invulnerableTime = (int) getAttribute(Attributes.COMBAT_HURTINVUL).getValue();
          playHurtSound(source);
          level.broadcastEntityEvent(this, (byte) 2); // hurt animation
@@ -487,6 +499,28 @@ index a92795d2a3d0ecdd7c1e3046a2cddb88b62c88ec..92d4bb443add343c46d2c56153d3919f
          boolean flag = target.hurt(DamageSource.mobAttack(this), dmg, type);
  
          if (flag) {
+diff --git a/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java b/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
+index c4d18fb80c7b20869f712cfd09b6689f4e67b000..fd5100f81b80dc1ba9cca853f528828974df9a4a 100644
+--- a/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
++++ b/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
+@@ -38,9 +38,14 @@ public class Attributes {
+     public static final Attribute ADV_WATER = Attributes.register("advantage.water", new RangedAttribute("attribute.name.advantage.water", 0, 0, 4096));
+     // Stats
+     public static final Attribute STAT_CRITCHANCE = Attributes.register("stat.crit.chance", new RangedAttribute("attribute.name.stat.crit.chance", 0, 0, 4096));
+-    public static final Attribute STAT_CRITDMG = Attributes.register("stat.crit.dmg", new RangedAttribute("attribute.name.stat.crit.dmg", 0, 0, 4096));
+-    public static final Attribute STAT_ATTACKSPEED= Attributes.register("stat.attackspeed", new RangedAttribute("attribute.name.stat.attackspeed", 0, 0, 4096));
+-    public static final Attribute STAT_CDR = Attributes.register("stat.cooldownreduction", new RangedAttribute("attribute.name.stat.cooldownreduction", 0, 0, 4096));
++    public static final Attribute STAT_CRITDMG = Attributes.register("stat.crit.dmg", new RangedAttribute("attribute.name.stat.crit.dmg", 0, -4096, 4096));
++    public static final Attribute STAT_CDR = Attributes.register("stat.cooldownreduction", new RangedAttribute("attribute.name.stat.cooldownreduction", 0, -4096, 4096));
++    public static final Attribute STAT_HEALTHREGEN = Attributes.register("stat.healthregen", new RangedAttribute("attribute.name.stat.healthregen", 0, 0, 4096));
++    public static final Attribute STAT_ENERGYREGEN = Attributes.register("stat.energyregen", new RangedAttribute("attribute.name.stat.energyregen", 0, 0, 4096));
++    public static final Attribute STAT_TENACITY = Attributes.register("stat.tenacity", new RangedAttribute("attribute.name.stat.tenacity", 0, 0, 4096));
++
++
++
+     // Combat
+     public static final Attribute COMBAT_HURTINVUL= Attributes.register("combat.hurtinvul", new RangedAttribute("attribute.name.combat.hurtinvul", 5, 0, 4096));
+ 
 diff --git a/src/main/java/net/minecraft/world/entity/ai/goal/MeleeAttackGoal.java b/src/main/java/net/minecraft/world/entity/ai/goal/MeleeAttackGoal.java
 index e6cf828a267f694d3f23e578b62c8f8146f22afb..16606e607d4b16b40895fefd1b235f1779de772a 100644
 --- a/src/main/java/net/minecraft/world/entity/ai/goal/MeleeAttackGoal.java
