@@ -643,7 +643,7 @@ index b7bc64818387288955d0723cd071d4203bd2f121..90720fb4d41e066dbebd4d755bd182bc
          this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
          this.goalSelector.addGoal(3, new RandomLookAroundGoal(this));
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
-index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..5573ab722d04c3a1f606f453da37cb0ae52c1f72 100644
+index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..785b0c1e241614a29948f010cc7c9446b25793de 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
 +++ b/src/main/java/net/minecraft/world/entity/player/Player.java
 @@ -18,7 +18,8 @@ import java.util.OptionalInt;
@@ -697,6 +697,24 @@ index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..5573ab722d04c3a1f606f453da37cb0a
                      boolean flag1 = false;
                      byte b0 = 0;
                      int i = b0 + EnchantmentHelper.getKnockbackBonus(this);
+@@ -1331,7 +1341,7 @@ public abstract class Player extends LivingEntity {
+                     }
+ 
+                     Vec3 vec3d = target.getDeltaMovement();
+-                    boolean flag5 = target.hurt(DamageSource.playerAttack(this).critical(flag2), f); // Paper - add critical damage API
++                    boolean flag5 = target.hurt(DamageSource.playerAttack(this).critical(flag2), f, attackDamageType); // Paper - add critical damage API
+ 
+                     if (flag5) {
+                         if (i > 0) {
+@@ -1359,7 +1369,7 @@ public abstract class Player extends LivingEntity {
+ 
+                                 if (entityliving != this && entityliving != target && !this.isAlliedTo((Entity) entityliving) && (!(entityliving instanceof ArmorStand) || !((ArmorStand) entityliving).isMarker()) && this.distanceToSqr((Entity) entityliving) < 9.0D) {
+                                     // CraftBukkit start - Only apply knockback if the damage hits
+-                                    if (entityliving.hurt(DamageSource.playerAttack(this).sweep().critical(flag2), f4)) { // Paper - add critical damage API
++                                    if (entityliving.hurt(DamageSource.playerAttack(this).sweep().critical(flag2), f4, attackDamageType)) { // Paper - add critical damage API
+                                     entityliving.knockback(0.4000000059604645D, (double) Mth.sin(this.getYRot() * 0.017453292F), (double) (-Mth.cos(this.getYRot() * 0.017453292F)), this); // Paper
+                                     }
+                                     // CraftBukkit end
 @@ -1472,7 +1482,7 @@ public abstract class Player extends LivingEntity {
  
      @Override
@@ -706,6 +724,199 @@ index 05dafb5ae30ac77b9917e31d08b49e8dd462e262..5573ab722d04c3a1f606f453da37cb0a
      }
  
      public void disableShield(boolean sprinting) {
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/AbstractArrow.java b/src/main/java/net/minecraft/world/entity/projectile/AbstractArrow.java
+index bc01e5014e1355a225bdf5c47f2965290b45e2d2..90ebb83d9f9a37ed909d9e2bd107894957befbbd 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/AbstractArrow.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/AbstractArrow.java
+@@ -1,6 +1,7 @@
+ package net.minecraft.world.entity.projectile;
+ 
+ import com.google.common.collect.Lists;
++import de.erethon.papyrus.CraftDamageType;
+ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+ import java.util.Arrays;
+ import java.util.Collection;
+@@ -409,7 +410,7 @@ public abstract class AbstractArrow extends Projectile {
+             // CraftBukkit end
+         }
+ 
+-        if (entity.hurt(damagesource, (float) i)) {
++        if (entity.hurt(damagesource, (float) i, damageType)) { // Papyrus - add damage type to arrows
+             if (flag) {
+                 return;
+             }
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/FireworkRocketEntity.java b/src/main/java/net/minecraft/world/entity/projectile/FireworkRocketEntity.java
+index 5406925cd66f46ab8744123c670d72cea7bfc3a1..b1694698070ca3658614f9c13059c1018c053343 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/FireworkRocketEntity.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/FireworkRocketEntity.java
+@@ -242,7 +242,7 @@ public class FireworkRocketEntity extends Projectile implements ItemSupplier {
+         if (f > 0.0F) {
+             if (this.attachedToEntity != null) {
+                 CraftEventFactory.entityDamage = this; // CraftBukkit
+-                this.attachedToEntity.hurt(DamageSource.fireworks(this, this.getOwner()), 5.0F + (float) (nbttaglist.size() * 2));
++                this.attachedToEntity.hurt(DamageSource.fireworks(this, this.getOwner()), 5.0F + (float) (nbttaglist.size() * 2), damageType);
+                 CraftEventFactory.entityDamage = null; // CraftBukkit
+             }
+ 
+@@ -271,7 +271,7 @@ public class FireworkRocketEntity extends Projectile implements ItemSupplier {
+                         float f1 = f * (float) Math.sqrt((5.0D - (double) this.distanceTo(entityliving)) / 5.0D);
+ 
+                         CraftEventFactory.entityDamage = this; // CraftBukkit
+-                        entityliving.hurt(DamageSource.fireworks(this, this.getOwner()), f1);
++                        entityliving.hurt(DamageSource.fireworks(this, this.getOwner()), f1, damageType);
+                         CraftEventFactory.entityDamage = null; // CraftBukkit
+                     }
+                 }
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/LargeFireball.java b/src/main/java/net/minecraft/world/entity/projectile/LargeFireball.java
+index 5237b699e000b4fed99be39b0a7e2daab9c8bf42..1244304ab63a35806071e76eea23d8c6f21f10ae 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/LargeFireball.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/LargeFireball.java
+@@ -54,7 +54,7 @@ public class LargeFireball extends Fireball {
+             Entity entity = entityHitResult.getEntity();
+             Entity entity1 = this.getOwner();
+ 
+-            entity.hurt(DamageSource.fireball(this, entity1), 6.0F);
++            entity.hurt(DamageSource.fireball(this, entity1), 6.0F, damageType);
+             if (entity1 instanceof LivingEntity) {
+                 this.doEnchantDamageEffects((LivingEntity) entity1, entity);
+             }
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/LlamaSpit.java b/src/main/java/net/minecraft/world/entity/projectile/LlamaSpit.java
+index 4132c1113f5437a776e5e3c1cb306904775aed88..252bd3fbe1fac0565a188c8794c7fc1449aa11eb 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/LlamaSpit.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/LlamaSpit.java
+@@ -62,7 +62,7 @@ public class LlamaSpit extends Projectile {
+         Entity entity = this.getOwner();
+ 
+         if (entity instanceof LivingEntity) {
+-            entityHitResult.getEntity().hurt(DamageSource.indirectMobAttack(this, (LivingEntity) entity).setProjectile(), 1.0F);
++            entityHitResult.getEntity().hurt(DamageSource.indirectMobAttack(this, (LivingEntity) entity).setProjectile(), 1.0F, damageType);
+         }
+ 
+     }
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/Projectile.java b/src/main/java/net/minecraft/world/entity/projectile/Projectile.java
+index 39ba6ca32b827daee300e1240bd76fd8f680ea02..fdbe686eb2274967059f073aeba170b9ad102d24 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/Projectile.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/Projectile.java
+@@ -4,6 +4,8 @@ import com.google.common.base.MoreObjects;
+ import java.util.Iterator;
+ import java.util.UUID;
+ import javax.annotation.Nullable;
++
++import de.erethon.papyrus.CraftDamageType;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.nbt.CompoundTag;
+ import net.minecraft.network.protocol.Packet;
+@@ -47,6 +49,10 @@ public abstract class Projectile extends Entity {
+     private static int loadedTick;
+ 
+     private int loadedLifetime = 0;
++
++    // Papyrus start
++    public CraftDamageType damageType = CraftDamageType.PHYSICAL;
++
+     @Override
+     public void setPos(double x, double y, double z) {
+         int currentTick = net.minecraft.server.MinecraftServer.currentTick;
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/ShulkerBullet.java b/src/main/java/net/minecraft/world/entity/projectile/ShulkerBullet.java
+index 0e66418720ca833e676295edc7e28473ce9d9f23..ad8a2ae961423bf3c0d94ecdcb5dd7f04523ac33 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/ShulkerBullet.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/ShulkerBullet.java
+@@ -299,7 +299,7 @@ public class ShulkerBullet extends Projectile {
+         Entity entity = entityHitResult.getEntity();
+         Entity entity1 = this.getOwner();
+         LivingEntity entityliving = entity1 instanceof LivingEntity ? (LivingEntity) entity1 : null;
+-        boolean flag = entity.hurt(DamageSource.indirectMobAttack(this, entityliving).setProjectile(), 4.0F);
++        boolean flag = entity.hurt(DamageSource.indirectMobAttack(this, entityliving).setProjectile(), 4.0F, damageType);
+ 
+         if (flag) {
+             this.doEnchantDamageEffects(entityliving, entity);
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/SmallFireball.java b/src/main/java/net/minecraft/world/entity/projectile/SmallFireball.java
+index 00ac1cdc4734cc57f15433c5c6e7a3a545739d33..671b4400c0dc3fe4c1ae95765b1aa583a8f416c5 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/SmallFireball.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/SmallFireball.java
+@@ -49,7 +49,7 @@ public class SmallFireball extends Fireball {
+                 entity.setSecondsOnFire(event.getDuration(), false);
+             }
+             // CraftBukkit end
+-            if (!entity.hurt(DamageSource.fireball(this, entity1), 5.0F)) {
++            if (!entity.hurt(DamageSource.fireball(this, entity1), 5.0F, damageType)) {
+                 entity.setRemainingFireTicks(i);
+             } else if (entity1 instanceof LivingEntity) {
+                 this.doEnchantDamageEffects((LivingEntity) entity1, entity);
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/ThrownEgg.java b/src/main/java/net/minecraft/world/entity/projectile/ThrownEgg.java
+index 77941e3981e49cf5662b3e3c86a9c419080b17c8..ca3b2ab1adb574ca6bf2b51830d684e14fc4cd50 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/ThrownEgg.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/ThrownEgg.java
+@@ -46,7 +46,7 @@ public class ThrownEgg extends ThrowableItemProjectile {
+     @Override
+     protected void onHitEntity(EntityHitResult entityHitResult) {
+         super.onHitEntity(entityHitResult);
+-        entityHitResult.getEntity().hurt(DamageSource.thrown(this, this.getOwner()), 0.0F);
++        entityHitResult.getEntity().hurt(DamageSource.thrown(this, this.getOwner()), 0.0F, damageType);
+     }
+ 
+     @Override
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/ThrownEnderpearl.java b/src/main/java/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
+index 23f77dfc6df93ef6a70e14a7e410263d39fae2cb..3fc5461cac43b1adf2338eda9faef53333f77297 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/ThrownEnderpearl.java
+@@ -41,7 +41,7 @@ public class ThrownEnderpearl extends ThrowableItemProjectile {
+     @Override
+     protected void onHitEntity(EntityHitResult entityHitResult) {
+         super.onHitEntity(entityHitResult);
+-        entityHitResult.getEntity().hurt(DamageSource.thrown(this, this.getOwner()), 0.0F);
++        entityHitResult.getEntity().hurt(DamageSource.thrown(this, this.getOwner()), 0.0F, damageType);
+     }
+ 
+     @Override
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/ThrownPotion.java b/src/main/java/net/minecraft/world/entity/projectile/ThrownPotion.java
+index fee09e6ff72cf1da389d5811dd005642cd50a5b4..f627063e631b2cbf4de4e54c8587f74564fde4f6 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/ThrownPotion.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/ThrownPotion.java
+@@ -158,7 +158,7 @@ public class ThrownPotion extends ThrowableItemProjectile implements ItemSupplie
+                 if (entityliving instanceof Axolotl axolotl && event.getIntensity(affectedEntity) > 0) {
+                     axolotl.rehydrate();
+                 } else {
+-                    entityliving.hurt(DamageSource.indirectMagic(this, this.getOwner()), 1.0F);
++                    entityliving.hurt(DamageSource.indirectMagic(this, this.getOwner()), 1.0F, damageType);
+                 }
+             }
+             // Paper end
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/ThrownTrident.java b/src/main/java/net/minecraft/world/entity/projectile/ThrownTrident.java
+index 1b31b32d42eeb54680b902cd7e82d10ba7daa5d0..eaf06ba20ee843a1f90b4fe4f1a59280de35663b 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/ThrownTrident.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/ThrownTrident.java
+@@ -142,7 +142,7 @@ public class ThrownTrident extends AbstractArrow {
+         this.dealtDamage = true;
+         SoundEvent soundeffect = SoundEvents.TRIDENT_HIT;
+ 
+-        if (entity.hurt(damagesource, f)) {
++        if (entity.hurt(damagesource, f, damageType)) {
+             if (entity.getType() == EntityType.ENDERMAN) {
+                 return;
+             }
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/WitherSkull.java b/src/main/java/net/minecraft/world/entity/projectile/WitherSkull.java
+index 2867e841e73a3edfdeb83af9d96e0d0cd4116a68..a57e1a66e0067de47b21f973ce8ada904a37e854 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/WitherSkull.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/WitherSkull.java
+@@ -60,7 +60,7 @@ public class WitherSkull extends AbstractHurtingProjectile {
+             if (entity1 instanceof LivingEntity) {
+                 LivingEntity entityliving = (LivingEntity) entity1;
+ 
+-                flag = entity.hurt(DamageSource.witherSkull(this, entityliving), 8.0F);
++                flag = entity.hurt(DamageSource.witherSkull(this, entityliving), 8.0F, damageType);
+                 if (flag) {
+                     if (entity.isAlive()) {
+                         this.doEnchantDamageEffects(entityliving, entity);
+@@ -69,7 +69,7 @@ public class WitherSkull extends AbstractHurtingProjectile {
+                     }
+                 }
+             } else {
+-                flag = entity.hurt(DamageSource.MAGIC, 5.0F);
++                flag = entity.hurt(DamageSource.MAGIC, 5.0F, damageType);
+             }
+ 
+             if (flag && entity instanceof LivingEntity) {
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 index 81fd066ddcdc3eadb1a531f00bea7b6ce1ed4bbe..378818feb7b24c8d48adcfa0996784a768b31f05 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
@@ -991,3 +1202,25 @@ index a1b101093e775ac8444b98aff9df977e9d4521ad..914f30ffd9c114ab3e5f2385357e1655
      @Override
      public void setPlayerListHeaderFooter(BaseComponent[] header, BaseComponent[] footer) {
           if (header != null) {
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftProjectile.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftProjectile.java
+index 9a68f4ef68870d0baab5b6464d6c0a82a8fd105d..52ac90a890c73eec5dc7164f05e83ba884f91472 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftProjectile.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftProjectile.java
+@@ -1,5 +1,7 @@
+ package org.bukkit.craftbukkit.entity;
+ 
++import de.erethon.papyrus.CraftDamageType;
++import de.erethon.papyrus.DamageType;
+ import net.minecraft.world.entity.LivingEntity;
+ import org.bukkit.craftbukkit.CraftServer;
+ import org.bukkit.entity.Projectile;
+@@ -34,4 +36,9 @@ public abstract class CraftProjectile extends AbstractProjectile implements Proj
+     public String toString() {
+         return "CraftProjectile";
+     }
++
++    @Override
++    public void setDamageType(DamageType type) {
++        getHandle().damageType = CraftDamageType.ofAPI(type);
++    }
+ }
