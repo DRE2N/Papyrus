@@ -996,6 +996,27 @@ index 81fd066ddcdc3eadb1a531f00bea7b6ce1ed4bbe..378818feb7b24c8d48adcfa0996784a7
      }
  
      // Paper start
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/AbstractProjectile.java b/src/main/java/org/bukkit/craftbukkit/entity/AbstractProjectile.java
+index 40e5b19bc8fa3de3b3d54da0762aee5bd7bb8d7b..6712ec11d43d7ba237ad67f61b706b303ec96e60 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/AbstractProjectile.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/AbstractProjectile.java
+@@ -1,5 +1,7 @@
+ package org.bukkit.craftbukkit.entity;
+ 
++import de.erethon.papyrus.CraftDamageType;
++import de.erethon.papyrus.DamageType;
+ import org.bukkit.craftbukkit.CraftServer;
+ import org.bukkit.entity.Projectile;
+ 
+@@ -22,4 +24,8 @@ public abstract class AbstractProjectile extends CraftEntity implements Projecti
+         this.doesBounce = doesBounce;
+     }
+ 
++    @Override
++    public void setDamageType(DamageType type) {
++        ((net.minecraft.world.entity.projectile.Projectile) getHandle()).damageType = CraftDamageType.ofAPI(type);
++    }
+ }
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragonPart.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragonPart.java
 index a407e802164603c74ec1f4ad3c98bc50398954bc..c7fdecbcd6eb7571a09883637bee4150dcb4eb72 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragonPart.java
