@@ -390,10 +390,10 @@ index 0000000000000000000000000000000000000000..b84280ca69686ab1b47707ce2341b384
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellData.java b/src/main/java/de/erethon/spellbook/api/SpellData.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..6de36125587ea7216784a6030e70164fd5727f10
+index 0000000000000000000000000000000000000000..afb054382f2e00b31be6aae1dc25d1887f0b309c
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellData.java
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,129 @@
 +package de.erethon.spellbook.api;
 +
 +import net.kyori.adventure.text.Component;
@@ -417,7 +417,7 @@ index 0000000000000000000000000000000000000000..6de36125587ea7216784a6030e70164f
 +    private int cooldown;
 +    private final String id;
 +    private Component name;
-+    private final List<Component> description = new ArrayList<>();
++    private final List<String> description = new ArrayList<>();
 +
 +    private Class<? extends SpellbookSpell> spellClass;
 +    private final ClassLoader classLoader;
@@ -474,7 +474,24 @@ index 0000000000000000000000000000000000000000..6de36125587ea7216784a6030e70164f
 +    }
 +
 +    public List<Component> getDescription() {
-+        return description;
++        List<Component> components = new ArrayList<>();
++        for (String entry : description) {
++            components.add(miniMessage.deserialize(entry));
++        }
++        return components;
++    }
++
++    public List<Component> getDescription(String[] placeholders, String[] replacements) {
++        if (replacements.length < placeholders.length) {
++            throw new RuntimeException("Invalid amount of replacements for provided placeholders");
++        }
++        List<Component> components = new ArrayList<>();
++        for (String entry : description) {
++            for (int i = 0; i < placeholders.length; i++) {
++                components.add(miniMessage.deserialize(entry.replaceAll(placeholders[i], replacements[i])));
++            }
++        }
++        return components;
 +    }
 +
 +    public int getCooldown() {
@@ -503,9 +520,7 @@ index 0000000000000000000000000000000000000000..6de36125587ea7216784a6030e70164f
 +        }
 +        cooldown = getInt("cooldown", 0);
 +        name = miniMessage.deserialize(getString("name", "<color:#ff0000>[Invalid name]"));
-+        for (String entry : getStringList("description")) {
-+            description.add(miniMessage.deserialize(entry));
-+        }
++        description.addAll(getStringList("description"));
 +    }
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
