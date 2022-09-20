@@ -1077,7 +1077,7 @@ index 0000000000000000000000000000000000000000..5c88815c0591b15fb2068586d76c32db
 +    }
 +}
 diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
-index 56e261efa654e4a6872ccea28f0461df13845d13..62c5606ffdd3fb824141d868eaece2b404f3b22d 100644
+index da5cab4246bd253fcc4e4d9574bdae1867ebb5ab..ed691f20d29dabfc27561db275e436a199791b16 100644
 --- a/src/main/java/org/bukkit/Server.java
 +++ b/src/main/java/org/bukkit/Server.java
 @@ -13,6 +13,7 @@ import java.util.Set;
@@ -1088,7 +1088,7 @@ index 56e261efa654e4a6872ccea28f0461df13845d13..62c5606ffdd3fb824141d868eaece2b4
  import org.bukkit.Warning.WarningState;
  import org.bukkit.advancement.Advancement;
  import org.bukkit.block.data.BlockData;
-@@ -2105,4 +2106,7 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+@@ -2116,4 +2117,7 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
       */
      @NotNull org.bukkit.potion.PotionBrewer getPotionBrewer();
      // Paper end
@@ -1147,7 +1147,7 @@ index fc4d3bcd9b16097086fef7975274d825b65adb10..0ada5e125ee88a606399b6437baa1af4
       * Gets the entity's health from 0 to {@link #getMaxHealth()}, where 0 is dead.
       *
 diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
-index 8fa8922ad2fb0ea8f770368faff61e56e9761df9..0c560c57f09329435b9de06b9698a5f651151a30 100644
+index 4af5e8d0cba6555f7615e4e809d9aff221c0dc4d..9be726c22b557a8a50355ea0ba835096f5d14f2d 100644
 --- a/src/main/java/org/bukkit/entity/LivingEntity.java
 +++ b/src/main/java/org/bukkit/entity/LivingEntity.java
 @@ -4,6 +4,8 @@ import java.util.Collection;
@@ -1159,7 +1159,7 @@ index 8fa8922ad2fb0ea8f770368faff61e56e9761df9..0c560c57f09329435b9de06b9698a5f6
  import org.bukkit.FluidCollisionMode;
  import org.bukkit.Location;
  import org.bukkit.Material;
-@@ -23,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
+@@ -25,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  /**
   * Represents a living entity, such as a monster or player
   */
@@ -1168,7 +1168,7 @@ index 8fa8922ad2fb0ea8f770368faff61e56e9761df9..0c560c57f09329435b9de06b9698a5f6
  
      /**
       * Gets the height of the living entity's eyes above its Location.
-@@ -909,4 +911,7 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+@@ -986,4 +988,7 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
       */
      void setHurtDirection(float hurtDirection);
      // Paper end
@@ -1177,10 +1177,10 @@ index 8fa8922ad2fb0ea8f770368faff61e56e9761df9..0c560c57f09329435b9de06b9698a5f6
 +    void sendActionbar(String msg);
  }
 diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
-index 3fcfe8651a9c422fa9c8ff77556477f1461424cf..dc7269032c49a703559c8061144d973a7cfdc706 100644
+index 5e51bc9176b481ec70fd7e5ac23d04d59f8d1a9a..dc9f62eb1fbf93d4bfc3a4c736ca015ae58039c9 100644
 --- a/src/main/java/org/bukkit/entity/Player.java
 +++ b/src/main/java/org/bukkit/entity/Player.java
-@@ -944,29 +944,6 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -956,29 +956,6 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
          return banEntry;
      }
  
@@ -1210,7 +1210,7 @@ index 3fcfe8651a9c422fa9c8ff77556477f1461424cf..dc7269032c49a703559c8061144d973a
      /**
       * Sends an Action Bar message to the client.
       *
-@@ -1003,7 +980,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -1015,7 +992,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
      /**
       * Sends an array of components as a single message to the specified screen position of this player
       *
@@ -1219,7 +1219,7 @@ index 3fcfe8651a9c422fa9c8ff77556477f1461424cf..dc7269032c49a703559c8061144d973a
       * @param position the screen position
       * @param components the components to send
       */
-@@ -2641,7 +2618,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -2672,7 +2649,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
          /**
           * Sends the component to the specified screen position of this player
           *
@@ -1228,7 +1228,7 @@ index 3fcfe8651a9c422fa9c8ff77556477f1461424cf..dc7269032c49a703559c8061144d973a
           * @param position the screen position
           * @param component the components to send
           * @deprecated use {@code sendMessage} methods that accept {@link net.kyori.adventure.text.Component}
-@@ -2654,7 +2631,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -2685,7 +2662,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
          /**
           * Sends an array of components as a single message to the specified screen position of this player
           *

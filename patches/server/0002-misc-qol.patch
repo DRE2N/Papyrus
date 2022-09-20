@@ -31,10 +31,10 @@ index 9656233cf8889387e41efef9a45059f58994ecd3..1222097f2c46b37f6f6598266000622b
  
      @Override
 diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
-index 37d8a797bb590c30bf42ab04128489a9390684d3..7f5cb7863c404e5058305d5e970093c3661e3273 100644
+index 5999d85e38951503fc83b40cfe39671921ae5088..f32cdb6e29a3c6b0c7ae431d0e288438a4aa78ab 100644
 --- a/src/main/java/net/minecraft/server/players/PlayerList.java
 +++ b/src/main/java/net/minecraft/server/players/PlayerList.java
-@@ -953,7 +953,7 @@ public abstract class PlayerList {
+@@ -959,7 +959,7 @@ public abstract class PlayerList {
          // CraftBukkit start
          LevelData worlddata = worldserver1.getLevelData();
          entityplayer1.connection.send(new ClientboundRespawnPacket(worldserver1.dimensionTypeId(), worldserver1.dimension(), BiomeManager.obfuscateSeed(worldserver1.getSeed()), entityplayer1.gameMode.getGameModeForPlayer(), entityplayer1.gameMode.getPreviousGameModeForPlayer(), worldserver1.isDebug(), worldserver1.isFlat(), flag, entityplayer1.getLastDeathLocation()));
