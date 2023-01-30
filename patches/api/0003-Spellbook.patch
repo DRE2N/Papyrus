@@ -1146,6 +1146,29 @@ index fc4d3bcd9b16097086fef7975274d825b65adb10..0ada5e125ee88a606399b6437baa1af4
      /**
       * Gets the entity's health from 0 to {@link #getMaxHealth()}, where 0 is dead.
       *
+diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
+index ead90b002034c463983af948a4fb882109b8d3a2..29d259f14f118ee5677990355596f61eadc6608e 100644
+--- a/src/main/java/org/bukkit/entity/LivingEntity.java
++++ b/src/main/java/org/bukkit/entity/LivingEntity.java
+@@ -4,6 +4,9 @@ import java.util.Collection;
+ import java.util.List;
+ import java.util.Set;
+ import java.util.UUID;
++
++import de.erethon.spellbook.api.SpellCaster;
++import de.erethon.spellbook.api.SpellbookSpell;
+ import org.bukkit.FluidCollisionMode;
+ import org.bukkit.Location;
+ import org.bukkit.Material;
+@@ -25,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
+ /**
+  * Represents a living entity, such as a monster or player
+  */
+-public interface LivingEntity extends Attributable, Damageable, ProjectileSource, io.papermc.paper.entity.Frictional { // Paper
++public interface LivingEntity extends Attributable, Damageable, ProjectileSource, io.papermc.paper.entity.Frictional, SpellCaster { // Paper
+ 
+     /**
+      * Gets the height of the living entity's eyes above its Location.
 diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
 index c68df5e5cc63b26da8623cf27e257ef07a61897d..074347d56d04960f4e242ac54be08b101c8274c3 100644
 --- a/src/main/java/org/bukkit/entity/Player.java
@@ -1207,3 +1230,21 @@ index c68df5e5cc63b26da8623cf27e257ef07a61897d..074347d56d04960f4e242ac54be08b10
           * @param position the screen position
           * @param components the components to send
           * @deprecated use {@code sendMessage} methods that accept {@link net.kyori.adventure.text.Component}
+diff --git a/src/main/java/org/bukkit/entity/Projectile.java b/src/main/java/org/bukkit/entity/Projectile.java
+index 6935f8806ca1ed87fa761e73bc0f6c41ab60453e..54a5ebff65de4333387190ed1c975f4ee818ab7d 100644
+--- a/src/main/java/org/bukkit/entity/Projectile.java
++++ b/src/main/java/org/bukkit/entity/Projectile.java
+@@ -1,5 +1,6 @@
+ package org.bukkit.entity;
+ 
++import de.erethon.papyrus.DamageType;
+ import org.bukkit.projectiles.ProjectileSource;
+ import org.jetbrains.annotations.Nullable;
+ 
+@@ -83,5 +84,6 @@ public interface Projectile extends Entity {
+      * @param beenShot has been in shot into the world
+      */
+     void setHasBeenShot(boolean beenShot);
++    void setDamageType(DamageType type);
+     // Paper end
+ }

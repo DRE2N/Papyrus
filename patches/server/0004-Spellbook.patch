@@ -360,28 +360,28 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..5e52a12bf4f43e5adbedd3a57eec4ca0
 +    }
  }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 413652284e229a51e3eefe47f239e8fa9a09ccb2..48af70c0cd13f3d7b983f66ee522d67c3255907b 100644
+index 413652284e229a51e3eefe47f239e8fa9a09ccb2..ebed88fac32f8b7d5fc4cba073fca2bf68f60921 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-@@ -63,7 +63,6 @@ import net.minecraft.world.InteractionHand;
- import net.minecraft.world.damagesource.CombatRules;
- import net.minecraft.world.damagesource.CombatTracker;
- import net.minecraft.world.damagesource.DamageSource;
--import net.minecraft.world.damagesource.EntityDamageSource;
- import net.minecraft.world.effect.MobEffect;
- import net.minecraft.world.effect.MobEffectInstance;
- import net.minecraft.world.effect.MobEffectUtil;
-@@ -77,9 +76,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
- import net.minecraft.world.entity.ai.attributes.Attributes;
- import net.minecraft.world.entity.ai.attributes.DefaultAttributes;
- import net.minecraft.world.entity.ai.targeting.TargetingConditions;
--import net.minecraft.world.entity.animal.Animal;
- import net.minecraft.world.entity.animal.FlyingAnimal;
--import net.minecraft.world.entity.animal.Wolf;
- import net.minecraft.world.entity.boss.wither.WitherBoss;
- import net.minecraft.world.entity.item.ItemEntity;
- import net.minecraft.world.entity.projectile.AbstractArrow;
-@@ -489,6 +486,7 @@ public abstract class LivingEntity extends Entity {
+@@ -19,6 +19,8 @@ import java.util.Optional;
+ import java.util.UUID;
+ import java.util.function.Predicate;
+ import javax.annotation.Nullable;
++
++import de.erethon.papyrus.CraftDamageType;
+ import net.minecraft.BlockUtil;
+ import net.minecraft.advancements.CriteriaTriggers;
+ import net.minecraft.commands.arguments.EntityAnchorArgument;
+@@ -278,6 +280,8 @@ public abstract class LivingEntity extends Entity {
+         ++this.noActionTime; // Above all the floats
+     }
+     // Spigot end
++    // Papyrus start
++    public CraftDamageType attackDamageType = CraftDamageType.PHYSICAL;
+ 
+     protected LivingEntity(EntityType<? extends LivingEntity> type, Level world) {
+         super(type, world);
+@@ -489,6 +493,7 @@ public abstract class LivingEntity extends Entity {
          }
  
          this.tickEffects();
@@ -976,6 +976,150 @@ index a407e802164603c74ec1f4ad3c98bc50398954bc..c7fdecbcd6eb7571a09883637bee4150
      @Override
      public double getHealth() {
          return this.getParent().getHealth();
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
+index 09da9d3c85e36c2a78663f58a97963dbc795a367..4173769af13142cd2384cd4f6951a9cd2a65aeaa 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
+@@ -3,12 +3,13 @@ package org.bukkit.craftbukkit.entity;
+ import com.destroystokyo.paper.entity.TargetEntityInfo;
+ import com.google.common.base.Preconditions;
+ import com.google.common.collect.Sets;
+-import java.util.ArrayList;
+-import java.util.Collection;
+-import java.util.Iterator;
+-import java.util.List;
+-import java.util.Set;
+-import java.util.UUID;
++
++import java.util.*;
++
++import de.erethon.papyrus.DamageType;
++import de.erethon.spellbook.api.SpellData;
++import de.erethon.spellbook.api.SpellEffect;
++import de.erethon.spellbook.api.SpellbookSpell;
+ import net.minecraft.sounds.SoundEvent;
+ import net.minecraft.world.InteractionHand;
+ import net.minecraft.world.damagesource.DamageSource;
+@@ -89,6 +90,19 @@ import org.bukkit.util.Vector;
+ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+     private CraftEntityEquipment equipment;
+ 
++    // Papyrus start
++    private Set<SpellData> unlockedSpellData = new HashSet<>();
++    private Set<SpellData> passiveSpells = new HashSet<>();
++    private Set<SpellbookSpell> activeSpells = new HashSet<>();
++    private final SpellData[] assignedSlots = new SpellData[8];
++
++    Map<SpellData, Long> usedSpells = new LinkedHashMap<>();
++    Set<SpellEffect> effects = new HashSet<>();
++    Set<SpellbookSpell> runningPassiveSpells = new HashSet<>();
++    private int maxEnergy = 0;
++    private int energy = 0;
++    // Papyrus end
++
+     public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
+         super(server, entity);
+ 
+@@ -358,7 +372,12 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+     // Paper End - Bee Stinger API
+     @Override
+     public void damage(double amount) {
+-        this.damage(amount, null);
++        this.damage(amount, DamageType.PURE);
++    }
++
++    @Override
++    public void damage(double amount, DamageType type) {
++
+     }
+ 
+     @Override
+@@ -376,6 +395,11 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+         entity.hurt(reason, (float) amount);
+     }
+ 
++    @Override
++    public void damage(double amount, Entity source, DamageType type) {
++
++    }
++
+     @Override
+     public Location getEyeLocation() {
+         Location loc = getLocation();
+@@ -1052,6 +1076,71 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+     public void knockback(double strength, double directionX, double directionZ) {
+         Preconditions.checkArgument(strength > 0, "Knockback strength must be > 0");
+         getHandle().knockback(strength, directionX, directionZ);
+-    };
+-    // Paper end
++    }
++
++
++         // Papyrus start - Spellbook
++
++    @Override
++    public Map<SpellData, Long> getUsedSpells() {
++        return usedSpells;
++    }
++
++    @Override
++    public Set<SpellEffect> getEffects() {
++         return effects;
++     }
++
++    @Override
++    public Set<SpellbookSpell> getPassiveSpells() {
++        return runningPassiveSpells;
++    }
++
++    @Override
++    public Set<SpellbookSpell> getActiveSpells() {
++         return activeSpells;
++    }
++
++    @Override
++    public Set<SpellData> getUnlockedSpells() {
++         return unlockedSpellData;
++    }
++
++    @Override
++    public Set<SpellData> getUnlockedPassives() {
++        return passiveSpells;
++    }
++
++    @Override
++    public int getEnergy() {
++        return energy;
++    }
++
++    @Override
++    public int setEnergy(int e) {
++        return energy = Math.min(e, maxEnergy);
++    }
++
++    @Override
++    public int getMaxEnergy() {
++        return maxEnergy;
++    }
++
++    @Override
++    public int setMaxEnergy(int e) {
++        return maxEnergy = e;
++    }
++
++    @Override
++    public int addEnergy(int e) {
++        energy = Math.min(energy + e, maxEnergy);
++        return energy;
++    }
++
++    @Override
++    public int removeEnergy(int e) {
++        energy = Math.max(energy - e, 0);
++        return energy;
++    }
++    // Papyrus end
+ }
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 index 68606c94ba353b83703e6495836ddada876d7d83..f48959fb50083fafbd7d5871e5b4ed500b6bc3ac 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
