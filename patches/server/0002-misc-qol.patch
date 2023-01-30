@@ -5,7 +5,7 @@ Subject: [PATCH] misc qol
 
 
 diff --git a/src/main/java/io/papermc/paper/chunk/PlayerChunkLoader.java b/src/main/java/io/papermc/paper/chunk/PlayerChunkLoader.java
-index b53402903eb6845df361daf6b05a668608ad7b63..889b5548a879453129d4084944903dc6aabb9374 100644
+index 0b060183429f4c72ec767075538477b4302bbf0d..f24de40905e4bc1fa8dea922ceaf6af4a310c73a 100644
 --- a/src/main/java/io/papermc/paper/chunk/PlayerChunkLoader.java
 +++ b/src/main/java/io/papermc/paper/chunk/PlayerChunkLoader.java
 @@ -996,7 +996,7 @@ public final class PlayerChunkLoader {
@@ -18,41 +18,28 @@ index b53402903eb6845df361daf6b05a668608ad7b63..889b5548a879453129d4084944903dc6
              if (tickViewDistance != this.lastTickDistance) {
                  this.player.connection.send(new ClientboundSetSimulationDistancePacket(tickViewDistance));
 diff --git a/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java b/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java
-index 9656233cf8889387e41efef9a45059f58994ecd3..1222097f2c46b37f6f6598266000622b81f0a8d2 100644
+index d163f6ac8473fcc0ee40994b22aa80f1863df763..f23a8282ba35d2fdec3af740239e05381f85610b 100644
 --- a/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java
 +++ b/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java
-@@ -31,7 +31,7 @@ public class ClientboundServerDataPacket implements Packet<ClientGamePacketListe
+@@ -27,7 +27,7 @@ public class ClientboundServerDataPacket implements Packet<ClientGamePacketListe
+     public void write(FriendlyByteBuf buf) {
          buf.writeOptional(this.motd, FriendlyByteBuf::writeComponent);
          buf.writeOptional(this.iconBase64, FriendlyByteBuf::writeUtf);
-         buf.writeBoolean(this.previewsChat);
 -        buf.writeBoolean(this.enforcesSecureChat);
 +        buf.writeBoolean(true);
      }
  
      @Override
 diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
-index 5999d85e38951503fc83b40cfe39671921ae5088..f32cdb6e29a3c6b0c7ae431d0e288438a4aa78ab 100644
+index 4b754f6eae683248d7fe11d6d6cb168d5dd696a2..1b0d06838a9b682d0552ba0e2647b1da3262d9ff 100644
 --- a/src/main/java/net/minecraft/server/players/PlayerList.java
 +++ b/src/main/java/net/minecraft/server/players/PlayerList.java
-@@ -959,7 +959,7 @@ public abstract class PlayerList {
+@@ -898,7 +898,7 @@ public abstract class PlayerList {
          // CraftBukkit start
          LevelData worlddata = worldserver1.getLevelData();
-         entityplayer1.connection.send(new ClientboundRespawnPacket(worldserver1.dimensionTypeId(), worldserver1.dimension(), BiomeManager.obfuscateSeed(worldserver1.getSeed()), entityplayer1.gameMode.getGameModeForPlayer(), entityplayer1.gameMode.getPreviousGameModeForPlayer(), worldserver1.isDebug(), worldserver1.isFlat(), flag, entityplayer1.getLastDeathLocation()));
+         entityplayer1.connection.send(new ClientboundRespawnPacket(worldserver1.dimensionTypeId(), worldserver1.dimension(), BiomeManager.obfuscateSeed(worldserver1.getSeed()), entityplayer1.gameMode.getGameModeForPlayer(), entityplayer1.gameMode.getPreviousGameModeForPlayer(), worldserver1.isDebug(), worldserver1.isFlat(), (byte) i, entityplayer1.getLastDeathLocation()));
 -        entityplayer1.connection.send(new ClientboundSetChunkCacheRadiusPacket(worldserver1.getChunkSource().chunkMap.playerChunkManager.getTargetSendDistance())); // Spigot // Paper - replace old player chunk management
 +        entityplayer1.connection.send(new ClientboundSetChunkCacheRadiusPacket(32)); // Spigot // Paper - replace old player chunk management
          entityplayer1.connection.send(new ClientboundSetSimulationDistancePacket(worldserver1.getChunkSource().chunkMap.playerChunkManager.getTargetTickViewDistance())); // Spigot // Paper - replace old player chunk management
          entityplayer1.spawnIn(worldserver1);
          entityplayer1.unsetRemoved();
-diff --git a/src/main/java/net/minecraft/world/level/levelgen/Heightmap.java b/src/main/java/net/minecraft/world/level/levelgen/Heightmap.java
-index 32c1dcaf921bf37c3d655ea65726c19563ca50ad..8e775bf64287fa5a45bb22bdf403f57a162ad641 100644
---- a/src/main/java/net/minecraft/world/level/levelgen/Heightmap.java
-+++ b/src/main/java/net/minecraft/world/level/levelgen/Heightmap.java
-@@ -125,7 +125,7 @@ public class Heightmap {
-         if (ms.length == ls.length) {
-             System.arraycopy(ls, 0, ms, 0, ls.length);
-         } else {
--            LOGGER.warn("Ignoring heightmap data for chunk " + chunk.getPos() + ", size does not match; expected: " + ms.length + ", got: " + ls.length);
-+            //LOGGER.warn("Ignoring heightmap data for chunk " + chunk.getPos() + ", size does not match; expected: " + ms.length + ", got: " + ls.length);
-             primeHeightmaps(chunk, EnumSet.of(type));
-         }
-     }
