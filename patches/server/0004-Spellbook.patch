@@ -158,7 +158,7 @@ index b1f0187b917c724cfef8f53e9f503b4f4afc4f27..bb5473440d935e81ef532fbab9e37de5
  
      }
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 43492b861556d0e1f70d92f72a505d3d880a81b5..5e52a12bf4f43e5adbedd3a57eec4ca0f4cd0321 100644
+index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0c665cd43 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
 @@ -7,7 +7,8 @@ import com.google.common.collect.Lists;
@@ -278,7 +278,13 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..5e52a12bf4f43e5adbedd3a57eec4ca0
      }
  
      public final void setOldPosAndRot() {
-@@ -2047,7 +2085,7 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -2042,17 +2080,18 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+             return false;
+         } else {
+             this.markHurt();
+-            return false;
++            return true;
+         }
      }
  
      // Papyrus - combat rework
@@ -287,7 +293,14 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..5e52a12bf4f43e5adbedd3a57eec4ca0
          if (this.isInvulnerableTo(source)) {
              return false;
          } else {
-@@ -4648,4 +4686,71 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+             this.markHurt();
+-            return false;
++            this.remove(RemovalReason.KILLED);
++            return true;
+         }
+     }
+ 
+@@ -4648,4 +4687,71 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
          return ((net.minecraft.server.level.ServerChunkCache) level.getChunkSource()).isPositionTicking(this);
      }
      // Paper end
@@ -360,19 +373,51 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..5e52a12bf4f43e5adbedd3a57eec4ca0
 +    }
  }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 413652284e229a51e3eefe47f239e8fa9a09ccb2..e534b0564a61be7d3e0e5146e07aa5f680b6cc8e 100644
+index 413652284e229a51e3eefe47f239e8fa9a09ccb2..daaba97e36f40bba4f6427969cef9402724cee5b 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-@@ -19,6 +19,8 @@ import java.util.Optional;
+@@ -19,6 +19,9 @@ import java.util.Optional;
  import java.util.UUID;
  import java.util.function.Predicate;
  import javax.annotation.Nullable;
 +
 +import de.erethon.papyrus.CraftDamageType;
++import net.kyori.adventure.text.Component;
  import net.minecraft.BlockUtil;
  import net.minecraft.advancements.CriteriaTriggers;
  import net.minecraft.commands.arguments.EntityAnchorArgument;
-@@ -278,6 +280,8 @@ public abstract class LivingEntity extends Entity {
+@@ -81,6 +84,7 @@ import net.minecraft.world.entity.animal.Animal;
+ import net.minecraft.world.entity.animal.FlyingAnimal;
+ import net.minecraft.world.entity.animal.Wolf;
+ import net.minecraft.world.entity.boss.wither.WitherBoss;
++import net.minecraft.world.entity.decoration.HangingEntity;
+ import net.minecraft.world.entity.item.ItemEntity;
+ import net.minecraft.world.entity.projectile.AbstractArrow;
+ import net.minecraft.world.food.FoodProperties;
+@@ -121,6 +125,8 @@ import net.minecraft.world.phys.EntityHitResult;
+ import net.minecraft.world.phys.HitResult;
+ import net.minecraft.world.phys.Vec3;
+ import net.minecraft.world.scores.PlayerTeam;
++import org.bukkit.Bukkit;
++import org.bukkit.event.entity.*;
+ import org.slf4j.Logger;
+ 
+ // CraftBukkit start
+@@ -133,13 +139,7 @@ import org.bukkit.craftbukkit.attribute.CraftAttributeMap;
+ import org.bukkit.craftbukkit.event.CraftEventFactory;
+ import org.bukkit.craftbukkit.inventory.CraftItemStack;
+ import org.bukkit.entity.Player;
+-import org.bukkit.event.entity.ArrowBodyCountChangeEvent;
+-import org.bukkit.event.entity.EntityDamageEvent;
+ import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
+-import org.bukkit.event.entity.EntityPotionEffectEvent;
+-import org.bukkit.event.entity.EntityRegainHealthEvent;
+-import org.bukkit.event.entity.EntityResurrectEvent;
+-import org.bukkit.event.entity.EntityTeleportEvent;
+ import org.bukkit.event.player.PlayerItemConsumeEvent;
+ // CraftBukkit end
+ 
+@@ -278,6 +278,8 @@ public abstract class LivingEntity extends Entity {
          ++this.noActionTime; // Above all the floats
      }
      // Spigot end
@@ -381,7 +426,7 @@ index 413652284e229a51e3eefe47f239e8fa9a09ccb2..e534b0564a61be7d3e0e5146e07aa5f6
  
      protected LivingEntity(EntityType<? extends LivingEntity> type, Level world) {
          super(type, world);
-@@ -338,7 +342,27 @@ public abstract class LivingEntity extends Entity {
+@@ -338,7 +340,28 @@ public abstract class LivingEntity extends Entity {
      }
  
      public static AttributeSupplier.Builder createLivingAttributes() {
@@ -406,11 +451,12 @@ index 413652284e229a51e3eefe47f239e8fa9a09ccb2..e534b0564a61be7d3e0e5146e07aa5f6
 +            .add(Attributes.STAT_CRITCHANCE)
 +            .add(Attributes.STAT_TENACITY)
 +            .add(Attributes.STAT_ENERGYREGEN)
-+            .add(Attributes.STAT_HEALTHREGEN);
++            .add(Attributes.STAT_HEALTHREGEN)
++            .add(Attributes.COMBAT_HURTINVUL);
      }
  
      @Override
-@@ -489,6 +513,7 @@ public abstract class LivingEntity extends Entity {
+@@ -489,6 +512,7 @@ public abstract class LivingEntity extends Entity {
          }
  
          this.tickEffects();
@@ -418,6 +464,92 @@ index 413652284e229a51e3eefe47f239e8fa9a09ccb2..e534b0564a61be7d3e0e5146e07aa5f6
          this.animStepO = this.animStep;
          this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
+@@ -1335,8 +1359,76 @@ public abstract class LivingEntity extends Entity {
+     }
+     // Pufferfish end
+ 
++    // Papyrus start
++    @Override
++    public boolean hurt(DamageSource source, float amount, CraftDamageType type) {
++        if (isInvulnerable() || isRemoved() || dead || getHealth() <= 0F || isInvulnerableTo(source) || level.isClientSide) {
++            return false;
++        }
++        markHurt();
++        if (invulnerableTime > 0) {
++            return false;
++        }
++        double finalDmg = amount - getAttributeValue(type.getResAttr());
++        Entity attacker = source.getEntity();
++        if (attacker != null) {
++            EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(source.getEntity().getBukkitEntity(), this.getBukkitLivingEntity(), EntityDamageEvent.DamageCause.ENTITY_ATTACK,amount);
++            Bukkit.getServer().getPluginManager().callEvent(event);
++            if (event.isCancelled()) {
++                return false;
++            }
++            if (source.getEntity() instanceof net.minecraft.world.entity.player.Player player) {
++                player.getBukkitEntity().sendActionBar(Component.text(type +   ": "  + amount  + " | Res: "  + getAttributeValue(type.getResAttr()) +  " | = " +  finalDmg));
++            }
++            if (isDamageSourceBlocked(source)) { // TODO: Maybe change isDamageSourceBlocked logic
++                hurtCurrentlyUsedShield(amount);
++                if (!source.isProjectile()) {
++                    Entity entity = source.getDirectEntity();
++                    if (entity instanceof LivingEntity && entity.distanceToSqr(this) <= (200.0D * 200.0D)) {
++                        blockUsingShield((LivingEntity) entity);
++                    }
++                }
++                finalDmg = finalDmg - getAttributeValue(type.getResAttr());
++                if (useItem.is(Items.SHIELD)) {
++                    // Use the HEAD slot modifier from shields for the damage
++                    double attrRes = 0;
++                    for (AttributeModifier modifier : useItem.getAttributeModifiers(EquipmentSlot.HEAD).get(type.getResAttr())) {
++                        attrRes = attrRes +   modifier.getAmount();
++                    }
++                    finalDmg = finalDmg - attrRes;
++                }
++            }
++            // TODO: This is a mess
++            final boolean isFarAway = attacker.distanceToSqr(this) > (200.0 * 200.0); // Vanilla value
++            double x = isFarAway ? (Math.random() - Math.random()) : attacker.getX() - this.getX();
++            double z;
++            for (z = isFarAway ? Math.random() - Math.random() : attacker.getZ() - this.getZ(); x * x + z * z < 1.0E-4D; z = (Math.random() - Math.random()) * 0.01D) { // Paper
++                x = (Math.random() - Math.random()) * 0.01D;
++            }
++
++            this.hurtDir = (float) (Mth.atan2(z, x) * 57.2957763671875D - (double) this.getYRot());
++            this.knockback(0.4000000059604645D, x, z, attacker);
++
++            if (finalDmg <= 0) {
++                return false;
++            }
++
++
++        } else {
++            hurtDir = (float) ((int) (Math.random() * 2.0D) * 180);
++        }
++        invulnerableTime = (int) getAttribute(Attributes.COMBAT_HURTINVUL).getValue();
++        playHurtSound(source);
++        level.broadcastEntityEvent(this, (byte) 2); // hurt animation
++        setHealth((float) (getHealth() - Math.max(finalDmg, 0)));
++        return true;
++    }
++
+     @Override
+     public boolean hurt(DamageSource source, float amount) {
++        return hurt(source, amount, CraftDamageType.PURE);
++    }
++        /*
+         if (this.isInvulnerableTo(source)) {
+             return false;
+         } else if (this.level.isClientSide) {
+@@ -1523,7 +1615,7 @@ public abstract class LivingEntity extends Entity {
+ 
+             return flag2;
+         }
+-    }
++    }*/
+ 
+     protected void blockUsingShield(LivingEntity attacker) {
+         attacker.blockedByShield(this);
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.javaDVl8e7 b/src/main/java/net/minecraft/world/entity/LivingEntity.javaDVl8e7
 new file mode 100644
 index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
@@ -645,7 +777,7 @@ index b7bc64818387288955d0723cd071d4203bd2f121..90720fb4d41e066dbebd4d755bd182bc
          this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
          this.goalSelector.addGoal(3, new RandomLookAroundGoal(this));
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
-index c9c90347a30c8c4aa6be7c1f9cdf255caa076ae7..afb6f2defba69555d8c8aab6979ea020fd5c8374 100644
+index c9c90347a30c8c4aa6be7c1f9cdf255caa076ae7..e12dd8bf70cf8e9ebcbbc34ccf1abee4ba35d80b 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
 +++ b/src/main/java/net/minecraft/world/entity/player/Player.java
 @@ -17,7 +17,8 @@ import java.util.OptionalInt;
@@ -658,7 +790,37 @@ index c9c90347a30c8c4aa6be7c1f9cdf255caa076ae7..afb6f2defba69555d8c8aab6979ea020
  import net.minecraft.SharedConstants;
  import net.minecraft.Util;
  import net.minecraft.advancements.CriteriaTriggers;
-@@ -1237,12 +1238,21 @@ public abstract class Player extends LivingEntity {
+@@ -225,7 +226,28 @@ public abstract class Player extends LivingEntity {
+ 
+     public static AttributeSupplier.Builder createAttributes() {
+         return LivingEntity.createLivingAttributes().add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.10000000149011612D).add(Attributes.ATTACK_SPEED).add(Attributes.LUCK)
+-            .add(Attributes.MAX_HEALTH, 500);
++            .add(Attributes.MAX_HEALTH, 500)
++            .add(Attributes.ADV_AIR)
++            .add(Attributes.ADV_EARTH)
++            .add(Attributes.ADV_FIRE)
++            .add(Attributes.ADV_WATER)
++            .add(Attributes.ADV_MAGIC)
++            .add(Attributes.ADV_PURE)
++            .add(Attributes.ADV_PHYSICAL)
++            .add(Attributes.RES_AIR)
++            .add(Attributes.RES_EARTH)
++            .add(Attributes.RES_FIRE)
++            .add(Attributes.RES_WATER)
++            .add(Attributes.RES_MAGIC)
++            .add(Attributes.RES_PURE)
++            .add(Attributes.RES_PHYSICAL)
++            .add(Attributes.STAT_CDR)
++            .add(Attributes.STAT_CRITDMG)
++            .add(Attributes.STAT_CRITCHANCE)
++            .add(Attributes.STAT_TENACITY)
++            .add(Attributes.STAT_ENERGYREGEN)
++            .add(Attributes.STAT_HEALTHREGEN)
++            .add(Attributes.COMBAT_HURTINVUL);
+     }
+ 
+     @Override
+@@ -1237,12 +1259,21 @@ public abstract class Player extends LivingEntity {
      }
  
      // Papyrus - combat rework
@@ -681,7 +843,7 @@ index c9c90347a30c8c4aa6be7c1f9cdf255caa076ae7..afb6f2defba69555d8c8aab6979ea020
      }
  
      public void attack(Entity target) {
-@@ -1266,13 +1276,13 @@ public abstract class Player extends LivingEntity {
+@@ -1266,13 +1297,13 @@ public abstract class Player extends LivingEntity {
                      f1 = EnchantmentHelper.getDamageBonus(this.getMainHandItem(), MobType.UNDEFINED);
                  }
  
@@ -699,7 +861,7 @@ index c9c90347a30c8c4aa6be7c1f9cdf255caa076ae7..afb6f2defba69555d8c8aab6979ea020
                      boolean flag1 = false;
                      byte b0 = 0;
                      int i = b0 + EnchantmentHelper.getKnockbackBonus(this);
-@@ -1323,7 +1333,7 @@ public abstract class Player extends LivingEntity {
+@@ -1323,7 +1354,7 @@ public abstract class Player extends LivingEntity {
                      }
  
                      Vec3 vec3d = target.getDeltaMovement();
@@ -708,7 +870,7 @@ index c9c90347a30c8c4aa6be7c1f9cdf255caa076ae7..afb6f2defba69555d8c8aab6979ea020
  
                      if (flag5) {
                          if (i > 0) {
-@@ -1351,7 +1361,7 @@ public abstract class Player extends LivingEntity {
+@@ -1351,7 +1382,7 @@ public abstract class Player extends LivingEntity {
  
                                  if (entityliving != this && entityliving != target && !this.isAlliedTo((Entity) entityliving) && (!(entityliving instanceof ArmorStand) || !((ArmorStand) entityliving).isMarker()) && this.distanceToSqr((Entity) entityliving) < 9.0D) {
                                      // CraftBukkit start - Only apply knockback if the damage hits
@@ -717,7 +879,7 @@ index c9c90347a30c8c4aa6be7c1f9cdf255caa076ae7..afb6f2defba69555d8c8aab6979ea020
                                      entityliving.knockback(0.4000000059604645D, (double) Mth.sin(this.getYRot() * 0.017453292F), (double) (-Mth.cos(this.getYRot() * 0.017453292F)), this); // Paper
                                      }
                                      // CraftBukkit end
-@@ -1464,7 +1474,7 @@ public abstract class Player extends LivingEntity {
+@@ -1464,7 +1495,7 @@ public abstract class Player extends LivingEntity {
  
      @Override
      protected void doAutoAttackOnTouch(LivingEntity target) {
