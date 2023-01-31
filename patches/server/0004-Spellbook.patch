@@ -360,7 +360,7 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..5e52a12bf4f43e5adbedd3a57eec4ca0
 +    }
  }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 413652284e229a51e3eefe47f239e8fa9a09ccb2..ebed88fac32f8b7d5fc4cba073fca2bf68f60921 100644
+index 413652284e229a51e3eefe47f239e8fa9a09ccb2..e534b0564a61be7d3e0e5146e07aa5f680b6cc8e 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -19,6 +19,8 @@ import java.util.Optional;
@@ -381,7 +381,36 @@ index 413652284e229a51e3eefe47f239e8fa9a09ccb2..ebed88fac32f8b7d5fc4cba073fca2bf
  
      protected LivingEntity(EntityType<? extends LivingEntity> type, Level world) {
          super(type, world);
-@@ -489,6 +493,7 @@ public abstract class LivingEntity extends Entity {
+@@ -338,7 +342,27 @@ public abstract class LivingEntity extends Entity {
+     }
+ 
+     public static AttributeSupplier.Builder createLivingAttributes() {
+-        return AttributeSupplier.builder().add(Attributes.MAX_HEALTH).add(Attributes.KNOCKBACK_RESISTANCE).add(Attributes.MOVEMENT_SPEED).add(Attributes.ARMOR).add(Attributes.ARMOR_TOUGHNESS);
++        return AttributeSupplier.builder().add(Attributes.MAX_HEALTH).add(Attributes.KNOCKBACK_RESISTANCE).add(Attributes.MOVEMENT_SPEED).add(Attributes.ARMOR).add(Attributes.ARMOR_TOUGHNESS)
++            .add(Attributes.ADV_AIR)
++            .add(Attributes.ADV_EARTH)
++            .add(Attributes.ADV_FIRE)
++            .add(Attributes.ADV_WATER)
++            .add(Attributes.ADV_MAGIC)
++            .add(Attributes.ADV_PURE)
++            .add(Attributes.ADV_PHYSICAL)
++            .add(Attributes.RES_AIR)
++            .add(Attributes.RES_EARTH)
++            .add(Attributes.RES_FIRE)
++            .add(Attributes.RES_WATER)
++            .add(Attributes.RES_MAGIC)
++            .add(Attributes.RES_PURE)
++            .add(Attributes.RES_PHYSICAL)
++            .add(Attributes.STAT_CDR)
++            .add(Attributes.STAT_CRITDMG)
++            .add(Attributes.STAT_CRITCHANCE)
++            .add(Attributes.STAT_TENACITY)
++            .add(Attributes.STAT_ENERGYREGEN)
++            .add(Attributes.STAT_HEALTHREGEN);
+     }
+ 
+     @Override
+@@ -489,6 +513,7 @@ public abstract class LivingEntity extends Entity {
          }
  
          this.tickEffects();
