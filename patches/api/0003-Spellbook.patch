@@ -1147,7 +1147,7 @@ index fc4d3bcd9b16097086fef7975274d825b65adb10..0ada5e125ee88a606399b6437baa1af4
       * Gets the entity's health from 0 to {@link #getMaxHealth()}, where 0 is dead.
       *
 diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
-index ead90b002034c463983af948a4fb882109b8d3a2..29d259f14f118ee5677990355596f61eadc6608e 100644
+index ead90b002034c463983af948a4fb882109b8d3a2..cc4c47341da3eee40684f66e17b288d9a0474bec 100644
 --- a/src/main/java/org/bukkit/entity/LivingEntity.java
 +++ b/src/main/java/org/bukkit/entity/LivingEntity.java
 @@ -4,6 +4,9 @@ import java.util.Collection;
@@ -1169,6 +1169,21 @@ index ead90b002034c463983af948a4fb882109b8d3a2..29d259f14f118ee5677990355596f61e
  
      /**
       * Gets the height of the living entity's eyes above its Location.
+@@ -1073,7 +1076,6 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+      * @param slot the slot
+      */
+     void broadcastSlotBreak(org.bukkit.inventory.@NotNull EquipmentSlot slot);
+-
+     /**
+      * Notifies specified players that the item in the slot
+      * of this entity broke.
+@@ -1107,4 +1109,6 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+      */
+     void damageItemStack(org.bukkit.inventory.@NotNull EquipmentSlot slot, int amount);
+     // Paper end
++    void sendParsedActionBar(String text);
++    void sendParsedMessage(String text);
+ }
 diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
 index c68df5e5cc63b26da8623cf27e257ef07a61897d..074347d56d04960f4e242ac54be08b101c8274c3 100644
 --- a/src/main/java/org/bukkit/entity/Player.java

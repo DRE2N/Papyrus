@@ -1006,10 +1006,10 @@ index a407e802164603c74ec1f4ad3c98bc50398954bc..c7fdecbcd6eb7571a09883637bee4150
      public double getHealth() {
          return this.getParent().getHealth();
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
-index 09da9d3c85e36c2a78663f58a97963dbc795a367..4173769af13142cd2384cd4f6951a9cd2a65aeaa 100644
+index 09da9d3c85e36c2a78663f58a97963dbc795a367..291dcf362d50620096b00b82c2ac5f417231f55a 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
-@@ -3,12 +3,13 @@ package org.bukkit.craftbukkit.entity;
+@@ -3,12 +3,14 @@ package org.bukkit.craftbukkit.entity;
  import com.destroystokyo.paper.entity.TargetEntityInfo;
  import com.google.common.base.Preconditions;
  import com.google.common.collect.Sets;
@@ -1026,10 +1026,11 @@ index 09da9d3c85e36c2a78663f58a97963dbc795a367..4173769af13142cd2384cd4f6951a9cd
 +import de.erethon.spellbook.api.SpellData;
 +import de.erethon.spellbook.api.SpellEffect;
 +import de.erethon.spellbook.api.SpellbookSpell;
++import net.kyori.adventure.text.minimessage.MiniMessage;
  import net.minecraft.sounds.SoundEvent;
  import net.minecraft.world.InteractionHand;
  import net.minecraft.world.damagesource.DamageSource;
-@@ -89,6 +90,19 @@ import org.bukkit.util.Vector;
+@@ -89,6 +91,19 @@ import org.bukkit.util.Vector;
  public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      private CraftEntityEquipment equipment;
  
@@ -1049,7 +1050,7 @@ index 09da9d3c85e36c2a78663f58a97963dbc795a367..4173769af13142cd2384cd4f6951a9cd
      public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
          super(server, entity);
  
-@@ -358,7 +372,12 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -358,7 +373,12 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      // Paper End - Bee Stinger API
      @Override
      public void damage(double amount) {
@@ -1063,7 +1064,7 @@ index 09da9d3c85e36c2a78663f58a97963dbc795a367..4173769af13142cd2384cd4f6951a9cd
      }
  
      @Override
-@@ -376,6 +395,11 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -376,6 +396,11 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
          entity.hurt(reason, (float) amount);
      }
  
@@ -1075,7 +1076,7 @@ index 09da9d3c85e36c2a78663f58a97963dbc795a367..4173769af13142cd2384cd4f6951a9cd
      @Override
      public Location getEyeLocation() {
          Location loc = getLocation();
-@@ -1052,6 +1076,71 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -1052,6 +1077,84 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      public void knockback(double strength, double directionX, double directionZ) {
          Preconditions.checkArgument(strength > 0, "Knockback strength must be > 0");
          getHandle().knockback(strength, directionX, directionZ);
@@ -1084,7 +1085,20 @@ index 09da9d3c85e36c2a78663f58a97963dbc795a367..4173769af13142cd2384cd4f6951a9cd
 +    }
 +
 +
-+         // Papyrus start - Spellbook
++    // Papyrus start - Spellbook
++    @Override
++    public void sendParsedActionBar(String text) {
++        if (this instanceof Player player) {
++            player.sendActionBar(MiniMessage.miniMessage().deserialize(text));
++        }
++    }
++
++    @Override
++    public void sendParsedMessage(String text) {
++        if (this instanceof Player player) {
++            player.sendMessage(MiniMessage.miniMessage().deserialize(text));
++        }
++    }
 +
 +    @Override
 +    public Map<SpellData, Long> getUsedSpells() {
