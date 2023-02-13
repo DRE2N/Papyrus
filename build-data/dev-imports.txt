@@ -11,6 +11,7 @@
 
 minecraft net.minecraft.world.entity.ai.navigation.AmphibiousPathNavigation
 minecraft net.minecraft.network.protocol.game.ClientboundServerDataPacket
+minecraft net.minecraft.network.protocol.game.ClientboundAddEntityPacket
 minecraft net.minecraft.world.entity.ai.goal.MeleeAttackGoal
 minecraft net.minecraft.world.entity.ai.goal.RangedAttackGoal
 minecraft net.minecraft.world.entity.ai.goal.RangedBowAttackGoal

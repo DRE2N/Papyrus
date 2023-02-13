@@ -120,6 +120,61 @@ index 0000000000000000000000000000000000000000..6650bb2ffb961035a7e598990097621c
 +        this.id = id;
 +    }
 +}
+diff --git a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java b/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
+index 0dd611aed9749ebed64e74fc4c2599c3c7f3ff2c..b04dbc4a8396f5266d24251e7f8833b065d8e93d 100644
+--- a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
++++ b/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
+@@ -15,7 +15,7 @@ public class ClientboundAddEntityPacket implements Packet<ClientGamePacketListen
+     private static final double LIMIT = 3.9D;
+     private final int id;
+     private final UUID uuid;
+-    private final EntityType<?> type;
++    private EntityType<?> type; // Papyrus - make not final
+     private final double x;
+     private final double y;
+     private final double z;
+@@ -27,16 +27,21 @@ public class ClientboundAddEntityPacket implements Packet<ClientGamePacketListen
+     private final byte yHeadRot;
+     private final int data;
+ 
++    private Entity entity;
++
+     public ClientboundAddEntityPacket(Entity entity) {
+         this(entity, 0);
++        this.entity = entity;
+     }
+ 
+     public ClientboundAddEntityPacket(Entity entity, int entityData) {
+         this(entity.getId(), entity.getUUID(), entity.getX(), entity.getY(), entity.getZ(), entity.getXRot(), entity.getYRot(), entity.getType(), entityData, entity.getDeltaMovement(), (double)entity.getYHeadRot());
++        this.entity = entity;
+     }
+ 
+     public ClientboundAddEntityPacket(Entity entity, int entityData, BlockPos pos) {
+         this(entity.getId(), entity.getUUID(), (double)pos.getX(), (double)pos.getY(), (double)pos.getZ(), entity.getXRot(), entity.getYRot(), entity.getType(), entityData, entity.getDeltaMovement(), (double)entity.getYHeadRot());
++        this.entity = entity;
+     }
+ 
+     public ClientboundAddEntityPacket(int id, UUID uuid, double x, double y, double z, float pitch, float yaw, EntityType<?> entityType, int entityData, Vec3 velocity, double headYaw) {
+@@ -53,6 +58,9 @@ public class ClientboundAddEntityPacket implements Packet<ClientGamePacketListen
+         this.xa = (int)(Mth.clamp(velocity.x, -3.9D, 3.9D) * 8000.0D);
+         this.ya = (int)(Mth.clamp(velocity.y, -3.9D, 3.9D) * 8000.0D);
+         this.za = (int)(Mth.clamp(velocity.z, -3.9D, 3.9D) * 8000.0D);
++        if (entity != null && entity.displayEntityType != null) {
++            this.type = entity.displayEntityType;
++        }
+     }
+ 
+     public ClientboundAddEntityPacket(FriendlyByteBuf buf) {
+@@ -69,6 +77,9 @@ public class ClientboundAddEntityPacket implements Packet<ClientGamePacketListen
+         this.xa = buf.readShort();
+         this.ya = buf.readShort();
+         this.za = buf.readShort();
++        if (entity != null && entity.displayEntityType != null) {
++            this.type = entity.displayEntityType;
++        }
+     }
+ 
+     @Override
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
 index 0489e97a49aa39cce8c101d52dac14c6e5afa6d9..c0d4906be32ce8a99b9eaa515f3bbfbb3b8812f8 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
@@ -158,7 +213,7 @@ index b1f0187b917c724cfef8f53e9f503b4f4afc4f27..bb5473440d935e81ef532fbab9e37de5
  
      }
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0c665cd43 100644
+index 43492b861556d0e1f70d92f72a505d3d880a81b5..ed92d2d4bef59417edc91c72421262c6053f3f2d 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
 @@ -7,7 +7,8 @@ import com.google.common.collect.Lists;
@@ -171,16 +226,17 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0
  import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
  import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
  import java.util.Arrays;
-@@ -400,6 +401,8 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -399,6 +400,9 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+     private UUID originWorld;
      public boolean freezeLocked = false; // Paper - Freeze Tick Lock API
      public boolean collidingWithWorldBorder; // Paper
- 
-+    public Set<EntityAttachment> attachedEntities = new HashSet<>(); // Papyrus - Entity attachments
++    public EntityType displayEntityType; // Papyrus
 +
++    public Set<EntityAttachment> attachedEntities = new HashSet<>(); // Papyrus - Entity attachments
+ 
      public void setOrigin(@javax.annotation.Nonnull Location location) {
          this.origin = location.toVector();
-         this.originWorld = location.getWorld().getUID();
-@@ -704,6 +707,9 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -704,6 +708,9 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
  
      public void remove(Entity.RemovalReason reason) {
          this.setRemoved(reason);
@@ -190,7 +246,7 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0
      }
  
      public void onClientRemoval() {}
-@@ -768,6 +774,11 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -768,6 +775,11 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
  
          this.setYRot(yaw % 360.0F);
          this.setXRot(pitch % 360.0F);
@@ -202,7 +258,7 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0
      }
  
      public final void setPos(Vec3 pos) {
-@@ -805,6 +816,9 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -805,6 +817,9 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
  
      public void tick() {
          this.baseTick();
@@ -212,7 +268,7 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0
      }
  
      // CraftBukkit start
-@@ -885,6 +899,9 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -885,6 +900,9 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
  
          this.firstTick = false;
          this.level.getProfiler().pop();
@@ -222,7 +278,7 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0
      }
  
      public void setSharedFlagOnFire(boolean onFire) {
-@@ -1043,6 +1060,11 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -1043,6 +1061,11 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
              this.moveStartZ = this.getZ();
              this.moveVector = movement;
          }
@@ -234,7 +290,7 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0
          try {
          // Paper end - detailed watchdog information
          if (this.noPhysics) {
-@@ -1869,6 +1891,10 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -1869,6 +1892,10 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
          Vec3 vec3d1 = Entity.getInputVector(movementInput, speed, this.getYRot());
  
          this.setDeltaMovement(this.getDeltaMovement().add(vec3d1));
@@ -245,7 +301,7 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0
      }
  
      private static Vec3 getInputVector(Vec3 movementInput, float speed, float yaw) {
-@@ -1898,6 +1924,10 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -1898,6 +1925,10 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
          this.yRotO = this.getYRot();
          this.xRotO = this.getXRot();
          this.setYHeadRot(yaw); // Paper - Update head rotation
@@ -256,7 +312,7 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0
      }
  
      public void absMoveTo(double x, double y, double z) {
-@@ -1909,6 +1939,10 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -1909,6 +1940,10 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
          this.zo = d4;
          this.setPos(d3, y, d4);
          if (this.valid) this.level.getChunk((int) Math.floor(this.getX()) >> 4, (int) Math.floor(this.getZ()) >> 4); // CraftBukkit
@@ -267,7 +323,7 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0
      }
  
      public void moveTo(Vec3 pos) {
-@@ -1937,6 +1971,10 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -1937,6 +1972,10 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
          this.setOldPosAndRot();
          this.reapplyPosition();
          this.setYHeadRot(yaw); // Paper - Update head rotation
@@ -278,7 +334,7 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0
      }
  
      public final void setOldPosAndRot() {
-@@ -2042,17 +2080,18 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -2042,17 +2081,18 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
              return false;
          } else {
              this.markHurt();
@@ -300,7 +356,7 @@ index 43492b861556d0e1f70d92f72a505d3d880a81b5..6da0cda7d58d966749cb0e2d73d0eca0
          }
      }
  
-@@ -4648,4 +4687,71 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -4648,4 +4688,71 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
          return ((net.minecraft.server.level.ServerChunkCache) level.getChunkSource()).isPositionTicking(this);
      }
      // Paper end
