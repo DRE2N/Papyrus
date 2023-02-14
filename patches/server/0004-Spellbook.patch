@@ -121,10 +121,19 @@ index 0000000000000000000000000000000000000000..6650bb2ffb961035a7e598990097621c
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java b/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
-index 0dd611aed9749ebed64e74fc4c2599c3c7f3ff2c..b04dbc4a8396f5266d24251e7f8833b065d8e93d 100644
+index 0dd611aed9749ebed64e74fc4c2599c3c7f3ff2c..69bda3881d54241414edadcabbf6036da073dca3 100644
 --- a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
 +++ b/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
-@@ -15,7 +15,7 @@ public class ClientboundAddEntityPacket implements Packet<ClientGamePacketListen
+@@ -5,6 +5,8 @@ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.registries.BuiltInRegistries;
+ import net.minecraft.network.FriendlyByteBuf;
+ import net.minecraft.network.protocol.Packet;
++import net.minecraft.resources.ResourceKey;
++import net.minecraft.resources.ResourceLocation;
+ import net.minecraft.util.Mth;
+ import net.minecraft.world.entity.Entity;
+ import net.minecraft.world.entity.EntityType;
+@@ -15,7 +17,7 @@ public class ClientboundAddEntityPacket implements Packet<ClientGamePacketListen
      private static final double LIMIT = 3.9D;
      private final int id;
      private final UUID uuid;
@@ -133,7 +142,7 @@ index 0dd611aed9749ebed64e74fc4c2599c3c7f3ff2c..b04dbc4a8396f5266d24251e7f8833b0
      private final double x;
      private final double y;
      private final double z;
-@@ -27,16 +27,21 @@ public class ClientboundAddEntityPacket implements Packet<ClientGamePacketListen
+@@ -27,19 +29,22 @@ public class ClientboundAddEntityPacket implements Packet<ClientGamePacketListen
      private final byte yHeadRot;
      private final int data;
  
@@ -145,21 +154,25 @@ index 0dd611aed9749ebed64e74fc4c2599c3c7f3ff2c..b04dbc4a8396f5266d24251e7f8833b0
      }
  
      public ClientboundAddEntityPacket(Entity entity, int entityData) {
-         this(entity.getId(), entity.getUUID(), entity.getX(), entity.getY(), entity.getZ(), entity.getXRot(), entity.getYRot(), entity.getType(), entityData, entity.getDeltaMovement(), (double)entity.getYHeadRot());
-+        this.entity = entity;
+-        this(entity.getId(), entity.getUUID(), entity.getX(), entity.getY(), entity.getZ(), entity.getXRot(), entity.getYRot(), entity.getType(), entityData, entity.getDeltaMovement(), (double)entity.getYHeadRot());
++        this(entity.getId(), entity.getUUID(), entity.getX(), entity.getY(), entity.getZ(), entity.getXRot(), entity.getYRot(), entity.getType(), entityData, entity.getDeltaMovement(), (double)entity.getYHeadRot(), entity);
      }
  
      public ClientboundAddEntityPacket(Entity entity, int entityData, BlockPos pos) {
-         this(entity.getId(), entity.getUUID(), (double)pos.getX(), (double)pos.getY(), (double)pos.getZ(), entity.getXRot(), entity.getYRot(), entity.getType(), entityData, entity.getDeltaMovement(), (double)entity.getYHeadRot());
-+        this.entity = entity;
+-        this(entity.getId(), entity.getUUID(), (double)pos.getX(), (double)pos.getY(), (double)pos.getZ(), entity.getXRot(), entity.getYRot(), entity.getType(), entityData, entity.getDeltaMovement(), (double)entity.getYHeadRot());
++        this(entity.getId(), entity.getUUID(), (double)pos.getX(), (double)pos.getY(), (double)pos.getZ(), entity.getXRot(), entity.getYRot(), entity.getType(), entityData, entity.getDeltaMovement(), (double)entity.getYHeadRot(), entity);
      }
  
-     public ClientboundAddEntityPacket(int id, UUID uuid, double x, double y, double z, float pitch, float yaw, EntityType<?> entityType, int entityData, Vec3 velocity, double headYaw) {
+-    public ClientboundAddEntityPacket(int id, UUID uuid, double x, double y, double z, float pitch, float yaw, EntityType<?> entityType, int entityData, Vec3 velocity, double headYaw) {
++    public ClientboundAddEntityPacket(int id, UUID uuid, double x, double y, double z, float pitch, float yaw, EntityType<?> entityType, int entityData, Vec3 velocity, double headYaw, Entity entity) {
+         this.id = id;
+         this.uuid = uuid;
+         this.x = x;
 @@ -53,6 +58,9 @@ public class ClientboundAddEntityPacket implements Packet<ClientGamePacketListen
          this.xa = (int)(Mth.clamp(velocity.x, -3.9D, 3.9D) * 8000.0D);
          this.ya = (int)(Mth.clamp(velocity.y, -3.9D, 3.9D) * 8000.0D);
          this.za = (int)(Mth.clamp(velocity.z, -3.9D, 3.9D) * 8000.0D);
-+        if (entity != null && entity.displayEntityType != null) {
++        if (entity.displayEntityType != null) {
 +            this.type = entity.displayEntityType;
 +        }
      }
@@ -169,7 +182,7 @@ index 0dd611aed9749ebed64e74fc4c2599c3c7f3ff2c..b04dbc4a8396f5266d24251e7f8833b0
          this.xa = buf.readShort();
          this.ya = buf.readShort();
          this.za = buf.readShort();
-+        if (entity != null && entity.displayEntityType != null) {
++        if (entity.displayEntityType != null) {
 +            this.type = entity.displayEntityType;
 +        }
      }
@@ -965,6 +978,19 @@ index 9788e477ff1446ad2ea3669922cc7dfc09900ce8..2d3b021f30032b6363834535a96c6101
              if (flag) {
                  return;
              }
+diff --git a/src/main/java/net/minecraft/world/entity/projectile/AbstractHurtingProjectile.java b/src/main/java/net/minecraft/world/entity/projectile/AbstractHurtingProjectile.java
+index 97231f7328f0eebffcacdae5469027be8aeec3ae..99b13ee2b65ff893b7976641607c6f4784c52519 100644
+--- a/src/main/java/net/minecraft/world/entity/projectile/AbstractHurtingProjectile.java
++++ b/src/main/java/net/minecraft/world/entity/projectile/AbstractHurtingProjectile.java
+@@ -207,7 +207,7 @@ public abstract class AbstractHurtingProjectile extends Projectile {
+         Entity entity = this.getOwner();
+         int i = entity == null ? 0 : entity.getId();
+ 
+-        return new ClientboundAddEntityPacket(this.getId(), this.getUUID(), this.getX(), this.getY(), this.getZ(), this.getXRot(), this.getYRot(), this.getType(), i, new Vec3(this.xPower, this.yPower, this.zPower), 0.0D);
++        return new ClientboundAddEntityPacket(this.getId(), this.getUUID(), this.getX(), this.getY(), this.getZ(), this.getXRot(), this.getYRot(), this.getType(), i, new Vec3(this.xPower, this.yPower, this.zPower), 0.0D, this);
+     }
+ 
+     @Override
 diff --git a/src/main/java/net/minecraft/world/entity/projectile/FireworkRocketEntity.java b/src/main/java/net/minecraft/world/entity/projectile/FireworkRocketEntity.java
 index 5406925cd66f46ab8744123c670d72cea7bfc3a1..b1694698070ca3658614f9c13059c1018c053343 100644
 --- a/src/main/java/net/minecraft/world/entity/projectile/FireworkRocketEntity.java
