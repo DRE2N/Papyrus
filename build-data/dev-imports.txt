@@ -16,3 +16,7 @@ minecraft net.minecraft.world.entity.ai.goal.MeleeAttackGoal
 minecraft net.minecraft.world.entity.ai.goal.RangedAttackGoal
 minecraft net.minecraft.world.entity.ai.goal.RangedBowAttackGoal
 minecraft net.minecraft.world.entity.ai.goal.RangedCrossbowAttackGoal
+minecraft net.minecraft.world.level.block.ChorusPlantBlock
+minecraft net.minecraft.world.level.block.HugeMushroomBlock
+minecraft net.minecraft.world.level.block.NoteBlock
+

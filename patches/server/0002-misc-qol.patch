@@ -43,3 +43,131 @@ index 4b754f6eae683248d7fe11d6d6cb168d5dd696a2..1b0d06838a9b682d0552ba0e2647b1da
          entityplayer1.connection.send(new ClientboundSetSimulationDistancePacket(worldserver1.getChunkSource().chunkMap.playerChunkManager.getTargetTickViewDistance())); // Spigot // Paper - replace old player chunk management
          entityplayer1.spawnIn(worldserver1);
          entityplayer1.unsetRemoved();
+diff --git a/src/main/java/net/minecraft/world/level/block/ChorusPlantBlock.java b/src/main/java/net/minecraft/world/level/block/ChorusPlantBlock.java
+index a6c25647fb37f59307de0d390f8e8cf55504d7d3..be7e9023a56a8c50be223e55bf4647042a260879 100644
+--- a/src/main/java/net/minecraft/world/level/block/ChorusPlantBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/ChorusPlantBlock.java
+@@ -21,6 +21,7 @@ public class ChorusPlantBlock extends PipeBlock {
+ 
+     @Override
+     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
++        if (true) return this.defaultBlockState();
+         return this.getStateForPlacement(ctx.getLevel(), ctx.getClickedPos());
+     }
+ 
+@@ -36,6 +37,7 @@ public class ChorusPlantBlock extends PipeBlock {
+ 
+     @Override
+     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
++        if (true) return state;
+         if (!state.canSurvive(world, pos)) {
+             world.scheduleTick(pos, this, 1);
+             return super.updateShape(state, direction, neighborState, world, pos, neighborPos);
+@@ -47,9 +49,9 @@ public class ChorusPlantBlock extends PipeBlock {
+ 
+     @Override
+     public void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
+-        if (!state.canSurvive(world, pos)) {
++        /*if (!state.canSurvive(world, pos)) {
+             world.destroyBlock(pos, true);
+-        }
++        }*/
+ 
+     }
+ 
+diff --git a/src/main/java/net/minecraft/world/level/block/HugeMushroomBlock.java b/src/main/java/net/minecraft/world/level/block/HugeMushroomBlock.java
+index 3c6d97b51c6fec130b80e5965afa2c49d48843c9..3101e7563209c5c983c6932eefdebf244652e1c5 100644
+--- a/src/main/java/net/minecraft/world/level/block/HugeMushroomBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/HugeMushroomBlock.java
+@@ -22,11 +22,12 @@ public class HugeMushroomBlock extends Block {
+ 
+     public HugeMushroomBlock(BlockBehaviour.Properties settings) {
+         super(settings);
+-        this.registerDefaultState(this.stateDefinition.any().setValue(NORTH, Boolean.valueOf(true)).setValue(EAST, Boolean.valueOf(true)).setValue(SOUTH, Boolean.valueOf(true)).setValue(WEST, Boolean.valueOf(true)).setValue(UP, Boolean.valueOf(true)).setValue(DOWN, Boolean.valueOf(true)));
++        this.registerDefaultState(this.stateDefinition.any().setValue(NORTH, true).setValue(EAST, true).setValue(SOUTH, true).setValue(WEST, true).setValue(UP, true).setValue(DOWN, true));
+     }
+ 
+     @Override
+     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
++        if (true) return this.defaultBlockState();
+         BlockGetter blockGetter = ctx.getLevel();
+         BlockPos blockPos = ctx.getClickedPos();
+         return this.defaultBlockState().setValue(DOWN, Boolean.valueOf(!blockGetter.getBlockState(blockPos.below()).is(this))).setValue(UP, Boolean.valueOf(!blockGetter.getBlockState(blockPos.above()).is(this))).setValue(NORTH, Boolean.valueOf(!blockGetter.getBlockState(blockPos.north()).is(this))).setValue(EAST, Boolean.valueOf(!blockGetter.getBlockState(blockPos.east()).is(this))).setValue(SOUTH, Boolean.valueOf(!blockGetter.getBlockState(blockPos.south()).is(this))).setValue(WEST, Boolean.valueOf(!blockGetter.getBlockState(blockPos.west()).is(this)));
+@@ -34,16 +35,19 @@ public class HugeMushroomBlock extends Block {
+ 
+     @Override
+     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
++        if (true) return state;
+         return neighborState.is(this) ? state.setValue(PROPERTY_BY_DIRECTION.get(direction), Boolean.valueOf(false)) : super.updateShape(state, direction, neighborState, world, pos, neighborPos);
+     }
+ 
+     @Override
+     public BlockState rotate(BlockState state, Rotation rotation) {
++        if (true) return state;
+         return state.setValue(PROPERTY_BY_DIRECTION.get(rotation.rotate(Direction.NORTH)), state.getValue(NORTH)).setValue(PROPERTY_BY_DIRECTION.get(rotation.rotate(Direction.SOUTH)), state.getValue(SOUTH)).setValue(PROPERTY_BY_DIRECTION.get(rotation.rotate(Direction.EAST)), state.getValue(EAST)).setValue(PROPERTY_BY_DIRECTION.get(rotation.rotate(Direction.WEST)), state.getValue(WEST)).setValue(PROPERTY_BY_DIRECTION.get(rotation.rotate(Direction.UP)), state.getValue(UP)).setValue(PROPERTY_BY_DIRECTION.get(rotation.rotate(Direction.DOWN)), state.getValue(DOWN));
+     }
+ 
+     @Override
+     public BlockState mirror(BlockState state, Mirror mirror) {
++        if (true) return state;
+         return state.setValue(PROPERTY_BY_DIRECTION.get(mirror.mirror(Direction.NORTH)), state.getValue(NORTH)).setValue(PROPERTY_BY_DIRECTION.get(mirror.mirror(Direction.SOUTH)), state.getValue(SOUTH)).setValue(PROPERTY_BY_DIRECTION.get(mirror.mirror(Direction.EAST)), state.getValue(EAST)).setValue(PROPERTY_BY_DIRECTION.get(mirror.mirror(Direction.WEST)), state.getValue(WEST)).setValue(PROPERTY_BY_DIRECTION.get(mirror.mirror(Direction.UP)), state.getValue(UP)).setValue(PROPERTY_BY_DIRECTION.get(mirror.mirror(Direction.DOWN)), state.getValue(DOWN));
+     }
+ 
+diff --git a/src/main/java/net/minecraft/world/level/block/NoteBlock.java b/src/main/java/net/minecraft/world/level/block/NoteBlock.java
+index df7965c86b9c9e89b07b76c75b638d391ea6cc34..a5aa65034a941585e715cfe932fad6f5ed23ec44 100644
+--- a/src/main/java/net/minecraft/world/level/block/NoteBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/NoteBlock.java
+@@ -60,11 +60,13 @@ public class NoteBlock extends Block {
+ 
+     @Override
+     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
++        if (true) return this.defaultBlockState();
+         return this.setInstrument(ctx.getLevel(), ctx.getClickedPos(), this.defaultBlockState());
+     }
+ 
+     @Override
+     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
++        if (true) return state;
+         boolean flag = NoteBlock.isFeatureFlagEnabled(world) ? direction.getAxis() == Direction.Axis.Y : direction == Direction.DOWN;
+ 
+         return flag ? this.setInstrument(world, pos, state) : super.updateShape(state, direction, neighborState, world, pos, neighborPos);
+@@ -72,6 +74,7 @@ public class NoteBlock extends Block {
+ 
+     @Override
+     public void neighborChanged(BlockState state, Level world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
++        if (true) return; // Papyrus - Disable neighbour updates
+         boolean flag1 = world.hasNeighborSignal(pos);
+ 
+         if (flag1 != (Boolean) state.getValue(NoteBlock.POWERED)) {
+@@ -86,6 +89,7 @@ public class NoteBlock extends Block {
+     }
+ 
+     private void playNote(@Nullable Entity entity, BlockState state, Level world, BlockPos pos) {
++        if (true) return; // Papyrus - disable note blocks
+         if (!((NoteBlockInstrument) state.getValue(NoteBlock.INSTRUMENT)).requiresAirAbove() || world.getBlockState(pos.above()).isAir()) {
+             // CraftBukkit start
+             // org.bukkit.event.block.NotePlayEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNotePlayEvent(world, pos, state.getValue(NoteBlock.INSTRUMENT), state.getValue(NoteBlock.NOTE));
+@@ -102,6 +106,7 @@ public class NoteBlock extends Block {
+ 
+     @Override
+     public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
++        if (true) return InteractionResult.FAIL;
+         if (world.isClientSide) {
+             return InteractionResult.SUCCESS;
+         } else {
+@@ -115,6 +120,7 @@ public class NoteBlock extends Block {
+ 
+     @Override
+     public void attack(BlockState state, Level world, BlockPos pos, Player player) {
++        if (true) return;
+         if (!world.isClientSide) {
+             this.playNote(player, state, world, pos);
+             player.awardStat(Stats.PLAY_NOTEBLOCK);
+@@ -123,6 +129,7 @@ public class NoteBlock extends Block {
+ 
+     @Override
+     public boolean triggerEvent(BlockState state, Level world, BlockPos pos, int type, int data) {
++        if (true) return false; // Papyrus - disable events
+         // Paper start - move NotePlayEvent call to fix instrument/note changes
+         org.bukkit.event.block.NotePlayEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNotePlayEvent(world, pos, state.getValue(INSTRUMENT), state.getValue(NOTE));
+         if (event.isCancelled()) return false;
