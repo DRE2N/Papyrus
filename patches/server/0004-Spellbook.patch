@@ -121,7 +121,7 @@ index 0000000000000000000000000000000000000000..6650bb2ffb961035a7e598990097621c
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java b/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
-index 0dd611aed9749ebed64e74fc4c2599c3c7f3ff2c..69bda3881d54241414edadcabbf6036da073dca3 100644
+index 0dd611aed9749ebed64e74fc4c2599c3c7f3ff2c..c43bf052b4a3e6cf693fad9b08526dc396d4dfef 100644
 --- a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
 +++ b/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
 @@ -5,6 +5,8 @@ import net.minecraft.core.BlockPos;
@@ -172,7 +172,7 @@ index 0dd611aed9749ebed64e74fc4c2599c3c7f3ff2c..69bda3881d54241414edadcabbf6036d
          this.xa = (int)(Mth.clamp(velocity.x, -3.9D, 3.9D) * 8000.0D);
          this.ya = (int)(Mth.clamp(velocity.y, -3.9D, 3.9D) * 8000.0D);
          this.za = (int)(Mth.clamp(velocity.z, -3.9D, 3.9D) * 8000.0D);
-+        if (entity.displayEntityType != null) {
++        if (this.entity != null && entity.displayEntityType != null) { // ModelEngine uses null entities because stupid
 +            this.type = entity.displayEntityType;
 +        }
      }
@@ -182,7 +182,7 @@ index 0dd611aed9749ebed64e74fc4c2599c3c7f3ff2c..69bda3881d54241414edadcabbf6036d
          this.xa = buf.readShort();
          this.ya = buf.readShort();
          this.za = buf.readShort();
-+        if (entity.displayEntityType != null) {
++        if (this.entity != null && entity.displayEntityType != null) { // ModelEngine uses null entities because stupid
 +            this.type = entity.displayEntityType;
 +        }
      }
