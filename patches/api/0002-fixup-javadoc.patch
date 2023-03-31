@@ -5,7 +5,7 @@ Subject: [PATCH] fixup javadoc
 
 
 diff --git a/build.gradle.kts b/build.gradle.kts
-index a995ecc3b1d6181c58d5b4a0a6a893178bdc40aa..50e3e8e6240d6551f4ba4e9b5d6a6ceb2d7e191f 100644
+index b83e2c5a0a094002d12aee55ec0cf8d12bf33f3e..b68692117f3625346221892d5b58b53d89e506ad 100644
 --- a/build.gradle.kts
 +++ b/build.gradle.kts
 @@ -5,7 +5,7 @@ plugins {
@@ -16,8 +16,8 @@ index a995ecc3b1d6181c58d5b4a0a6a893178bdc40aa..50e3e8e6240d6551f4ba4e9b5d6a6ceb
 +    //withJavadocJar()
  }
  
- val adventureVersion = "4.12.0"
-@@ -127,6 +127,7 @@ tasks.withType<Javadoc> {
+ val adventureVersion = "4.13.0"
+@@ -129,6 +129,7 @@ tasks.withType<Javadoc> {
              "sourcepath",
              apiAndDocs.resolvedConfiguration.files.joinToString(separator = File.pathSeparator, transform = File::getPath)
          )

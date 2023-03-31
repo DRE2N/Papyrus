@@ -1077,7 +1077,7 @@ index 0000000000000000000000000000000000000000..5c88815c0591b15fb2068586d76c32db
 +    }
 +}
 diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
-index 2204336d8800311b65e894739ab1b27273e7c6f2..e6c4d4f481e1810a8a8f43acfe435a649d6d594c 100644
+index ce2ef5cff6ad10b64791e67f6d3cff328c2cf7dc..a8fdf232b3c9d67b6f75eee8150966419d26775f 100644
 --- a/src/main/java/org/bukkit/Server.java
 +++ b/src/main/java/org/bukkit/Server.java
 @@ -13,6 +13,7 @@ import java.util.Set;
@@ -1147,7 +1147,7 @@ index fc4d3bcd9b16097086fef7975274d825b65adb10..0ada5e125ee88a606399b6437baa1af4
       * Gets the entity's health from 0 to {@link #getMaxHealth()}, where 0 is dead.
       *
 diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
-index ead90b002034c463983af948a4fb882109b8d3a2..cc4c47341da3eee40684f66e17b288d9a0474bec 100644
+index 059dfc40edc6c52f95a30e9ac72f45b6aaf5f9a8..d7ee00524ac596ec17ffb40a5f6195b1e19f1427 100644
 --- a/src/main/java/org/bukkit/entity/LivingEntity.java
 +++ b/src/main/java/org/bukkit/entity/LivingEntity.java
 @@ -4,6 +4,9 @@ import java.util.Collection;
@@ -1169,7 +1169,7 @@ index ead90b002034c463983af948a4fb882109b8d3a2..cc4c47341da3eee40684f66e17b288d9
  
      /**
       * Gets the height of the living entity's eyes above its Location.
-@@ -1073,7 +1076,6 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+@@ -1094,7 +1097,6 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
       * @param slot the slot
       */
      void broadcastSlotBreak(org.bukkit.inventory.@NotNull EquipmentSlot slot);
@@ -1177,28 +1177,27 @@ index ead90b002034c463983af948a4fb882109b8d3a2..cc4c47341da3eee40684f66e17b288d9
      /**
       * Notifies specified players that the item in the slot
       * of this entity broke.
-@@ -1107,4 +1109,6 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+@@ -1148,4 +1150,8 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
       */
-     void damageItemStack(org.bukkit.inventory.@NotNull EquipmentSlot slot, int amount);
+     void setBodyYaw(float bodyYaw);
      // Paper end
++
++    // Paper end
 +    void sendParsedActionBar(String text);
 +    void sendParsedMessage(String text);
  }
 diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
-index c68df5e5cc63b26da8623cf27e257ef07a61897d..074347d56d04960f4e242ac54be08b101c8274c3 100644
+index 5f11b2e9c1bca121ae72dd0ec94ae4a86f80a324..22ba38a78bbc961a8a6d8687571126ecb5932398 100644
 --- a/src/main/java/org/bukkit/entity/Player.java
 +++ b/src/main/java/org/bukkit/entity/Player.java
-@@ -1006,29 +1006,6 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
-         return banEntry;
-     }
- 
--    /**
--     * Sends an Action Bar message to the client.
--     *
+@@ -1056,30 +1056,6 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+     /**
+      * Sends an Action Bar message to the client.
+      *
 -     * Use Section symbols for legacy color codes to send formatting.
 -     *
 -     * @param message The message to send
--     * @deprecated use {@link #sendActionBar(Component)}
+-     * @deprecated use {@link #sendActionBar(net.kyori.adventure.text.Component)}
 -     */
 -    @Deprecated
 -    public void sendActionBar(@NotNull String message);
@@ -1210,15 +1209,19 @@ index c68df5e5cc63b26da8623cf27e257ef07a61897d..074347d56d04960f4e242ac54be08b10
 -     *
 -     * @param alternateChar Alternate symbol such as '&amp;'
 -     * @param message The message to send
--     * @deprecated use {@link #sendActionBar(Component)}
+-     * @deprecated use {@link #sendActionBar(net.kyori.adventure.text.Component)}
 -     */
 -    @Deprecated
 -    public void sendActionBar(char alternateChar, @NotNull String message);
 -
-     /**
-      * Sends an Action Bar message to the client.
-      *
-@@ -1065,7 +1042,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+-    /**
+-     * Sends an Action Bar message to the client.
+-     *
+-     * @param message The components to send
+      * @deprecated use {@link #sendActionBar(net.kyori.adventure.text.Component)}
+      */
+     @Deprecated
+@@ -1112,7 +1088,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
      /**
       * Sends an array of components as a single message to the specified screen position of this player
       *
@@ -1227,26 +1230,16 @@ index c68df5e5cc63b26da8623cf27e257ef07a61897d..074347d56d04960f4e242ac54be08b10
       * @param position the screen position
       * @param components the components to send
       */
-@@ -2739,7 +2716,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
-         /**
-          * Sends the component to the specified screen position of this player
-          *
--         * @deprecated This is unlikely the API you want to use. See {@link #sendActionBar(String)} for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
-+         * @deprecated This is unlikely the API you want to use. for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
-          * @param position the screen position
-          * @param component the components to send
-          * @deprecated use {@code sendMessage} methods that accept {@link net.kyori.adventure.text.Component}
-@@ -2752,7 +2729,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -2829,6 +2805,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
          /**
           * Sends an array of components as a single message to the specified screen position of this player
           *
--         * @deprecated This is unlikely the API you want to use. See {@link #sendActionBar(String)} for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
-+         * @deprecated This is unlikely the API you want to use. See  for a more proper Action Bar API. This deprecated API may send unsafe items to the client.
++
           * @param position the screen position
           * @param components the components to send
           * @deprecated use {@code sendMessage} methods that accept {@link net.kyori.adventure.text.Component}
 diff --git a/src/main/java/org/bukkit/entity/Projectile.java b/src/main/java/org/bukkit/entity/Projectile.java
-index 6935f8806ca1ed87fa761e73bc0f6c41ab60453e..54a5ebff65de4333387190ed1c975f4ee818ab7d 100644
+index d97904540ff5cf103604862a5a1a3a41f56dfe33..da3a6b0154fc5ec2d026ab131e66cf753b52182e 100644
 --- a/src/main/java/org/bukkit/entity/Projectile.java
 +++ b/src/main/java/org/bukkit/entity/Projectile.java
 @@ -1,5 +1,6 @@
@@ -1256,10 +1249,9 @@ index 6935f8806ca1ed87fa761e73bc0f6c41ab60453e..54a5ebff65de4333387190ed1c975f4e
  import org.bukkit.projectiles.ProjectileSource;
  import org.jetbrains.annotations.Nullable;
  
-@@ -83,5 +84,6 @@ public interface Projectile extends Entity {
-      * @param beenShot has been in shot into the world
+@@ -119,4 +120,5 @@ public interface Projectile extends Entity {
       */
-     void setHasBeenShot(boolean beenShot);
-+    void setDamageType(DamageType type);
+     void hitEntity(@org.jetbrains.annotations.NotNull Entity entity, @org.jetbrains.annotations.NotNull org.bukkit.util.Vector vector);
      // Paper end
++    void setDamageType(DamageType type); // Papyrus
  }

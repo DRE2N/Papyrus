@@ -5,7 +5,7 @@ Subject: [PATCH] misc qol
 
 
 diff --git a/src/main/java/io/papermc/paper/chunk/PlayerChunkLoader.java b/src/main/java/io/papermc/paper/chunk/PlayerChunkLoader.java
-index 0b060183429f4c72ec767075538477b4302bbf0d..f24de40905e4bc1fa8dea922ceaf6af4a310c73a 100644
+index e77972c4c264100ffdd824bfa2dac58dbbc6d678..44ec8a80cdebb389941c06f2c926800e5f8a4165 100644
 --- a/src/main/java/io/papermc/paper/chunk/PlayerChunkLoader.java
 +++ b/src/main/java/io/papermc/paper/chunk/PlayerChunkLoader.java
 @@ -996,7 +996,7 @@ public final class PlayerChunkLoader {
@@ -18,23 +18,23 @@ index 0b060183429f4c72ec767075538477b4302bbf0d..f24de40905e4bc1fa8dea922ceaf6af4
              if (tickViewDistance != this.lastTickDistance) {
                  this.player.connection.send(new ClientboundSetSimulationDistancePacket(tickViewDistance));
 diff --git a/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java b/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java
-index d163f6ac8473fcc0ee40994b22aa80f1863df763..f23a8282ba35d2fdec3af740239e05381f85610b 100644
+index 4620cce7b62ea9b1687dc39badcd75b984bfabc3..7a639d7623e00d29c97ae9b67eb7780868be241d 100644
 --- a/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java
 +++ b/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java
-@@ -27,7 +27,7 @@ public class ClientboundServerDataPacket implements Packet<ClientGamePacketListe
+@@ -26,7 +26,7 @@ public class ClientboundServerDataPacket implements Packet<ClientGamePacketListe
      public void write(FriendlyByteBuf buf) {
-         buf.writeOptional(this.motd, FriendlyByteBuf::writeComponent);
-         buf.writeOptional(this.iconBase64, FriendlyByteBuf::writeUtf);
+         buf.writeComponent(this.motd);
+         buf.writeOptional(this.iconBytes, FriendlyByteBuf::writeByteArray);
 -        buf.writeBoolean(this.enforcesSecureChat);
 +        buf.writeBoolean(true);
      }
  
      @Override
 diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
-index 4b754f6eae683248d7fe11d6d6cb168d5dd696a2..1b0d06838a9b682d0552ba0e2647b1da3262d9ff 100644
+index c0c14766adaac855112f85a203a6163b8adfdded..dd4949999e50b7701775e76f9dd50b8ae861ae3f 100644
 --- a/src/main/java/net/minecraft/server/players/PlayerList.java
 +++ b/src/main/java/net/minecraft/server/players/PlayerList.java
-@@ -898,7 +898,7 @@ public abstract class PlayerList {
+@@ -905,7 +905,7 @@ public abstract class PlayerList {
          // CraftBukkit start
          LevelData worlddata = worldserver1.getLevelData();
          entityplayer1.connection.send(new ClientboundRespawnPacket(worldserver1.dimensionTypeId(), worldserver1.dimension(), BiomeManager.obfuscateSeed(worldserver1.getSeed()), entityplayer1.gameMode.getGameModeForPlayer(), entityplayer1.gameMode.getPreviousGameModeForPlayer(), worldserver1.isDebug(), worldserver1.isFlat(), (byte) i, entityplayer1.getLastDeathLocation()));
@@ -114,10 +114,10 @@ index 3c6d97b51c6fec130b80e5965afa2c49d48843c9..3101e7563209c5c983c6932eefdebf24
      }
  
 diff --git a/src/main/java/net/minecraft/world/level/block/NoteBlock.java b/src/main/java/net/minecraft/world/level/block/NoteBlock.java
-index df7965c86b9c9e89b07b76c75b638d391ea6cc34..a5aa65034a941585e715cfe932fad6f5ed23ec44 100644
+index 50ead76879398222a76f26c36e98800d2d1af167..2fb4d91af75ff938644953eb0280bb46db320220 100644
 --- a/src/main/java/net/minecraft/world/level/block/NoteBlock.java
 +++ b/src/main/java/net/minecraft/world/level/block/NoteBlock.java
-@@ -60,11 +60,13 @@ public class NoteBlock extends Block {
+@@ -62,11 +62,13 @@ public class NoteBlock extends Block {
  
      @Override
      public BlockState getStateForPlacement(BlockPlaceContext ctx) {
@@ -131,7 +131,7 @@ index df7965c86b9c9e89b07b76c75b638d391ea6cc34..a5aa65034a941585e715cfe932fad6f5
          boolean flag = NoteBlock.isFeatureFlagEnabled(world) ? direction.getAxis() == Direction.Axis.Y : direction == Direction.DOWN;
  
          return flag ? this.setInstrument(world, pos, state) : super.updateShape(state, direction, neighborState, world, pos, neighborPos);
-@@ -72,6 +74,7 @@ public class NoteBlock extends Block {
+@@ -74,6 +76,7 @@ public class NoteBlock extends Block {
  
      @Override
      public void neighborChanged(BlockState state, Level world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
@@ -139,7 +139,7 @@ index df7965c86b9c9e89b07b76c75b638d391ea6cc34..a5aa65034a941585e715cfe932fad6f5
          boolean flag1 = world.hasNeighborSignal(pos);
  
          if (flag1 != (Boolean) state.getValue(NoteBlock.POWERED)) {
-@@ -86,6 +89,7 @@ public class NoteBlock extends Block {
+@@ -88,6 +91,7 @@ public class NoteBlock extends Block {
      }
  
      private void playNote(@Nullable Entity entity, BlockState state, Level world, BlockPos pos) {
@@ -147,15 +147,7 @@ index df7965c86b9c9e89b07b76c75b638d391ea6cc34..a5aa65034a941585e715cfe932fad6f5
          if (!((NoteBlockInstrument) state.getValue(NoteBlock.INSTRUMENT)).requiresAirAbove() || world.getBlockState(pos.above()).isAir()) {
              // CraftBukkit start
              // org.bukkit.event.block.NotePlayEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNotePlayEvent(world, pos, state.getValue(NoteBlock.INSTRUMENT), state.getValue(NoteBlock.NOTE));
-@@ -102,6 +106,7 @@ public class NoteBlock extends Block {
- 
-     @Override
-     public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-+        if (true) return InteractionResult.FAIL;
-         if (world.isClientSide) {
-             return InteractionResult.SUCCESS;
-         } else {
-@@ -115,6 +120,7 @@ public class NoteBlock extends Block {
+@@ -125,6 +129,7 @@ public class NoteBlock extends Block {
  
      @Override
      public void attack(BlockState state, Level world, BlockPos pos, Player player) {
@@ -163,7 +155,7 @@ index df7965c86b9c9e89b07b76c75b638d391ea6cc34..a5aa65034a941585e715cfe932fad6f5
          if (!world.isClientSide) {
              this.playNote(player, state, world, pos);
              player.awardStat(Stats.PLAY_NOTEBLOCK);
-@@ -123,6 +129,7 @@ public class NoteBlock extends Block {
+@@ -133,6 +138,7 @@ public class NoteBlock extends Block {
  
      @Override
      public boolean triggerEvent(BlockState state, Level world, BlockPos pos, int type, int data) {
