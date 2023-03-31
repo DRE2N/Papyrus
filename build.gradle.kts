@@ -35,7 +35,7 @@ subprojects {
     tasks.withType<JavaCompile> {
         options.encoding = Charsets.UTF_8.name()
         options.release.set(17);
-        options.isFailOnError = false;
+        options.isFailOnError = true;
     }
     tasks.withType<Javadoc> {
         options.encoding = Charsets.UTF_8.name()
