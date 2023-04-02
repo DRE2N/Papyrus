@@ -1253,10 +1253,10 @@ index a407e802164603c74ec1f4ad3c98bc50398954bc..c7fdecbcd6eb7571a09883637bee4150
      public double getHealth() {
          return this.getParent().getHealth();
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
-index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1e76c77630fe0cf4f12e747afa400c095499241b 100644
+index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1d2b26ef3d33a9f9dea37f00b5c8763b351c5249 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
-@@ -3,12 +3,14 @@ package org.bukkit.craftbukkit.entity;
+@@ -3,12 +3,15 @@ package org.bukkit.craftbukkit.entity;
  import com.destroystokyo.paper.entity.TargetEntityInfo;
  import com.google.common.base.Preconditions;
  import com.google.common.collect.Sets;
@@ -1269,6 +1269,7 @@ index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1e76c77630fe0cf4f12e747afa400c09
 +
 +import java.util.*;
 +
++import de.erethon.papyrus.CraftDamageType;
 +import de.erethon.papyrus.DamageType;
 +import de.erethon.spellbook.api.SpellData;
 +import de.erethon.spellbook.api.SpellEffect;
@@ -1277,7 +1278,7 @@ index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1e76c77630fe0cf4f12e747afa400c09
  import net.minecraft.sounds.SoundEvent;
  import net.minecraft.world.InteractionHand;
  import net.minecraft.world.damagesource.DamageSource;
-@@ -89,6 +91,19 @@ import org.bukkit.util.Vector;
+@@ -89,6 +92,19 @@ import org.bukkit.util.Vector;
  public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      private CraftEntityEquipment equipment;
  
@@ -1297,7 +1298,7 @@ index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1e76c77630fe0cf4f12e747afa400c09
      public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
          super(server, entity);
  
-@@ -364,7 +379,12 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -364,7 +380,12 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      // Paper End - Bee Stinger API
      @Override
      public void damage(double amount) {
@@ -1307,23 +1308,30 @@ index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1e76c77630fe0cf4f12e747afa400c09
 +
 +    @Override
 +    public void damage(double amount, DamageType type) {
-+
++        entity.hurt(entity.damageSources().generic(), (float) amount, CraftDamageType.ofAPI(type));
      }
  
      @Override
-@@ -382,6 +402,11 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -382,6 +403,18 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
          entity.hurt(reason, (float) amount);
      }
  
 +    @Override
 +    public void damage(double amount, Entity source, DamageType type) {
++        DamageSource reason = this.getHandle().damageSources().generic();
 +
++        if (source instanceof HumanEntity) {
++            reason = this.getHandle().damageSources().playerAttack(((CraftHumanEntity) source).getHandle());
++        } else if (source instanceof LivingEntity) {
++            reason = this.getHandle().damageSources().mobAttack(((CraftLivingEntity) source).getHandle());
++        }
++        entity.hurt(reason, (float) amount, CraftDamageType.ofAPI(type));
 +    }
 +
      @Override
      public Location getEyeLocation() {
          Location loc = getLocation();
-@@ -1068,6 +1093,84 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -1068,6 +1101,84 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      public void knockback(double strength, double directionX, double directionZ) {
          Preconditions.checkArgument(strength > 0, "Knockback strength must be > 0");
          getHandle().knockback(strength, directionX, directionZ);
