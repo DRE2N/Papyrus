@@ -198,10 +198,10 @@ index 0000000000000000000000000000000000000000..9597c69b1fd9825abfdedd316c5874b7
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..b84280ca69686ab1b47707ce2341b3843922cd05
+index 0000000000000000000000000000000000000000..bd6f56027705ac5c78879f36abcc9433d3b68575
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-@@ -0,0 +1,186 @@
+@@ -0,0 +1,220 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -233,6 +233,7 @@ index 0000000000000000000000000000000000000000..b84280ca69686ab1b47707ce2341b384
 +    Set<SpellData> getUnlockedSpells();
 +    Set<SpellData> getUnlockedPassives();
 +
++    Set<SpellTrait> getActiveTraits();
 +
 +    default void tick() {
 +        Iterator<SpellEffect> effectIterator = getEffects().iterator();
@@ -247,6 +248,9 @@ index 0000000000000000000000000000000000000000..b84280ca69686ab1b47707ce2341b384
 +            } else {
 +                effect.tick();
 +            }
++        }
++        for (SpellTrait trait : getActiveTraits()) {
++            trait.onTick();
 +        }
 +    }
 +
@@ -324,6 +328,9 @@ index 0000000000000000000000000000000000000000..b84280ca69686ab1b47707ce2341b384
 +        while (iterator.hasNext()) {
 +            SpellEffect itr = iterator.next();
 +            if (itr.data == effect) {
++                if (!onEffectRemove(itr)) {
++                    continue;
++                }
 +                iterator.remove();
 +                onEffectRemove(itr);
 +            }
@@ -364,7 +371,6 @@ index 0000000000000000000000000000000000000000..b84280ca69686ab1b47707ce2341b384
 +    int removeEnergy(int energy);
 +    
 +    private boolean onEffectAdd(SpellEffect effect, boolean isNew) {
-+        boolean canAdd = true;
 +        for (SpellbookSpell eventSpell : getActiveSpells()) {
 +            if (!eventSpell.onAddEffect(effect, isNew)) {
 +                return false;
@@ -375,17 +381,45 @@ index 0000000000000000000000000000000000000000..b84280ca69686ab1b47707ce2341b384
 +                return false;
 +            }
 +        }
++        for (SpellTrait eventTrait : getActiveTraits()) {
++            if (!eventTrait.onAddEffect(effect, isNew)) {
++                return false;
++            }
++        }
 +        return true;
 +    }
 +
-+    private void onEffectRemove(SpellEffect effect) {
++    private boolean onEffectRemove(SpellEffect effect) {
 +        for (SpellbookSpell eventSpell : getActiveSpells()) {
-+            eventSpell.onRemoveEffect(effect);
++            if (!eventSpell.onRemoveEffect(effect)) {
++                return false;
++            }
 +        }
 +        for (SpellEffect eventEffect : getEffects()) {
-+            eventEffect.onRemoveEffect(effect);
++            if (!eventEffect.onRemoveEffect(effect)) {
++                return false;
++            }
++        }
++        for (SpellTrait eventTrait : getActiveTraits()) {
++            if (!eventTrait.onRemoveEffect(effect)) {
++                return false;
++            }
++        }
++        return true;
++    }
++
++    default void onSpellCast(SpellbookSpell spell) {
++        for (SpellTrait trait : getActiveTraits()) {
++            if (trait.data.affectsSpell(spell.data)) {
++                SpellData afterTraitData = trait.onSpellCast(spell);
++                if (afterTraitData != spell.data) {
++                    spell.cancel();
++                    cast(afterTraitData);
++                }
++            }
 +        }
 +    }
++
 +
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellData.java b/src/main/java/de/erethon/spellbook/api/SpellData.java
@@ -525,10 +559,10 @@ index 0000000000000000000000000000000000000000..afb054382f2e00b31be6aae1dc25d188
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..70cd42b4f00a21c948aa066e5d88f9190b476406
+index 0000000000000000000000000000000000000000..5dfd5bcaa73523a92d3dabd3e056ba93d4c1789e
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,85 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -594,7 +628,8 @@ index 0000000000000000000000000000000000000000..70cd42b4f00a21c948aa066e5d88f919
 +        return true;
 +    }
 +
-+    public void onRemoveEffect(SpellEffect effect) {
++    public boolean onRemoveEffect(SpellEffect effect) {
++        return true;
 +    }
 +
 +    public boolean onAddEffect(SpellEffect effect, boolean isNew) {
@@ -615,10 +650,10 @@ index 0000000000000000000000000000000000000000..70cd42b4f00a21c948aa066e5d88f919
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellLibrary.java b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..f7dec50648bf38e62f97f3e69aea2afb0ab0b21b
+index 0000000000000000000000000000000000000000..af5dc47142c17acf7834ccb0cd08399e08f25ad6
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,135 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.Bukkit;
@@ -638,6 +673,7 @@ index 0000000000000000000000000000000000000000..f7dec50648bf38e62f97f3e69aea2afb
 +    private final SpellbookAPI spellbookAPI;
 +    private final HashMap<String, SpellData> loadedSpells = new HashMap<>();
 +    private final HashMap<String, EffectData> loadedEffects = new HashMap<>();
++    private final HashMap<String, TraitData> loadedTraits = new HashMap<>();
 +
 +    public SpellLibrary(SpellbookAPI spellbookAPI) {
 +        this.spellbookAPI = spellbookAPI;
@@ -651,6 +687,10 @@ index 0000000000000000000000000000000000000000..f7dec50648bf38e62f97f3e69aea2afb
 +        return loadedEffects;
 +    }
 +
++    public HashMap<String, TraitData> getLoadedTraits() {
++        return loadedTraits;
++    }
++
 +    public SpellData getSpellByID(String id) {
 +        return loadedSpells.get(id);
 +    }
@@ -659,15 +699,20 @@ index 0000000000000000000000000000000000000000..f7dec50648bf38e62f97f3e69aea2afb
 +        return loadedEffects.get(id);
 +    }
 +
++    public TraitData getTraitByID(String id ) {
++        return loadedTraits.get(id);
++    }
++
 +    public void reload() {
 +        spellbookAPI.getQueue().clear();
 +        loadedEffects.clear();
 +        loadedSpells.clear();
++        loadedTraits.clear();
 +        loadSpells(SpellbookAPI.SPELLS);
 +    }
 +
 +    public void loadSpells(File spellFolder) {
-+        Plugin plugin = Bukkit.getPluginManager().getPlugin("Hecate"); // TODO: maybe don't assume its always there
++        Plugin plugin = Bukkit.getPluginManager().getPlugin("Hecate");
 +        if (plugin == null) {
 +            spellbookAPI.getServer().getLogger().warning("Could not load spells due to Spellbook plugin missing.");
 +            return;
@@ -675,7 +720,7 @@ index 0000000000000000000000000000000000000000..f7dec50648bf38e62f97f3e69aea2afb
 +        ClassLoader classLoader = plugin.getClass().getClassLoader();
 +        try {
 +            for (File f : getFilesForFolder(spellFolder)) {
-+                if (!f.getName().endsWith(".yml") || f.getAbsolutePath().contains("effects")) {
++                if (!f.getName().endsWith(".yml") || f.getAbsolutePath().contains("effects") || f.getAbsolutePath().contains("traits")) {
 +                    continue;
 +                }
 +                String id = f.getName().replace(".yml", "");
@@ -692,7 +737,7 @@ index 0000000000000000000000000000000000000000..f7dec50648bf38e62f97f3e69aea2afb
 +            spellbookAPI.getServer().getLogger().info("Loaded " + loadedSpells.size() + " spells.");
 +
 +            for (File f : getFilesForFolder(new File(spellFolder, "effects"))) {
-+                if (!f.getName().endsWith(".yml")) {
++                if (!f.getName().endsWith(".yml") || f.getAbsolutePath().contains("traits")) {
 +                    continue;
 +                }
 +                String id = f.getName().replace(".yml", "");
@@ -707,8 +752,24 @@ index 0000000000000000000000000000000000000000..f7dec50648bf38e62f97f3e69aea2afb
 +            }
 +            spellbookAPI.getServer().getLogger().info("Loaded " + loadedEffects.size() + " effects.");
 +
++            for (File f : getFilesForFolder(new File(spellFolder, "traits"))) {
++                if (!f.getName().endsWith(".yml")) {
++                    continue;
++                }
++                String id = f.getName().replace(".yml", "");
++                spellbookAPI.getServer().getLogger().info("Loading trait " + id);
++                TraitData traitData = new TraitData(spellbookAPI, id, classLoader);
++                try {
++                    traitData.load(f);
++                } catch (IOException | InvalidConfigurationException e) {
++                    throw new RuntimeException(e);
++                }
++                loadedTraits.put(id, traitData);
++            }
++            spellbookAPI.getServer().getLogger().info("Loaded " + loadedTraits.size() + " traits.");
++
 +        } catch (Exception e) {
-+            spellbookAPI.getServer().getLogger().log(Level.SEVERE, "An error occurred while loading spells/effects: " + e.getMessage());
++            spellbookAPI.getServer().getLogger().log(Level.SEVERE, "An error occurred while loading spells/effects/traits: " + e.getMessage());
 +            e.printStackTrace();
 +        }
 +    }
@@ -730,10 +791,10 @@ index 0000000000000000000000000000000000000000..f7dec50648bf38e62f97f3e69aea2afb
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellQueue.java b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..02a0ab86799cee6c5aa3b52392aa84720998b7b5
+index 0000000000000000000000000000000000000000..4cffcc1e150ca13850301e2c479810c4d4f50fbc
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellQueue.java
-@@ -0,0 +1,146 @@
+@@ -0,0 +1,151 @@
 +package de.erethon.spellbook.api;
 +
 +import com.destroystokyo.paper.event.server.ServerTickEndEvent;
@@ -807,7 +868,12 @@ index 0000000000000000000000000000000000000000..02a0ab86799cee6c5aa3b52392aa8472
 +                    queueIterator.remove();
 +                    continue;
 +                }
-+                spell.ready();
++                try {
++                    spell.ready();
++                } catch (Exception exception) {
++                    server.getLogger().log(Level.SEVERE, "An error occurred while readying " + spell.getId() + " for " + spell.getCaster().getName() + ": " + exception.getMessage());
++                    exception.printStackTrace();
++                }
 +                queueIterator.remove();
 +                activeSpells.add(spell);
 +                spell.getCaster().addActiveSpell(spell);
@@ -880,6 +946,55 @@ index 0000000000000000000000000000000000000000..02a0ab86799cee6c5aa3b52392aa8472
 +    }
 +
 +}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellTrait.java b/src/main/java/de/erethon/spellbook/api/SpellTrait.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a61c8978cdd874f4813241e8beccc992f02eae5
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/SpellTrait.java
+@@ -0,0 +1,43 @@
++package de.erethon.spellbook.api;
++
++import org.bukkit.entity.LivingEntity;
++
++public class SpellTrait {
++
++    protected final TraitData data;
++    protected final LivingEntity caster;
++
++    public SpellTrait(TraitData data, LivingEntity caster) {
++        this.data = data;
++        this.caster = caster;
++    }
++
++    protected void onTick() {
++    }
++
++    protected SpellData onSpellCast(SpellbookSpell casted) {
++        return casted.data;
++    }
++
++    protected SpellbookSpell onSpellReceive(SpellbookSpell other) {
++        return other;
++    }
++
++    protected boolean onAddEffect(SpellEffect effect, boolean isNew) {
++        return true;
++    }
++
++    protected boolean onRemoveEffect(SpellEffect effect) {
++        return true;
++    }
++
++    public TraitData getData() {
++        return data;
++    }
++
++    public LivingEntity getCaster() {
++        return caster;
++    }
++
++
++}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java b/src/main/java/de/erethon/spellbook/api/SpellbookAPI.java
 new file mode 100644
 index 0000000000000000000000000000000000000000..633828d54c4b67d82bbd400870e7b73a65e5ee5a
@@ -933,10 +1048,10 @@ index 0000000000000000000000000000000000000000..633828d54c4b67d82bbd400870e7b73a
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..5c88815c0591b15fb2068586d76c32db2ed87cd9
+index 0000000000000000000000000000000000000000..efc91a6a90fadeac1cb1f6165c5c2deeeb3316c1
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
-@@ -0,0 +1,139 @@
+@@ -0,0 +1,189 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -953,12 +1068,13 @@ index 0000000000000000000000000000000000000000..5c88815c0591b15fb2068586d76c32db
 +    protected final LivingEntity caster;
 +
 +    protected int keepAliveTicks = 0;
-+    private int currentTicks = 0;
++    protected int currentTicks = 0;
 +
 +    protected int tickInterval = 1;
-+    private int currentTickInterval = 0;
++    protected int currentTickInterval = 0;
 +
-+    private boolean failed = false;
++    protected boolean failed = false;
++    protected boolean interrupted = false;
 +
 +    public SpellbookSpell(LivingEntity caster, SpellData spellData) {
 +        this.data = spellData;
@@ -995,12 +1111,28 @@ index 0000000000000000000000000000000000000000..5c88815c0591b15fb2068586d76c32db
 +    }
 +
 +    protected void onTickFinish() {
++        cleanup();
 +    }
 +
++    /**
++     * This method should be used for cleaning up after a Spell cast. For example spawned entities should be
++     * removed here.
++     */
++    protected void cleanup() {
++    }
++
++    /**
++     * This method is called when the caster takes damage.
++     * @param attacker the attacker
++     */
 +    public double onDamage(LivingEntity attacker, double damage, DamageType type) {
 +        return damage;
 +    }
 +
++    /**
++     * This method is called when the caster deals damage.
++     * @param target the target the caster is attacking
++     */
 +    public double onAttack(LivingEntity target, double damage, DamageType type) {
 +        return damage;
 +    }
@@ -1009,20 +1141,49 @@ index 0000000000000000000000000000000000000000..5c88815c0591b15fb2068586d76c32db
 +        return true;
 +    }
 +
++    /**
++     * This method is called when an active Spell on the caster is ticked.
++     */
 +    public boolean onSpellTick(SpellbookSpell spell) {
 +        return true;
 +    }
-+    
-+    public void onRemoveEffect(SpellEffect effect) {
++
++    /**
++     * This method is called when a StatusEffect is removed from the caster.
++     * @return if the effect should re removed
++     */
++    public boolean onRemoveEffect(SpellEffect effect) {
++        return true;
 +    }
-+    
++
++    /**
++     * This method is called when a StatusEffect is added to the caster.
++     * @return if the effect should be added
++     */
 +    public boolean onAddEffect(SpellEffect effect, boolean isNew) {
 +        return true;
++    }
++
++    /**
++     * Interrupts the spell. It will stop ticking, but cleanup() will still
++     * be called.
++     */
++    public void interrupt() {
++        interrupted = true;
++    }
++
++    /**
++     * Immediately stops spell execution.
++     * <b>Careful! No other Spell methods with be called afterwards.</b>
++     */
++    public void cancel() {
++        failed = true;
 +    }
 +
 +    public void ready() {
 +        if (onPrecast()) {
 +            if (onCast()) {
++                caster.onSpellCast(this);
 +                onAfterCast();
 +            } else {
 +                failed = true;
@@ -1034,6 +1195,10 @@ index 0000000000000000000000000000000000000000..5c88815c0591b15fb2068586d76c32db
 +
 +    public void tick() {
 +        if (failed) {
++            return;
++        }
++        if (interrupted) {
++            cleanup();
 +            return;
 +        }
 +        currentTicks++;
@@ -1074,6 +1239,134 @@ index 0000000000000000000000000000000000000000..5c88815c0591b15fb2068586d76c32db
 +
 +    public String getId() {
 +        return data.getId();
++    }
++}
+diff --git a/src/main/java/de/erethon/spellbook/api/TraitData.java b/src/main/java/de/erethon/spellbook/api/TraitData.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..558fbfc2d2e3fd8f7fedfa4e0769852acd2dd37d
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/TraitData.java
+@@ -0,0 +1,122 @@
++package de.erethon.spellbook.api;
++
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.minimessage.MiniMessage;
++import org.bukkit.configuration.InvalidConfigurationException;
++import org.bukkit.configuration.file.YamlConfiguration;
++import org.bukkit.entity.LivingEntity;
++import org.jetbrains.annotations.NotNull;
++
++import java.io.File;
++import java.io.IOException;
++import java.lang.reflect.InvocationTargetException;
++import java.util.ArrayList;
++import java.util.HashSet;
++import java.util.List;
++import java.util.Set;
++
++public class TraitData extends YamlConfiguration {
++
++    SpellbookAPI spellbookAPI;
++    SpellQueue queue;
++    MiniMessage miniMessage = MiniMessage.miniMessage();
++
++    private final String id;
++
++    private Class<? extends SpellTrait> traitClass;
++    private final ClassLoader classLoader;
++
++    private Component name;
++    private final List<String> description = new ArrayList<>();
++    private final Set<SpellData> affectedSpells = new HashSet<>();
++    private int cooldown = 0;
++
++
++    public TraitData(SpellbookAPI spellbookAPI, String id, ClassLoader classLoader) {
++        this.spellbookAPI = spellbookAPI;
++        this.id = id;
++        queue = spellbookAPI.getQueue();
++        this.classLoader = classLoader;
++        spellbookAPI.getServer().getLogger().info("Created new TraitData with " + spellbookAPI.getClass().getName());
++    }
++
++    public String getIcon() {
++        return getString("icon", "<red>E");
++    }
++
++    public String getId() {
++        return id;
++    }
++
++    @NotNull
++    public Component getDisplayName() {
++        return name;
++    }
++
++    public List<Component> getDescription() {
++        List<Component> components = new ArrayList<>();
++        for (String entry : description) {
++            components.add(miniMessage.deserialize(entry));
++        }
++        return components;
++    }
++
++    public List<Component> getDescription(String[] placeholders, String[] replacements) {
++        if (replacements.length < placeholders.length) {
++            throw new RuntimeException("Invalid amount of replacements for provided placeholders");
++        }
++        List<Component> components = new ArrayList<>();
++        for (String entry : description) {
++            for (int i = 0; i < placeholders.length; i++) {
++                components.add(miniMessage.deserialize(entry.replaceAll(placeholders[i], replacements[i])));
++            }
++        }
++        return components;
++    }
++
++    public Set<SpellData> getAffectedSpells() {
++        return affectedSpells;
++    }
++
++    public boolean affectsSpell(SpellData spellData) {
++        if (affectedSpells.isEmpty()) {
++            return true;
++        }
++        return affectedSpells.contains(spellData);
++    }
++
++    public SpellTrait getActiveTrait(LivingEntity caster, LivingEntity target, int duration, int stack) {
++        SpellTrait spellTrait;
++        try {
++            spellTrait = traitClass.getDeclaredConstructor(TraitData.class, LivingEntity.class).newInstance(this, caster);
++        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
++            spellbookAPI.getServer().getLogger().warning("Could not create class for trait " + id + ": " + traitClass);
++            throw new RuntimeException(e);
++        }
++        return spellTrait;
++    }
++
++    @Override
++    public void load(@NotNull File file) throws IOException, InvalidConfigurationException {
++        super.load(file);
++        String className = getString("class");
++        try {
++            traitClass = (Class<? extends SpellTrait>) Class.forName("de.erethon.spellbook.traits." + className, true, classLoader);
++        } catch (ClassNotFoundException e1) {
++            spellbookAPI.getServer().getLogger().warning("Could not find class for effect " + id + ": " + className);
++            throw new RuntimeException(e1);
++        }
++        name = miniMessage.deserialize(getString("name", "<color:#ff0000>[Invalid name]"));
++        description.addAll(getStringList("description"));
++        cooldown = getInt("cooldown", 0);
++        List<String> affectedIDs = getStringList("affectedSpells");
++        for (String id : affectedIDs) {
++            SpellData data = spellbookAPI.getLibrary().getSpellByID(id);
++            if (data == null) {
++                spellbookAPI.getServer().getLogger().warning("Could not find spell with ID " + id + " (Trait: " + id + ")");
++                continue;
++            }
++            affectedSpells.add(data);
++        }
 +    }
 +}
 diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java

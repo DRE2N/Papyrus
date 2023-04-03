@@ -1253,10 +1253,10 @@ index a407e802164603c74ec1f4ad3c98bc50398954bc..c7fdecbcd6eb7571a09883637bee4150
      public double getHealth() {
          return this.getParent().getHealth();
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
-index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1d2b26ef3d33a9f9dea37f00b5c8763b351c5249 100644
+index aec588b41f19b2147a4e7267bafa417fbcf7abc0..41741f6d86c47de553df65153ae9319214a6dc8f 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
-@@ -3,12 +3,15 @@ package org.bukkit.craftbukkit.entity;
+@@ -3,12 +3,16 @@ package org.bukkit.craftbukkit.entity;
  import com.destroystokyo.paper.entity.TargetEntityInfo;
  import com.google.common.base.Preconditions;
  import com.google.common.collect.Sets;
@@ -1273,12 +1273,13 @@ index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1d2b26ef3d33a9f9dea37f00b5c8763b
 +import de.erethon.papyrus.DamageType;
 +import de.erethon.spellbook.api.SpellData;
 +import de.erethon.spellbook.api.SpellEffect;
++import de.erethon.spellbook.api.SpellTrait;
 +import de.erethon.spellbook.api.SpellbookSpell;
 +import net.kyori.adventure.text.minimessage.MiniMessage;
  import net.minecraft.sounds.SoundEvent;
  import net.minecraft.world.InteractionHand;
  import net.minecraft.world.damagesource.DamageSource;
-@@ -89,6 +92,19 @@ import org.bukkit.util.Vector;
+@@ -89,6 +93,20 @@ import org.bukkit.util.Vector;
  public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      private CraftEntityEquipment equipment;
  
@@ -1286,6 +1287,7 @@ index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1d2b26ef3d33a9f9dea37f00b5c8763b
 +    private Set<SpellData> unlockedSpellData = new HashSet<>();
 +    private Set<SpellData> passiveSpells = new HashSet<>();
 +    private Set<SpellbookSpell> activeSpells = new HashSet<>();
++    private Set<SpellTrait> activeTraits = new HashSet<>();
 +    private final SpellData[] assignedSlots = new SpellData[8];
 +
 +    Map<SpellData, Long> usedSpells = new LinkedHashMap<>();
@@ -1298,7 +1300,7 @@ index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1d2b26ef3d33a9f9dea37f00b5c8763b
      public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
          super(server, entity);
  
-@@ -364,7 +380,12 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -364,7 +382,12 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      // Paper End - Bee Stinger API
      @Override
      public void damage(double amount) {
@@ -1312,7 +1314,7 @@ index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1d2b26ef3d33a9f9dea37f00b5c8763b
      }
  
      @Override
-@@ -382,6 +403,18 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -382,6 +405,18 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
          entity.hurt(reason, (float) amount);
      }
  
@@ -1331,7 +1333,7 @@ index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1d2b26ef3d33a9f9dea37f00b5c8763b
      @Override
      public Location getEyeLocation() {
          Location loc = getLocation();
-@@ -1068,6 +1101,84 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -1068,6 +1103,89 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      public void knockback(double strength, double directionX, double directionZ) {
          Preconditions.checkArgument(strength > 0, "Knockback strength must be > 0");
          getHandle().knockback(strength, directionX, directionZ);
@@ -1383,6 +1385,11 @@ index aec588b41f19b2147a4e7267bafa417fbcf7abc0..1d2b26ef3d33a9f9dea37f00b5c8763b
 +    @Override
 +    public Set<SpellData> getUnlockedPassives() {
 +        return passiveSpells;
++    }
++
++    @Override
++    public Set<SpellTrait> getActiveTraits() {
++        return activeTraits;
 +    }
 +
 +    @Override
