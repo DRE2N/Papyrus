@@ -198,10 +198,10 @@ index 0000000000000000000000000000000000000000..9597c69b1fd9825abfdedd316c5874b7
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..4de771e758456b7b9c88af5197b1cf9914c58c98
+index 0000000000000000000000000000000000000000..8474b473d0b2bd551c502f59cba836020d40d21a
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-@@ -0,0 +1,305 @@
+@@ -0,0 +1,311 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -291,6 +291,9 @@ index 0000000000000000000000000000000000000000..4de771e758456b7b9c88af5197b1cf99
 +        for (SpellEffect effect : getEffects()) {
 +            damage = effect.onDamage(damager, damage, type);
 +        }
++        for (SpellTrait trait : getActiveTraits()) {
++            damage = trait.onDamage(damager, damage, type);
++        }
 +        return Math.max(damage, 0);
 +    }
 +
@@ -300,6 +303,9 @@ index 0000000000000000000000000000000000000000..4de771e758456b7b9c88af5197b1cf99
 +        }
 +        for (SpellEffect effect : getEffects()) {
 +            damage = effect.onAttack(target, damage, type);
++        }
++        for (SpellTrait trait : getActiveTraits()) {
++            damage = trait.onAttack(target, damage, type);
 +        }
 +        return Math.max(damage, 0);
 +    }
@@ -1034,12 +1040,13 @@ index 0000000000000000000000000000000000000000..4cffcc1e150ca13850301e2c479810c4
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellTrait.java b/src/main/java/de/erethon/spellbook/api/SpellTrait.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..14a529027d417ecedaeb1a4b16ded50f8042f638
+index 0000000000000000000000000000000000000000..37563d7f78d93892035b88c9325f270cf3e76aa6
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellTrait.java
-@@ -0,0 +1,86 @@
+@@ -0,0 +1,106 @@
 +package de.erethon.spellbook.api;
 +
++import de.erethon.papyrus.DamageType;
 +import org.bukkit.entity.LivingEntity;
 +
 +/**
@@ -1111,6 +1118,25 @@ index 0000000000000000000000000000000000000000..14a529027d417ecedaeb1a4b16ded50f
 +    protected void onOtherTraitRemove(TraitData other) {
 +    }
 +
++    protected void onSpellPreCast(SpellbookSpell spell) {
++    }
++
++     /**
++     * This method is called when the caster takes damage.
++     * @param attacker the attacker
++     */
++    public double onDamage(LivingEntity attacker, double damage, DamageType type) {
++        return damage;
++    }
++
++    /**
++     * This method is called when the caster deals damage.
++     * @param target the target the caster is attacking
++     */
++    public double onAttack(LivingEntity target, double damage, DamageType type) {
++        return damage;
++    }
++
 +    public TraitData getData() {
 +        return data;
 +    }
@@ -1177,10 +1203,10 @@ index 0000000000000000000000000000000000000000..633828d54c4b67d82bbd400870e7b73a
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..da48f399a61a942baef209fbb0061d8c3217734f
+index 0000000000000000000000000000000000000000..b7b9ae3832268468a6195eaf043bdaf98e26c787
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
-@@ -0,0 +1,239 @@
+@@ -0,0 +1,242 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -1360,6 +1386,9 @@ index 0000000000000000000000000000000000000000..da48f399a61a942baef209fbb0061d8c
 +    }
 +
 +    public void ready() {
++        for (SpellTrait trait : caster.getActiveTraits()) {
++            trait.onSpellPreCast(this);
++        }
 +        if (onPrecast()) {
 +            if (onCast()) {
 +                caster.onSpellCast(this);
