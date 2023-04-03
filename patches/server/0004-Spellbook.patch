@@ -442,7 +442,7 @@ index 5a59392c88b463ccb61835cf4b666717b18ca8aa..1f811e81249ba1e4c029b93a649d1252
 +    }
  }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..bdf5ab8ba6a2c5e4bcb9e138b1fe5437ab4ef616 100644
+index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..2dc4c0d91543552d33b3690da653fbd9791ac096 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -19,6 +19,9 @@ import java.util.Optional;
@@ -533,7 +533,7 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..bdf5ab8ba6a2c5e4bcb9e138b1fe5437
          this.animStepO = this.animStep;
          this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
-@@ -1329,8 +1353,78 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -1329,8 +1353,81 @@ public abstract class LivingEntity extends Entity implements Attackable {
      }
      // Pufferfish end
  
@@ -589,11 +589,14 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..bdf5ab8ba6a2c5e4bcb9e138b1fe5437
 +            indicateDamage(x, z);
 +            markHurt();
 +
++            if (attacker instanceof LivingEntity living) {
++                org.bukkit.entity.LivingEntity attackerBukkit = (org.bukkit.entity.LivingEntity) living;
++                finalDmg = getBukkitLivingEntity().onDamage(attackerBukkit, finalDmg, type.getApiDamageType());
++            }
++
 +            if (finalDmg <= 0) {
 +                return false;
 +            }
-+
-+
 +        } else {
 +            //hurtDir = (float) ((int) (Math.random() * 2.0D) * 180);
 +        }
@@ -612,7 +615,7 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..bdf5ab8ba6a2c5e4bcb9e138b1fe5437
          if (this.isInvulnerableTo(source)) {
              return false;
          } else if (this.level.isClientSide) {
-@@ -1512,7 +1606,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -1512,7 +1609,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
  
              return flag2;
          }
