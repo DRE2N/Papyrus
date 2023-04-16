@@ -75,6 +75,68 @@ index a6c25647fb37f59307de0d390f8e8cf55504d7d3..be7e9023a56a8c50be223e55bf464704
  
      }
  
+diff --git a/src/main/java/net/minecraft/world/level/block/CoralBlock.java b/src/main/java/net/minecraft/world/level/block/CoralBlock.java
+index 88faea00be60a519f56f975a5311df5e1eb3e6b8..0a6f89dbce23decb94d05a7c8d6c82e8173d595b 100644
+--- a/src/main/java/net/minecraft/world/level/block/CoralBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/CoralBlock.java
+@@ -30,7 +30,7 @@ public class CoralBlock extends Block {
+                 return;
+             }
+             // CraftBukkit end
+-            world.setBlock(pos, this.deadBlock.defaultBlockState(), 2);
++            // Papyrus - world.setBlock(pos, this.deadBlock.defaultBlockState(), 2);
+         }
+ 
+     }
+@@ -45,6 +45,9 @@ public class CoralBlock extends Block {
+     }
+ 
+     protected boolean scanForWater(BlockGetter world, BlockPos pos) {
++        if (true) {
++            return true; // Papyrus - Don't kill corals.
++        }
+         Direction[] aenumdirection = Direction.values();
+         int i = aenumdirection.length;
+ 
+diff --git a/src/main/java/net/minecraft/world/level/block/CoralFanBlock.java b/src/main/java/net/minecraft/world/level/block/CoralFanBlock.java
+index 86e58786c8a4caa965ea63aff50a13ae61da8c1c..82bdfc5fca8d811a23d0535a6c844adb252ce765 100644
+--- a/src/main/java/net/minecraft/world/level/block/CoralFanBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/CoralFanBlock.java
+@@ -33,7 +33,7 @@ public class CoralFanBlock extends BaseCoralFanBlock {
+                 return;
+             }
+             // CraftBukkit end
+-            world.setBlock(pos, (BlockState) this.deadBlock.defaultBlockState().setValue(CoralFanBlock.WATERLOGGED, false), 2);
++            // Papyrus world.setBlock(pos, (BlockState) this.deadBlock.defaultBlockState().setValue(CoralFanBlock.WATERLOGGED, false), 2);
+         }
+ 
+     }
+diff --git a/src/main/java/net/minecraft/world/level/block/CoralPlantBlock.java b/src/main/java/net/minecraft/world/level/block/CoralPlantBlock.java
+index f980e31c4b6ba396be6ef317cffe027004a090e0..faa2b9c003e3d69a2877e4fe692a947bd37ec982 100644
+--- a/src/main/java/net/minecraft/world/level/block/CoralPlantBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/CoralPlantBlock.java
+@@ -38,7 +38,7 @@ public class CoralPlantBlock extends BaseCoralPlantTypeBlock {
+                 return;
+             }
+             // CraftBukkit end
+-            world.setBlock(pos, (BlockState) this.deadBlock.defaultBlockState().setValue(CoralPlantBlock.WATERLOGGED, false), 2);
++            // Papyrus world.setBlock(pos, (BlockState) this.deadBlock.defaultBlockState().setValue(CoralPlantBlock.WATERLOGGED, false), 2);
+         }
+ 
+     }
+diff --git a/src/main/java/net/minecraft/world/level/block/CoralWallFanBlock.java b/src/main/java/net/minecraft/world/level/block/CoralWallFanBlock.java
+index f759ad7b49244a91aca4d36db2980267d46e1c23..44b9ad5ee8653d1042717e6eafaad0b1931eb64c 100644
+--- a/src/main/java/net/minecraft/world/level/block/CoralWallFanBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/CoralWallFanBlock.java
+@@ -33,7 +33,7 @@ public class CoralWallFanBlock extends BaseCoralWallFanBlock {
+                 return;
+             }
+             // CraftBukkit end
+-            world.setBlock(pos, (BlockState) ((BlockState) this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false)).setValue(CoralWallFanBlock.FACING, (Direction) state.getValue(CoralWallFanBlock.FACING)), 2);
++            // Papyrus - world.setBlock(pos, (BlockState) ((BlockState) this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false)).setValue(CoralWallFanBlock.FACING, (Direction) state.getValue(CoralWallFanBlock.FACING)), 2);
+         }
+ 
+     }
 diff --git a/src/main/java/net/minecraft/world/level/block/HugeMushroomBlock.java b/src/main/java/net/minecraft/world/level/block/HugeMushroomBlock.java
 index 3c6d97b51c6fec130b80e5965afa2c49d48843c9..3101e7563209c5c983c6932eefdebf244652e1c5 100644
 --- a/src/main/java/net/minecraft/world/level/block/HugeMushroomBlock.java
