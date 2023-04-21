@@ -442,7 +442,7 @@ index 5a59392c88b463ccb61835cf4b666717b18ca8aa..1f811e81249ba1e4c029b93a649d1252
 +    }
  }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..4e33ed8867277d20a3ff3e93109760eddf025c36 100644
+index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..22ceeb0ef1a3133268e8b97fe6694d4233842a41 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -19,6 +19,9 @@ import java.util.Optional;
@@ -533,7 +533,7 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..4e33ed8867277d20a3ff3e93109760ed
          this.animStepO = this.animStep;
          this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
-@@ -1329,8 +1353,86 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -1329,8 +1353,89 @@ public abstract class LivingEntity extends Entity implements Attackable {
      }
      // Pufferfish end
  
@@ -556,7 +556,10 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..4e33ed8867277d20a3ff3e93109760ed
 +                return false;
 +            }
 +            if (source.getEntity() instanceof net.minecraft.world.entity.player.Player player) {
++                setLastHurtByPlayer(player);
 +                player.getBukkitEntity().sendActionBar(Component.text(type +   ": "  + amount  + " | Res: "  + getAttributeValue(type.getResAttr()) +  " | = " +  finalDmg));
++            } else if (source.getEntity() instanceof LivingEntity livingEntity){
++                setLastHurtByMob(livingEntity);
 +            }
 +            if (isDamageSourceBlocked(source)) { // TODO: Maybe change isDamageSourceBlocked logic
 +                hurtCurrentlyUsedShield(amount);
@@ -620,7 +623,7 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..4e33ed8867277d20a3ff3e93109760ed
          if (this.isInvulnerableTo(source)) {
              return false;
          } else if (this.level.isClientSide) {
-@@ -1512,7 +1614,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -1512,7 +1617,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
  
              return flag2;
          }
