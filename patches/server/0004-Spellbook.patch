@@ -442,7 +442,7 @@ index 5a59392c88b463ccb61835cf4b666717b18ca8aa..1f811e81249ba1e4c029b93a649d1252
 +    }
  }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..b69db599b14348c4dfd14a12e06974fb7b4c3813 100644
+index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..6392ee87e5f7cb9c6b52fb61411e081108cf6a25 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -19,6 +19,9 @@ import java.util.Optional;
@@ -533,7 +533,7 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..b69db599b14348c4dfd14a12e06974fb
          this.animStepO = this.animStep;
          this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
-@@ -1329,8 +1353,81 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -1329,8 +1353,84 @@ public abstract class LivingEntity extends Entity implements Attackable {
      }
      // Pufferfish end
  
@@ -604,6 +604,9 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..b69db599b14348c4dfd14a12e06974fb
 +        playHurtSound(source);
 +        level.broadcastDamageEvent(this, source); // hurt animation
 +        setHealth((float) (getHealth() - Math.max(finalDmg, 0)));
++        if (getHealth() <= 0.0f) {
++            die(source);
++        }
 +        return true;
 +    }
 +
@@ -615,7 +618,7 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..b69db599b14348c4dfd14a12e06974fb
          if (this.isInvulnerableTo(source)) {
              return false;
          } else if (this.level.isClientSide) {
-@@ -1512,7 +1609,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -1512,7 +1612,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
  
              return flag2;
          }
