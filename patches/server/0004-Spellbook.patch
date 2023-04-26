@@ -203,7 +203,7 @@ index 707de4e1cf1a76a1500384f6408501dd043900e9..fba5146cb9504dcdfbc12ccbbe46c127
          // Paper end
          this.profiler.push("tallying");
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-index 1d47dd4ea7a3fada6a084207e5c55cabe2909d92..18b90f1e61a0e3a9e61796d91079f9fb3091ee7f 100644
+index 6157d73cc72f1901562373b32b155378ab89f2a6..a44b6cdf78ee7ad1270456452ea8e7b9daa87722 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
 +++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
 @@ -19,8 +19,7 @@ import java.util.OptionalInt;
@@ -216,7 +216,7 @@ index 1d47dd4ea7a3fada6a084207e5c55cabe2909d92..18b90f1e61a0e3a9e61796d91079f9fb
  import net.minecraft.BlockUtil;
  import net.minecraft.ChatFormatting;
  import net.minecraft.CrashReport;
-@@ -2115,7 +2114,7 @@ public class ServerPlayer extends Player {
+@@ -2117,7 +2116,7 @@ public class ServerPlayer extends Player {
          if (this.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
              this.setCamera(target);
          } else {

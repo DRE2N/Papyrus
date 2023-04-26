@@ -30,11 +30,73 @@ index 4620cce7b62ea9b1687dc39badcd75b984bfabc3..7a639d7623e00d29c97ae9b67eb77808
      }
  
      @Override
+diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
+index 1d4d02f26391ac55c7631817f09d05e2769b0d29..480cfbc37bf0cf7beb24bd1ecdbc34127d7fbe40 100644
+--- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
++++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
+@@ -276,6 +276,8 @@ public class ServerPlayer extends Player {
+     public PlayerNaturallySpawnCreaturesEvent playerNaturallySpawnedEvent; // Paper
+     public org.bukkit.event.player.PlayerQuitEvent.QuitReason quitReason = null; // Paper - there are a lot of changes to do if we change all methods leading to the event
+ 
++    public int selectedProfileID = 0; // Papyrus - Player profiles
++
+     public ServerPlayer(MinecraftServer server, ServerLevel world, GameProfile profile) {
+         super(world, world.getSharedSpawnPos(), world.getSharedSpawnAngle(), profile);
+         this.chatVisibility = ChatVisiblity.FULL;
 diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
-index c0c14766adaac855112f85a203a6163b8adfdded..dd4949999e50b7701775e76f9dd50b8ae861ae3f 100644
+index c0c14766adaac855112f85a203a6163b8adfdded..276b31774f6b74e14c9dbf67148e1aaa3a22d453 100644
 --- a/src/main/java/net/minecraft/server/players/PlayerList.java
 +++ b/src/main/java/net/minecraft/server/players/PlayerList.java
-@@ -905,7 +905,7 @@ public abstract class PlayerList {
+@@ -8,6 +8,7 @@ import com.mojang.authlib.GameProfile;
+ import com.mojang.logging.LogUtils;
+ import com.mojang.serialization.DataResult;
+ import com.mojang.serialization.Dynamic;
++import de.erethon.papyrus.PlayerSwitchProfileEvent;
+ import io.netty.buffer.Unpooled;
+ import io.papermc.paper.adventure.PaperAdventure;
+ import java.io.File;
+@@ -531,8 +532,22 @@ public abstract class PlayerList {
+         });
+     }
+ 
++    public void switchProfile(ServerPlayer player, int newID) {
++        save(player);
++        int oldID = player.selectedProfileID;
++        player.selectedProfileID = newID;
++        load(player, newID);
++        player.teleportTo(player.getLevel(), player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
++        new PlayerSwitchProfileEvent(player.getBukkitEntity(), oldID, newID).callEvent();
++    }
++
+     @Nullable
+     public CompoundTag load(ServerPlayer player) {
++        return load(player, 0);
++    }
++
++    @Nullable
++    public CompoundTag load(ServerPlayer player, int profileID) {
+         CompoundTag nbttagcompound = this.server.getWorldData().getLoadedPlayerTag();
+         CompoundTag nbttagcompound1;
+ 
+@@ -541,7 +556,7 @@ public abstract class PlayerList {
+             player.load(nbttagcompound);
+             PlayerList.LOGGER.debug("loading single player");
+         } else {
+-            nbttagcompound1 = this.playerIo.load(player);
++            nbttagcompound1 = this.playerIo.load(player, profileID);
+         }
+ 
+         return nbttagcompound1;
+@@ -550,7 +565,7 @@ public abstract class PlayerList {
+     protected void save(ServerPlayer player) {
+         if (!player.getBukkitEntity().isPersistent()) return; // CraftBukkit
+         player.lastSave = MinecraftServer.currentTick; // Paper
+-        this.playerIo.save(player);
++        this.playerIo.save(player, player.selectedProfileID);
+         ServerStatsCounter serverstatisticmanager = (ServerStatsCounter) player.getStats(); // CraftBukkit
+ 
+         if (serverstatisticmanager != null) {
+@@ -905,7 +920,7 @@ public abstract class PlayerList {
          // CraftBukkit start
          LevelData worlddata = worldserver1.getLevelData();
          entityplayer1.connection.send(new ClientboundRespawnPacket(worldserver1.dimensionTypeId(), worldserver1.dimension(), BiomeManager.obfuscateSeed(worldserver1.getSeed()), entityplayer1.gameMode.getGameModeForPlayer(), entityplayer1.gameMode.getPreviousGameModeForPlayer(), worldserver1.isDebug(), worldserver1.isFlat(), (byte) i, entityplayer1.getLastDeathLocation()));
@@ -225,3 +287,70 @@ index 50ead76879398222a76f26c36e98800d2d1af167..2fb4d91af75ff938644953eb0280bb46
          // Paper start - move NotePlayEvent call to fix instrument/note changes
          org.bukkit.event.block.NotePlayEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNotePlayEvent(world, pos, state.getValue(INSTRUMENT), state.getValue(NOTE));
          if (event.isCancelled()) return false;
+diff --git a/src/main/java/net/minecraft/world/level/storage/PlayerDataStorage.java b/src/main/java/net/minecraft/world/level/storage/PlayerDataStorage.java
+index 36af81f0957d17e170d229059c66f4eb4539dfeb..354d4b050bef01e9554078a90ceae9473ee21780 100644
+--- a/src/main/java/net/minecraft/world/level/storage/PlayerDataStorage.java
++++ b/src/main/java/net/minecraft/world/level/storage/PlayerDataStorage.java
+@@ -16,6 +16,9 @@ import org.slf4j.Logger;
+ // CraftBukkit start
+ import java.io.FileInputStream;
+ import java.io.InputStream;
++import java.nio.file.Files;
++import java.nio.file.Path;
++
+ import org.bukkit.craftbukkit.entity.CraftPlayer;
+ // CraftBukkit end
+ 
+@@ -32,14 +35,21 @@ public class PlayerDataStorage {
+     }
+ 
+     public void save(Player player) {
++        save(player, 0);
++    }
++
++    public void save(Player player, int profileID) {
+         if (org.spigotmc.SpigotConfig.disablePlayerDataSaving) return; // Spigot
+         try {
+             CompoundTag nbttagcompound = player.saveWithoutId(new CompoundTag());
+-            File file = File.createTempFile(player.getStringUUID() + "-", ".dat", this.playerDir);
+-
++            File file = File.createTempFile(player.getStringUUID() + "-" + profileID, ".dat", this.playerDir);
++            File playerDirectory = new File(playerDir, player.getStringUUID());
++            if (!playerDirectory.exists()) {
++                playerDirectory.mkdirs();
++            }
+             NbtIo.writeCompressed(nbttagcompound, file);
+-            File file1 = new File(this.playerDir, player.getStringUUID() + ".dat");
+-            File file2 = new File(this.playerDir, player.getStringUUID() + ".dat_old");
++            File file1 = new File(playerDirectory, profileID + ".dat");
++            File file2 = new File(playerDirectory, profileID + ".dat_old");
+ 
+             Util.safeReplaceFile(file1, file, file2);
+         } catch (Exception exception) {
+@@ -50,10 +60,16 @@ public class PlayerDataStorage {
+ 
+     @Nullable
+     public CompoundTag load(Player player) {
++        return load(player, 0);
++    }
++
++    @Nullable
++    public CompoundTag load(Player player, int profileID) {
+         CompoundTag nbttagcompound = null;
++        File playerDirectory = new File(playerDir, player.getStringUUID());
+ 
+         try {
+-            File file = new File(this.playerDir, player.getStringUUID() + ".dat");
++            File file = new File(playerDirectory, profileID + ".dat");
+             // Spigot Start
+             boolean usingWrongFile = false;
+             if ( org.bukkit.Bukkit.getOnlineMode() && !file.exists() ) // Paper - Check online mode first
+@@ -85,7 +101,7 @@ public class PlayerDataStorage {
+             if (player instanceof ServerPlayer) {
+                 CraftPlayer player1 = (CraftPlayer) player.getBukkitEntity();
+                 // Only update first played if it is older than the one we have
+-                long modified = new File(this.playerDir, player.getUUID().toString() + ".dat").lastModified();
++                long modified = new File(playerDirectory, profileID + ".dat").lastModified();
+                 if (modified < player1.getFirstPlayed()) {
+                     player1.setFirstPlayed(modified);
+                 }

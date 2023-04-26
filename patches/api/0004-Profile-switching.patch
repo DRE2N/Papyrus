@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Malfrador <malfrador@gmail.com>
+Date: Wed, 26 Apr 2023 21:15:24 +0200
+Subject: [PATCH] Profile switching
+
+
+diff --git a/src/main/java/de/erethon/papyrus/PlayerSwitchProfileEvent.java b/src/main/java/de/erethon/papyrus/PlayerSwitchProfileEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..1f20fd2c6128cd58ec160e95ca59d276168497a2
+--- /dev/null
++++ b/src/main/java/de/erethon/papyrus/PlayerSwitchProfileEvent.java
+@@ -0,0 +1,39 @@
++package de.erethon.papyrus;
++
++import org.bukkit.entity.Player;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.player.PlayerEvent;
++import org.jetbrains.annotations.NotNull;
++
++public class PlayerSwitchProfileEvent extends PlayerEvent {
++
++    private static final HandlerList handlers = new HandlerList();
++    private int oldProfileID;
++    private int newProfileID;
++
++
++    public PlayerSwitchProfileEvent(@NotNull Player who, int oldProfileID, int newProfileID) {
++        super(who);
++        this.oldProfileID = oldProfileID;
++        this.newProfileID = newProfileID;
++    }
++
++    public int getOldProfileID() {
++        return oldProfileID;
++    }
++
++    public int getNewProfileID() {
++        return newProfileID;
++    }
++
++    @NotNull
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++
++}
