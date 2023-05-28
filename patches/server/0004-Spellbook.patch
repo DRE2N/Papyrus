@@ -6,10 +6,10 @@ Subject: [PATCH] Spellbook
 
 diff --git a/src/main/java/de/erethon/papyrus/CraftDamageType.java b/src/main/java/de/erethon/papyrus/CraftDamageType.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..20184e08449c0f6fc37b68093973ac592c1feb93
+index 0000000000000000000000000000000000000000..dd13ca3b8962d7bc1c700b5a7a2ef03fde1dd234
 --- /dev/null
 +++ b/src/main/java/de/erethon/papyrus/CraftDamageType.java
-@@ -0,0 +1,44 @@
+@@ -0,0 +1,52 @@
 +package de.erethon.papyrus;
 +
 +import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -19,21 +19,24 @@ index 0000000000000000000000000000000000000000..20184e08449c0f6fc37b68093973ac59
 +
 +public enum CraftDamageType {
 +
-+    AIR(Attributes.ADV_AIR, Attributes.RES_AIR, DamageType.AIR),
-+    EARTH(Attributes.ADV_EARTH, Attributes.RES_EARTH, DamageType.EARTH),
-+    FIRE(Attributes.ADV_FIRE, Attributes.RES_FIRE, DamageType.FIRE),
-+    MAGIC(Attributes.ADV_MAGIC, Attributes.RES_MAGIC, DamageType.MAGIC),
-+    PHYSICAL(Attributes.ADV_PHYSICAL, Attributes.RES_PHYSICAL, DamageType.PHYSICAL),
-+    WATER(Attributes.ADV_WATER, Attributes.RES_WATER, DamageType.WATER),
-+    PURE(Attributes.ADV_PURE, Attributes.RES_PURE, DamageType.PURE);
++    AIR(Attributes.ADV_AIR, Attributes.RES_AIR, Attributes.PEN_MAGICAL, DamageType.AIR),
++    EARTH(Attributes.ADV_EARTH, Attributes.RES_EARTH, Attributes.PEN_MAGICAL, DamageType.EARTH),
++    FIRE(Attributes.ADV_FIRE, Attributes.RES_FIRE, Attributes.PEN_MAGICAL,DamageType.FIRE),
++    MAGIC(Attributes.ADV_MAGIC, Attributes.RES_MAGIC, Attributes.PEN_MAGICAL,DamageType.MAGIC),
++    PHYSICAL(Attributes.ADV_PHYSICAL, Attributes.RES_PHYSICAL, Attributes.PEN_PHYSICAL,DamageType.PHYSICAL),
++    WATER(Attributes.ADV_WATER, Attributes.RES_WATER, Attributes.PEN_MAGICAL,DamageType.WATER),
++    PURE(Attributes.ADV_PURE, Attributes.RES_PURE, Attributes.PEN_PHYSICAL, DamageType.PURE);
 +
 +    private final Attribute advAttr;
 +    private final Attribute resAttr;
++
++    private final Attribute penAttribute;
 +    private final DamageType apiDamageType;
 +
-+    CraftDamageType(Attribute advAttr, Attribute resAttr, DamageType apiDamageType) {
++    CraftDamageType(Attribute advAttr, Attribute resAttr, Attribute penAttribute, DamageType apiDamageType) {
 +        this.advAttr = advAttr;
 +        this.resAttr = resAttr;
++        this.penAttribute = penAttribute;
 +        this.apiDamageType = apiDamageType;
 +    }
 +
@@ -45,6 +48,11 @@ index 0000000000000000000000000000000000000000..20184e08449c0f6fc37b68093973ac59
 +    public Attribute getResAttr() {
 +        return this.resAttr;
 +    }
++
++    public Attribute getPenAttribute() {
++        return this.penAttribute;
++    }
++
 +
 +    public static CraftDamageType ofAPI(DamageType type) {
 +        return Arrays.stream(values()).filter(crafttype -> crafttype.apiDamageType == type).findFirst().orElse(null);
@@ -442,7 +450,7 @@ index 5a59392c88b463ccb61835cf4b666717b18ca8aa..1f811e81249ba1e4c029b93a649d1252
 +    }
  }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..22ceeb0ef1a3133268e8b97fe6694d4233842a41 100644
+index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..19a414baab961305cffcd6d635ba40251714b5e7 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -19,6 +19,9 @@ import java.util.Optional;
@@ -495,7 +503,7 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..22ceeb0ef1a3133268e8b97fe6694d42
  
      protected LivingEntity(EntityType<? extends LivingEntity> type, Level world) {
          super(type, world);
-@@ -333,7 +335,28 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -333,7 +335,32 @@ public abstract class LivingEntity extends Entity implements Attackable {
      }
  
      public static AttributeSupplier.Builder createLivingAttributes() {
@@ -515,17 +523,21 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..22ceeb0ef1a3133268e8b97fe6694d42
 +            .add(Attributes.RES_MAGIC)
 +            .add(Attributes.RES_PURE)
 +            .add(Attributes.RES_PHYSICAL)
++            .add(Attributes.PEN_PHYSICAL)
++            .add(Attributes.PEN_MAGICAL)
 +            .add(Attributes.STAT_CDR)
 +            .add(Attributes.STAT_CRITDMG)
 +            .add(Attributes.STAT_CRITCHANCE)
 +            .add(Attributes.STAT_TENACITY)
 +            .add(Attributes.STAT_ENERGYREGEN)
++            .add(Attributes.STAT_ENERGY)
++            .add(Attributes.STAT_HEALINGPOWER)
 +            .add(Attributes.STAT_HEALTHREGEN)
 +            .add(Attributes.COMBAT_HURTINVUL);
      }
  
      @Override
-@@ -484,6 +507,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -484,6 +511,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
          }
  
          this.tickEffects();
@@ -533,7 +545,7 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..22ceeb0ef1a3133268e8b97fe6694d42
          this.animStepO = this.animStep;
          this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
-@@ -1329,8 +1353,89 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -1329,8 +1357,93 @@ public abstract class LivingEntity extends Entity implements Attackable {
      }
      // Pufferfish end
  
@@ -547,17 +559,24 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..22ceeb0ef1a3133268e8b97fe6694d42
 +        if (invulnerableTime > 0) {
 +            return false;
 +        }
-+        double finalDmg = amount - getAttributeValue(type.getResAttr());
 +        Entity attacker = source.getEntity();
++        double finalDmg = amount;
++        double resistance = getAttributeValue(type.getResAttr());
 +        if (attacker != null) {
 +            EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(source.getEntity().getBukkitEntity(), this.getBukkitLivingEntity(), EntityDamageEvent.DamageCause.ENTITY_ATTACK,amount);
 +            Bukkit.getServer().getPluginManager().callEvent(event);
 +            if (event.isCancelled()) {
 +                return false;
 +            }
++            if (attacker instanceof LivingEntity living) {
++                resistance = resistance - living.getAttributeValue(type.getPenAttribute()); // Remove the value of the attackers penetration attribute from the victims resistance
++            }
++            finalDmg = amount - resistance;
 +            if (source.getEntity() instanceof net.minecraft.world.entity.player.Player player) {
 +                setLastHurtByPlayer(player);
-+                player.getBukkitEntity().sendActionBar(Component.text(type +   ": "  + amount  + " | Res: "  + getAttributeValue(type.getResAttr()) +  " | = " +  finalDmg));
++                if (attacker instanceof LivingEntity living) {
++                    player.getBukkitEntity().sendActionBar(Component.text(type +   ": "  + amount  + " | Res: "  + getAttributeValue(type.getResAttr()) +  " | Pen: " + living.getAttributeValue(type.getPenAttribute()) + " | = " +  finalDmg));
++                }
 +            } else if (source.getEntity() instanceof LivingEntity livingEntity){
 +                setLastHurtByMob(livingEntity);
 +            }
@@ -587,7 +606,6 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..22ceeb0ef1a3133268e8b97fe6694d42
 +                x = (Math.random() - Math.random()) * 0.01D;
 +            }
 +
-+            //this.hurtDir = (float) (Mth.atan2(z, x) * 57.2957763671875D - (double) this.getYRot()); Apparently this was removed? - Papyrus
 +            this.knockback(0.4000000059604645D, x, z, attacker);
 +            indicateDamage(x, z);
 +            markHurt();
@@ -600,8 +618,6 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..22ceeb0ef1a3133268e8b97fe6694d42
 +            if (finalDmg <= 0) {
 +                return false;
 +            }
-+        } else {
-+            //hurtDir = (float) ((int) (Math.random() * 2.0D) * 180);
 +        }
 +        invulnerableTime = (int) getAttribute(Attributes.COMBAT_HURTINVUL).getValue();
 +        playHurtSound(source);
@@ -623,7 +639,7 @@ index 791f672b30f2a4d3b329e2ce0f4fb9c2ca627b01..22ceeb0ef1a3133268e8b97fe6694d42
          if (this.isInvulnerableTo(source)) {
              return false;
          } else if (this.level.isClientSide) {
-@@ -1512,7 +1617,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -1512,7 +1625,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
  
              return flag2;
          }
@@ -684,11 +700,24 @@ index fee3c03b0053db1f0d4766f18dfd1a680524eee5..0adf597cea2b1103f69389955ba5e1a1
          if (flag) {
              if (knockback > 0.0F && target instanceof LivingEntity) {
 diff --git a/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java b/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
-index 57be3d8f01e53a1edf8f92cd6cf35bede099602f..ddb9388cb94ee9f880f7dc979c460b180b643bcb 100644
+index 57be3d8f01e53a1edf8f92cd6cf35bede099602f..ce7ae924326e9520c982a544d41c67f57261c795 100644
 --- a/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
 +++ b/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
-@@ -39,9 +39,14 @@ public class Attributes {
+@@ -3,6 +3,7 @@ package net.minecraft.world.entity.ai.attributes;
+ 
+ import net.minecraft.core.Registry;
+ import net.minecraft.core.registries.BuiltInRegistries;
++import org.checkerframework.checker.units.qual.A;
+ 
+ public class Attributes {
+ 
+@@ -37,11 +38,22 @@ public class Attributes {
+     public static final Attribute ADV_EARTH = Attributes.register("advantage.earth", new RangedAttribute("attribute.name.advantage.earth", 0, 0, 4096));
+     public static final Attribute ADV_FIRE = Attributes.register("advantage.fire", new RangedAttribute("attribute.name.advantage.fire", 0, 0, 4096));
      public static final Attribute ADV_WATER = Attributes.register("advantage.water", new RangedAttribute("attribute.name.advantage.water", 0, 0, 4096));
++
++    public static final Attribute PEN_PHYSICAL = Attributes.register("penetration.physical", new RangedAttribute("attribute.name.penetration.physical", 0, 0, 4096));
++    public static final Attribute PEN_MAGICAL = Attributes.register("penetration.magical", new RangedAttribute("attribute.name.penetration.magical", 0, 0, 4096));
      // Stats
      public static final Attribute STAT_CRITCHANCE = Attributes.register("stat.crit.chance", new RangedAttribute("attribute.name.stat.crit.chance", 0, 0, 4096));
 -    public static final Attribute STAT_CRITDMG = Attributes.register("stat.crit.dmg", new RangedAttribute("attribute.name.stat.crit.dmg", 0, 0, 4096));
@@ -698,6 +727,9 @@ index 57be3d8f01e53a1edf8f92cd6cf35bede099602f..ddb9388cb94ee9f880f7dc979c460b18
 +    public static final Attribute STAT_CDR = Attributes.register("stat.cooldownreduction", new RangedAttribute("attribute.name.stat.cooldownreduction", 0, -4096, 4096));
 +    public static final Attribute STAT_HEALTHREGEN = Attributes.register("stat.healthregen", new RangedAttribute("attribute.name.stat.healthregen", 0, 0, 4096));
 +    public static final Attribute STAT_ENERGYREGEN = Attributes.register("stat.energyregen", new RangedAttribute("attribute.name.stat.energyregen", 0, 0, 4096));
++    public static final Attribute STAT_ENERGY= Attributes.register("stat.energy", new RangedAttribute("attribute.name.stat.energy", 0, 0, 4096));
++    public static final Attribute STAT_HEALINGPOWER= Attributes.register("stat.healingpower", new RangedAttribute("attribute.name.stat.healingpower", 0, 0, 4096));
++
 +    public static final Attribute STAT_TENACITY = Attributes.register("stat.tenacity", new RangedAttribute("attribute.name.stat.tenacity", 0, 0, 4096));
 +
 +

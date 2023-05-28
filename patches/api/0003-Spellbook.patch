@@ -1669,10 +1669,17 @@ index ce2ef5cff6ad10b64791e67f6d3cff328c2cf7dc..a8fdf232b3c9d67b6f75eee815096641
 +    // Papyrus end
  }
 diff --git a/src/main/java/org/bukkit/attribute/Attribute.java b/src/main/java/org/bukkit/attribute/Attribute.java
-index dc820ba494e92a0fc770703c7d5020cb2af549fd..e65c53e956a68c7b74762689b75969760cae1c12 100644
+index dc820ba494e92a0fc770703c7d5020cb2af549fd..20980356b061f00e0f4d496ae2afcc08cfcc342d 100644
 --- a/src/main/java/org/bukkit/attribute/Attribute.java
 +++ b/src/main/java/org/bukkit/attribute/Attribute.java
-@@ -80,10 +80,13 @@ public enum Attribute implements Keyed, net.kyori.adventure.translation.Translat
+@@ -75,15 +75,22 @@ public enum Attribute implements Keyed, net.kyori.adventure.translation.Translat
+     ADV_PURE("advantage.pure"),
+     ADV_PHYSICAL("advantage.physical"),
+     ADV_MAGIC("advantage.magic"),
++    PEN_MAGIC("penetration.magic"),
++    PEN_PHYSICAL("penetration.physical"),
+     ADV_AIR("advantage.air"),
+     ADV_EARTH("advantage.earth"),
      ADV_FIRE("advantage.fire"),
      ADV_WATER("advantage.water"),
  
@@ -1684,6 +1691,8 @@ index dc820ba494e92a0fc770703c7d5020cb2af549fd..e65c53e956a68c7b74762689b7596976
      STAT_CDR("stat.cooldownreduction"),
 +    STAT_HEALTHREGEN("stat.healthregen"),
 +    STAT_ENERGYREGEN("stat.energyregen"),
++    STAT_ENERGY("stat.energy"),
++    STAT_HEALINGPOWER("stat.healingpower"),
 +    STAT_TENACITY("stat.tenacity"),
 +
  
