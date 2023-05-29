@@ -755,7 +755,7 @@ index 0000000000000000000000000000000000000000..5dfd5bcaa73523a92d3dabd3e056ba93
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffectAddEvent.java b/src/main/java/de/erethon/spellbook/api/SpellEffectAddEvent.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..82ff4dfc3148166cf7a48b61e651d50b69b4d2a7
+index 0000000000000000000000000000000000000000..b17ca4a434d1d12d9246d2b5157759d4d67dfbbe
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffectAddEvent.java
 @@ -0,0 +1,61 @@
@@ -772,7 +772,7 @@ index 0000000000000000000000000000000000000000..82ff4dfc3148166cf7a48b61e651d50b
 +    private final LivingEntity caster;
 +    private final SpellEffect effect;
 +    private final EffectData data;
-+    private final boolean isExtension = false;
++    private final boolean isExtension;
 +
 +    private boolean cancelled = false;
 +
