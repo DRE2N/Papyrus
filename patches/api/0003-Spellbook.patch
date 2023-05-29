@@ -198,7 +198,7 @@ index 0000000000000000000000000000000000000000..9597c69b1fd9825abfdedd316c5874b7
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..8703bbddcd0d1c63289b6d82cfbf07bd815718f7
+index 0000000000000000000000000000000000000000..4da6c8b02f9d4b86df6bd836315c6c40fa0b5f05
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 @@ -0,0 +1,319 @@
@@ -373,10 +373,10 @@ index 0000000000000000000000000000000000000000..8703bbddcd0d1c63289b6d82cfbf07bd
 +                if (!onEffectRemove(itr)) {
 +                    continue;
 +                }
-+                SpellEffectRemoveEvent event = new SpellEffectRemoveEvent(this, itr, effect, RemovalReason.CLEANSED);
-+                Bukkit.getPluginManager().callEvent(event);
 +                iterator.remove();
 +                onEffectRemove(itr);
++                SpellEffectRemoveEvent event = new SpellEffectRemoveEvent(this, itr, effect, RemovalReason.CLEANSED);
++                Bukkit.getPluginManager().callEvent(event);
 +            }
 +        }
 +    }
