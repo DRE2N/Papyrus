@@ -198,10 +198,10 @@ index 0000000000000000000000000000000000000000..9597c69b1fd9825abfdedd316c5874b7
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..5c5c51a69cec8e6f5c0b65f05458918904ed2c27
+index 0000000000000000000000000000000000000000..8703bbddcd0d1c63289b6d82cfbf07bd815718f7
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-@@ -0,0 +1,325 @@
+@@ -0,0 +1,319 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -348,12 +348,9 @@ index 0000000000000000000000000000000000000000..5c5c51a69cec8e6f5c0b65f054589189
 +                if (!onEffectAdd(oldEffect, false)) {
 +                    return;
 +                }
++                oldEffect.add(duration, stacks);
 +                SpellEffectAddEvent event = new SpellEffectAddEvent(this, oldEffect, data, true);
 +                Bukkit.getPluginManager().callEvent(event);
-+                if (event.isCancelled()) {
-+                    return;
-+                }
-+                oldEffect.add(duration, stacks);
 +            }
 +        } else {
 +            SpellEffect effect = data.getActiveEffect(caster, (LivingEntity) this, duration, stacks);
@@ -361,13 +358,10 @@ index 0000000000000000000000000000000000000000..5c5c51a69cec8e6f5c0b65f054589189
 +            if (!onEffectAdd(effect, true)) {
 +                return;
 +            }
-+            SpellEffectAddEvent event = new SpellEffectAddEvent(this, effect, data, false);
-+            Bukkit.getPluginManager().callEvent(event);
-+            if (event.isCancelled()) {
-+                return;
-+            }
 +            getEffects().add(effect);
 +            effect.onApply();
++            SpellEffectAddEvent event = new SpellEffectAddEvent(this, effect, data, false);
++            Bukkit.getPluginManager().callEvent(event);
 +        }
 +    }
 +
@@ -763,26 +757,22 @@ index 0000000000000000000000000000000000000000..079e681b11c825c42d4456efaf7d5065
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffectAddEvent.java b/src/main/java/de/erethon/spellbook/api/SpellEffectAddEvent.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..81e4b2efe7080c8a829e7afa9e8ec2ca2657e855
+index 0000000000000000000000000000000000000000..34db493a8543fbdd07fe4557e0f55f12a298031f
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffectAddEvent.java
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,48 @@
 +package de.erethon.spellbook.api;
 +
-+import org.bukkit.entity.LivingEntity;
-+import org.bukkit.event.Cancellable;
 +import org.bukkit.event.Event;
 +import org.bukkit.event.HandlerList;
 +import org.jetbrains.annotations.NotNull;
 +
-+public class SpellEffectAddEvent extends Event implements Cancellable {
++public class SpellEffectAddEvent extends Event {
 +
 +    private final SpellCaster target;
 +    private final SpellEffect effect;
 +    private final EffectData data;
 +    private final boolean isExtension;
-+
-+    private boolean cancelled = false;
 +
 +    public SpellEffectAddEvent(SpellCaster target, SpellEffect activeSpell, EffectData data, boolean isExtension) {
 +        this.target = target;
@@ -818,15 +808,6 @@ index 0000000000000000000000000000000000000000..81e4b2efe7080c8a829e7afa9e8ec2ca
 +        return handlers;
 +    }
 +
-+    @Override
-+    public boolean isCancelled() {
-+        return cancelled;
-+    }
-+
-+    @Override
-+    public void setCancelled(boolean b) {
-+        cancelled = b;
-+    }
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffectRemoveEvent.java b/src/main/java/de/erethon/spellbook/api/SpellEffectRemoveEvent.java
 new file mode 100644
