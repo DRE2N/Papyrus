@@ -198,7 +198,7 @@ index 0000000000000000000000000000000000000000..9597c69b1fd9825abfdedd316c5874b7
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..25354c3506aaa58412d1df163433f07d83650c8d
+index 0000000000000000000000000000000000000000..5c5c51a69cec8e6f5c0b65f05458918904ed2c27
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 @@ -0,0 +1,325 @@
@@ -348,7 +348,7 @@ index 0000000000000000000000000000000000000000..25354c3506aaa58412d1df163433f07d
 +                if (!onEffectAdd(oldEffect, false)) {
 +                    return;
 +                }
-+                SpellEffectAddEvent event = new SpellEffectAddEvent(caster, oldEffect, data, true);
++                SpellEffectAddEvent event = new SpellEffectAddEvent(this, oldEffect, data, true);
 +                Bukkit.getPluginManager().callEvent(event);
 +                if (event.isCancelled()) {
 +                    return;
@@ -361,7 +361,7 @@ index 0000000000000000000000000000000000000000..25354c3506aaa58412d1df163433f07d
 +            if (!onEffectAdd(effect, true)) {
 +                return;
 +            }
-+            SpellEffectAddEvent event = new SpellEffectAddEvent(caster, effect, data, false);
++            SpellEffectAddEvent event = new SpellEffectAddEvent(this, effect, data, false);
 +            Bukkit.getPluginManager().callEvent(event);
 +            if (event.isCancelled()) {
 +                return;
@@ -379,7 +379,7 @@ index 0000000000000000000000000000000000000000..25354c3506aaa58412d1df163433f07d
 +                if (!onEffectRemove(itr)) {
 +                    continue;
 +                }
-+                SpellEffectRemoveEvent event = new SpellEffectRemoveEvent(itr.caster, itr, effect, RemovalReason.CLEANSED);
++                SpellEffectRemoveEvent event = new SpellEffectRemoveEvent(this, itr, effect, RemovalReason.CLEANSED);
 +                Bukkit.getPluginManager().callEvent(event);
 +                iterator.remove();
 +                onEffectRemove(itr);
@@ -755,7 +755,7 @@ index 0000000000000000000000000000000000000000..5dfd5bcaa73523a92d3dabd3e056ba93
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffectAddEvent.java b/src/main/java/de/erethon/spellbook/api/SpellEffectAddEvent.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..b17ca4a434d1d12d9246d2b5157759d4d67dfbbe
+index 0000000000000000000000000000000000000000..81e4b2efe7080c8a829e7afa9e8ec2ca2657e855
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffectAddEvent.java
 @@ -0,0 +1,61 @@
@@ -769,25 +769,25 @@ index 0000000000000000000000000000000000000000..b17ca4a434d1d12d9246d2b5157759d4
 +
 +public class SpellEffectAddEvent extends Event implements Cancellable {
 +
-+    private final LivingEntity caster;
++    private final SpellCaster target;
 +    private final SpellEffect effect;
 +    private final EffectData data;
 +    private final boolean isExtension;
 +
 +    private boolean cancelled = false;
 +
-+    public SpellEffectAddEvent(LivingEntity caster, SpellEffect activeSpell, EffectData data, boolean isExtension) {
-+        this.caster = caster;
++    public SpellEffectAddEvent(SpellCaster target, SpellEffect activeSpell, EffectData data, boolean isExtension) {
++        this.target = target;
 +        this.effect = activeSpell;
 +        this.data = data;
 +        this.isExtension = isExtension;
 +    }
 +
-+    public LivingEntity getCaster() {
-+        return caster;
++    public SpellCaster getTarget() {
++        return target;
 +    }
 +
-+    public SpellEffect getActiveSpell() {
++    public SpellEffect getEffect() {
 +        return effect;
 +    }
 +
@@ -822,7 +822,7 @@ index 0000000000000000000000000000000000000000..b17ca4a434d1d12d9246d2b5157759d4
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffectRemoveEvent.java b/src/main/java/de/erethon/spellbook/api/SpellEffectRemoveEvent.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..cf16c61afe8005925f1c8a7b12a6a01325543bd9
+index 0000000000000000000000000000000000000000..b829b5b7ee2bd4d121cc541ad0ed38669d244eb1
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffectRemoveEvent.java
 @@ -0,0 +1,53 @@
@@ -839,23 +839,23 @@ index 0000000000000000000000000000000000000000..cf16c61afe8005925f1c8a7b12a6a013
 +}
 +public class SpellEffectRemoveEvent extends Event {
 +
-+    private final LivingEntity caster;
++    private final SpellCaster target;
 +    private final SpellEffect effect;
 +    private final EffectData data;
 +    private final RemovalReason reason;
 +
-+    public SpellEffectRemoveEvent(LivingEntity caster, SpellEffect activeSpell, EffectData data, RemovalReason removalReason) {
-+        this.caster = caster;
++    public SpellEffectRemoveEvent(SpellCaster target, SpellEffect activeSpell, EffectData data, RemovalReason removalReason) {
++        this.target = target;
 +        this.effect = activeSpell;
 +        this.data = data;
 +        this.reason = removalReason;
 +    }
 +
-+    public LivingEntity getCaster() {
-+        return caster;
++    public SpellCaster getTarget() {
++        return target;
 +    }
 +
-+    public SpellEffect getActiveSpell() {
++    public SpellEffect getEffect() {
 +        return effect;
 +    }
 +
