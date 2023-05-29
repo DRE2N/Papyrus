@@ -198,10 +198,10 @@ index 0000000000000000000000000000000000000000..9597c69b1fd9825abfdedd316c5874b7
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..8474b473d0b2bd551c502f59cba836020d40d21a
+index 0000000000000000000000000000000000000000..25354c3506aaa58412d1df163433f07d83650c8d
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-@@ -0,0 +1,311 @@
+@@ -0,0 +1,325 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -272,6 +272,8 @@ index 0000000000000000000000000000000000000000..8474b473d0b2bd551c502f59cba83602
 +                for (SpellEffect eventEffect: getEffects()) {
 +                    eventEffect.onRemoveEffect(effect);
 +                }
++                SpellEffectRemoveEvent event = new SpellEffectRemoveEvent(effect.caster, effect, effect.data, RemovalReason.EXPIRED);
++                Bukkit.getPluginManager().callEvent(event);
 +            } else {
 +                effect.tick();
 +            }
@@ -346,12 +348,22 @@ index 0000000000000000000000000000000000000000..8474b473d0b2bd551c502f59cba83602
 +                if (!onEffectAdd(oldEffect, false)) {
 +                    return;
 +                }
++                SpellEffectAddEvent event = new SpellEffectAddEvent(caster, oldEffect, data, true);
++                Bukkit.getPluginManager().callEvent(event);
++                if (event.isCancelled()) {
++                    return;
++                }
 +                oldEffect.add(duration, stacks);
 +            }
 +        } else {
 +            SpellEffect effect = data.getActiveEffect(caster, (LivingEntity) this, duration, stacks);
 +            Bukkit.getLogger().info("Added new " + data.getClass().getName());
 +            if (!onEffectAdd(effect, true)) {
++                return;
++            }
++            SpellEffectAddEvent event = new SpellEffectAddEvent(caster, effect, data, false);
++            Bukkit.getPluginManager().callEvent(event);
++            if (event.isCancelled()) {
 +                return;
 +            }
 +            getEffects().add(effect);
@@ -367,6 +379,8 @@ index 0000000000000000000000000000000000000000..8474b473d0b2bd551c502f59cba83602
 +                if (!onEffectRemove(itr)) {
 +                    continue;
 +                }
++                SpellEffectRemoveEvent event = new SpellEffectRemoveEvent(itr.caster, itr, effect, RemovalReason.CLEANSED);
++                Bukkit.getPluginManager().callEvent(event);
 +                iterator.remove();
 +                onEffectRemove(itr);
 +            }
@@ -738,6 +752,132 @@ index 0000000000000000000000000000000000000000..5dfd5bcaa73523a92d3dabd3e056ba93
 +        }
 +        return false;
 +    }
++}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffectAddEvent.java b/src/main/java/de/erethon/spellbook/api/SpellEffectAddEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..82ff4dfc3148166cf7a48b61e651d50b69b4d2a7
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/SpellEffectAddEvent.java
+@@ -0,0 +1,61 @@
++package de.erethon.spellbook.api;
++
++import org.bukkit.entity.LivingEntity;
++import org.bukkit.event.Cancellable;
++import org.bukkit.event.Event;
++import org.bukkit.event.HandlerList;
++import org.jetbrains.annotations.NotNull;
++
++public class SpellEffectAddEvent extends Event implements Cancellable {
++
++    private final LivingEntity caster;
++    private final SpellEffect effect;
++    private final EffectData data;
++    private final boolean isExtension = false;
++
++    private boolean cancelled = false;
++
++    public SpellEffectAddEvent(LivingEntity caster, SpellEffect activeSpell, EffectData data, boolean isExtension) {
++        this.caster = caster;
++        this.effect = activeSpell;
++        this.data = data;
++        this.isExtension = isExtension;
++    }
++
++    public LivingEntity getCaster() {
++        return caster;
++    }
++
++    public SpellEffect getActiveSpell() {
++        return effect;
++    }
++
++    public EffectData getData() {
++        return data;
++    }
++
++    public boolean wasExtended() {
++        return isExtension;
++    }
++
++    private static final HandlerList handlers = new HandlerList();
++
++    @Override
++    public @NotNull HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static @NotNull HandlerList getHandlerList() {
++        return handlers;
++    }
++
++    @Override
++    public boolean isCancelled() {
++        return cancelled;
++    }
++
++    @Override
++    public void setCancelled(boolean b) {
++        cancelled = b;
++    }
++}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffectRemoveEvent.java b/src/main/java/de/erethon/spellbook/api/SpellEffectRemoveEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..cf16c61afe8005925f1c8a7b12a6a01325543bd9
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/SpellEffectRemoveEvent.java
+@@ -0,0 +1,53 @@
++package de.erethon.spellbook.api;
++
++import org.bukkit.entity.LivingEntity;
++import org.bukkit.event.Event;
++import org.bukkit.event.HandlerList;
++import org.jetbrains.annotations.NotNull;
++
++enum RemovalReason {
++    EXPIRED,
++    CLEANSED
++}
++public class SpellEffectRemoveEvent extends Event {
++
++    private final LivingEntity caster;
++    private final SpellEffect effect;
++    private final EffectData data;
++    private final RemovalReason reason;
++
++    public SpellEffectRemoveEvent(LivingEntity caster, SpellEffect activeSpell, EffectData data, RemovalReason removalReason) {
++        this.caster = caster;
++        this.effect = activeSpell;
++        this.data = data;
++        this.reason = removalReason;
++    }
++
++    public LivingEntity getCaster() {
++        return caster;
++    }
++
++    public SpellEffect getActiveSpell() {
++        return effect;
++    }
++
++    public EffectData getData() {
++        return data;
++    }
++
++    public RemovalReason getReason() {
++        return reason;
++    }
++
++    private static final HandlerList handlers = new HandlerList();
++
++    @Override
++    public @NotNull HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static @NotNull HandlerList getHandlerList() {
++        return handlers;
++    }
++
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellLibrary.java b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
 new file mode 100644
