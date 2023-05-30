@@ -198,10 +198,10 @@ index 0000000000000000000000000000000000000000..9597c69b1fd9825abfdedd316c5874b7
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..4da6c8b02f9d4b86df6bd836315c6c40fa0b5f05
+index 0000000000000000000000000000000000000000..9db25aed60af480255c42cb06d07308cfb7ee080
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-@@ -0,0 +1,319 @@
+@@ -0,0 +1,322 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -487,6 +487,9 @@ index 0000000000000000000000000000000000000000..4da6c8b02f9d4b86df6bd836315c6c40
 +                continue;
 +            }
 +            if (trait.data.affectsSpell(spell.data)) {
++                if (trait.onSpellCast(spell) == null) {
++                    spell.cancel();
++                }
 +                SpellData afterTraitData = trait.onSpellCast(spell).data;
 +                if (afterTraitData != spell.data) {
 +                    spell.cancel();
@@ -1332,10 +1335,10 @@ index 0000000000000000000000000000000000000000..633828d54c4b67d82bbd400870e7b73a
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..b7b9ae3832268468a6195eaf043bdaf98e26c787
+index 0000000000000000000000000000000000000000..a755287c75d9e4236c68cf70caa500d1dc530103
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
-@@ -0,0 +1,242 @@
+@@ -0,0 +1,250 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -1469,6 +1472,14 @@ index 0000000000000000000000000000000000000000..b7b9ae3832268468a6195eaf043bdaf9
 +
 +    /**
 +     * Triggers traits that might be activated by this spell
++     * @param id id that can be used for references
++     */
++    public void triggerTraits(int id) {
++        executeTraitTrigger(new TraitTrigger(this, id));
++    }
++
++    /**
++     * Triggers traits that might be activated by this spell
 +     * @param targets set of entities affected by the spell
 +     */
 +    public void triggerTraits(Set<LivingEntity> targets) {
@@ -1478,7 +1489,7 @@ index 0000000000000000000000000000000000000000..b7b9ae3832268468a6195eaf043bdaf9
 +    /**
 +     * Triggers traits that might be activated by this spell
 +     * @param targets set of entities affected by the spell
-+     * @param id
++     * @param id id that can be used for references
 +     */
 +    public void triggerTraits(Set<LivingEntity> targets, int id) {
 +        executeTraitTrigger(new TraitTrigger(this, targets, id));
@@ -1487,7 +1498,7 @@ index 0000000000000000000000000000000000000000..b7b9ae3832268468a6195eaf043bdaf9
 +    /**
 +     * Triggers traits that might be activated by this spell
 +     * @param targets set of entities affected by the spell
-+     * @param id
++     * @param id id that can be used for references
 +     * @param optional other objects to be passed to the trait
 +     */
 +    public void triggerTraits(Set<LivingEntity> targets, int id, Object... optional) {
@@ -1720,10 +1731,10 @@ index 0000000000000000000000000000000000000000..f801abb9662e7f887a1c5c6e48ceb286
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/TraitTrigger.java b/src/main/java/de/erethon/spellbook/api/TraitTrigger.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..afa63036834e37d7a8b25f46b488f69e67ad88ee
+index 0000000000000000000000000000000000000000..64c572212d00193e39f6bbde6cb7c25f09bebb00
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/TraitTrigger.java
-@@ -0,0 +1,53 @@
+@@ -0,0 +1,58 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.entity.LivingEntity;
@@ -1741,6 +1752,11 @@ index 0000000000000000000000000000000000000000..afa63036834e37d7a8b25f46b488f69e
 +
 +    TraitTrigger(SpellbookSpell spell) {
 +        this.spell = spell;
++    }
++
++    TraitTrigger(SpellbookSpell spell, int id) {
++        this.spell = spell;
++        this.id = id;
 +    }
 +
 +    TraitTrigger(SpellbookSpell spell, Set<LivingEntity> targets) {
