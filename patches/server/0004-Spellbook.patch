@@ -1241,6 +1241,23 @@ index 17ee343bf5e85644ae1c82ec3f22b6c79a5401f7..2ba66effd44bba33eb0c74c997a20f84
  
      public boolean getCommandBlockOverride(String command) {
          return this.overrideAllCommandBlockCommands || this.commandsConfiguration.getStringList("command-block-overrides").contains(command);
+diff --git a/src/main/java/org/bukkit/craftbukkit/attribute/CraftAttributeInstance.java b/src/main/java/org/bukkit/craftbukkit/attribute/CraftAttributeInstance.java
+index e828ef7df04de98628e59e93c0431ea0e10199f8..c07d35f711bbee494c7f07e07b14139b4e0b104a 100644
+--- a/src/main/java/org/bukkit/craftbukkit/attribute/CraftAttributeInstance.java
++++ b/src/main/java/org/bukkit/craftbukkit/attribute/CraftAttributeInstance.java
+@@ -50,6 +50,12 @@ public class CraftAttributeInstance implements AttributeInstance {
+         this.handle.addPermanentModifier(CraftAttributeInstance.convert(modifier));
+     }
+ 
++    @Override
++    public void addTransientModifier(AttributeModifier modifier) {
++        Preconditions.checkArgument(modifier != null, "modifier");
++        this.handle.addTransientModifier(CraftAttributeInstance.convert(modifier));
++    }
++
+     @Override
+     public void removeModifier(AttributeModifier modifier) {
+         Preconditions.checkArgument(modifier != null, "modifier");
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/AbstractProjectile.java b/src/main/java/org/bukkit/craftbukkit/entity/AbstractProjectile.java
 index 1c8d63e462f3ed3d5286659ae0d1ec04d8b55177..b49792ff99acdf5331165c3d4e53042e7d1b3471 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/AbstractProjectile.java

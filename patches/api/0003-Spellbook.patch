@@ -1843,6 +1843,25 @@ index dc820ba494e92a0fc770703c7d5020cb2af549fd..20980356b061f00e0f4d496ae2afcc08
  
      COMBAT_HURTINVUL("combat.hurtinvul");
  
+diff --git a/src/main/java/org/bukkit/attribute/AttributeInstance.java b/src/main/java/org/bukkit/attribute/AttributeInstance.java
+index f08ee26cc4d479e1bfc5264b8cbe721315de91f2..61f8f67f70927951aac21f1b86861b182270aa35 100644
+--- a/src/main/java/org/bukkit/attribute/AttributeInstance.java
++++ b/src/main/java/org/bukkit/attribute/AttributeInstance.java
+@@ -46,6 +46,14 @@ public interface AttributeInstance {
+      */
+     void addModifier(@NotNull AttributeModifier modifier);
+ 
++    /**
++     * Add a transient modifier to this instance.
++     * Transient modifiers are not saved.
++     *
++     * @param modifier to add
++     */
++    void addTransientModifier(AttributeModifier modifier);
++
+     /**
+      * Remove a modifier from this instance.
+      *
 diff --git a/src/main/java/org/bukkit/entity/Damageable.java b/src/main/java/org/bukkit/entity/Damageable.java
 index fc4d3bcd9b16097086fef7975274d825b65adb10..0ada5e125ee88a606399b6437baa1af45ae25b19 100644
 --- a/src/main/java/org/bukkit/entity/Damageable.java
