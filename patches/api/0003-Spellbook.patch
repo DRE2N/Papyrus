@@ -661,10 +661,10 @@ index 0000000000000000000000000000000000000000..afb054382f2e00b31be6aae1dc25d188
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..079e681b11c825c42d4456efaf7d506552b00f5a
+index 0000000000000000000000000000000000000000..80ac112f79426c811fd88dfcf3c3423ae0ae2aa5
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
-@@ -0,0 +1,93 @@
+@@ -0,0 +1,101 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -748,6 +748,14 @@ index 0000000000000000000000000000000000000000..079e681b11c825c42d4456efaf7d5065
 +
 +    public int getTicksLeft() {
 +        return ticksLeft;
++    }
++
++    public LivingEntity getCaster() {
++        return caster;
++    }
++
++    public LivingEntity getTarget() {
++        return target;
 +    }
 +
 +    @Override
