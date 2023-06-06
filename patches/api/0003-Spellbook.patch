@@ -1180,10 +1180,10 @@ index 0000000000000000000000000000000000000000..4cffcc1e150ca13850301e2c479810c4
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellTrait.java b/src/main/java/de/erethon/spellbook/api/SpellTrait.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..37563d7f78d93892035b88c9325f270cf3e76aa6
+index 0000000000000000000000000000000000000000..031af75e4ecb7ba611952bd56ab21f8e7a7a7627
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellTrait.java
-@@ -0,0 +1,106 @@
+@@ -0,0 +1,114 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -1286,6 +1286,14 @@ index 0000000000000000000000000000000000000000..37563d7f78d93892035b88c9325f270c
 +     */
 +    public LivingEntity getCaster() {
 +        return caster;
++    }
++
++    public boolean isActive() {
++        return active;
++    }
++
++    public void setActive(boolean bool) {
++        active = bool;
 +    }
 +
 +
