@@ -246,6 +246,53 @@ index ffb44be6e56fcd3b593914ea59262d57f84f28f6..98d3a28a4257408607c17eb10eb97203
          }
  
      }
+diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
+index 8547e7ff2f1f5b7701fb0f3c3010c14601a5f83e..bcdd12e0265159882c39ad61a2fe853d9b03ca29 100644
+--- a/src/main/java/net/minecraft/server/players/PlayerList.java
++++ b/src/main/java/net/minecraft/server/players/PlayerList.java
+@@ -8,6 +8,7 @@ import com.mojang.authlib.GameProfile;
+ import com.mojang.logging.LogUtils;
+ import com.mojang.serialization.DataResult;
+ import com.mojang.serialization.Dynamic;
++import de.erethon.papyrus.PlayerSwitchProfileEvent;
+ import io.netty.buffer.Unpooled;
+ import io.papermc.paper.adventure.PaperAdventure;
+ import java.io.File;
+@@ -547,6 +548,11 @@ public abstract class PlayerList {
+ 
+     @Nullable
+     public CompoundTag load(ServerPlayer player) {
++        return load(player, 0);
++    }
++
++    @Nullable
++    public CompoundTag load(ServerPlayer player, int profileID) {
+         CompoundTag nbttagcompound = this.server.getWorldData().getLoadedPlayerTag();
+         CompoundTag nbttagcompound1;
+ 
+@@ -555,7 +561,7 @@ public abstract class PlayerList {
+             player.load(nbttagcompound);
+             PlayerList.LOGGER.debug("loading single player");
+         } else {
+-            nbttagcompound1 = this.playerIo.load(player);
++            nbttagcompound1 = this.playerIo.load(player, profileID);
+         }
+ 
+         return nbttagcompound1;
+@@ -1554,4 +1560,13 @@ public abstract class PlayerList {
+     public boolean isAllowCheatsForAllPlayers() {
+         return this.allowCheatsForAllPlayers;
+     }
++
++    public void switchProfile(ServerPlayer player, int newID) {
++        save(player);
++        int oldID = player.selectedProfileID;
++        player.selectedProfileID = newID;
++        load(player, newID);
++        player.teleportTo((ServerLevel) player.level(), player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
++        new PlayerSwitchProfileEvent(player.getBukkitEntity(), oldID, newID).callEvent();
++    }
+ }
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
 index 8b874b260b9306fa2d2d80d46ca5098c4e1d3d61..26ad59839826ac467d734c8eb22439f3bb59fdfd 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
