@@ -8,15 +8,3 @@
 # To import classes from the vanilla Minecraft jar use `minecraft` as the artifactId:
 #     minecraft net.minecraft.world.level.entity.LevelEntityGetterAdapter
 #     minecraft net/minecraft/world/level/entity/LevelEntityGetter.java
-
-minecraft net.minecraft.world.entity.ai.navigation.AmphibiousPathNavigation
-minecraft net.minecraft.network.protocol.game.ClientboundServerDataPacket
-minecraft net.minecraft.network.protocol.game.ClientboundAddEntityPacket
-minecraft net.minecraft.world.entity.ai.goal.MeleeAttackGoal
-minecraft net.minecraft.world.entity.ai.goal.RangedAttackGoal
-minecraft net.minecraft.world.entity.ai.goal.RangedBowAttackGoal
-minecraft net.minecraft.world.entity.ai.goal.RangedCrossbowAttackGoal
-minecraft net.minecraft.world.level.block.ChorusPlantBlock
-minecraft net.minecraft.world.level.block.HugeMushroomBlock
-minecraft net.minecraft.world.level.block.NoteBlock
-

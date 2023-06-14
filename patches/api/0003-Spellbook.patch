@@ -1810,7 +1810,7 @@ index 0000000000000000000000000000000000000000..64c572212d00193e39f6bbde6cb7c25f
 +    }
 +}
 diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
-index ce2ef5cff6ad10b64791e67f6d3cff328c2cf7dc..a8fdf232b3c9d67b6f75eee8150966419d26775f 100644
+index 5b225bbb128893d67251a96ab318035802a0cf76..fb57173f4c11b41ab3f0590409ba5504f1c6c602 100644
 --- a/src/main/java/org/bukkit/Server.java
 +++ b/src/main/java/org/bukkit/Server.java
 @@ -13,6 +13,7 @@ import java.util.Set;
@@ -1821,7 +1821,7 @@ index ce2ef5cff6ad10b64791e67f6d3cff328c2cf7dc..a8fdf232b3c9d67b6f75eee815096641
  import org.bukkit.Warning.WarningState;
  import org.bukkit.advancement.Advancement;
  import org.bukkit.block.data.BlockData;
-@@ -2139,4 +2140,7 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+@@ -2175,4 +2176,7 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
       */
      @NotNull org.bukkit.potion.PotionBrewer getPotionBrewer();
      // Paper end
@@ -1859,25 +1859,6 @@ index dc820ba494e92a0fc770703c7d5020cb2af549fd..20980356b061f00e0f4d496ae2afcc08
  
      COMBAT_HURTINVUL("combat.hurtinvul");
  
-diff --git a/src/main/java/org/bukkit/attribute/AttributeInstance.java b/src/main/java/org/bukkit/attribute/AttributeInstance.java
-index f08ee26cc4d479e1bfc5264b8cbe721315de91f2..61f8f67f70927951aac21f1b86861b182270aa35 100644
---- a/src/main/java/org/bukkit/attribute/AttributeInstance.java
-+++ b/src/main/java/org/bukkit/attribute/AttributeInstance.java
-@@ -46,6 +46,14 @@ public interface AttributeInstance {
-      */
-     void addModifier(@NotNull AttributeModifier modifier);
- 
-+    /**
-+     * Add a transient modifier to this instance.
-+     * Transient modifiers are not saved.
-+     *
-+     * @param modifier to add
-+     */
-+    void addTransientModifier(AttributeModifier modifier);
-+
-     /**
-      * Remove a modifier from this instance.
-      *
 diff --git a/src/main/java/org/bukkit/entity/Damageable.java b/src/main/java/org/bukkit/entity/Damageable.java
 index fc4d3bcd9b16097086fef7975274d825b65adb10..0ada5e125ee88a606399b6437baa1af45ae25b19 100644
 --- a/src/main/java/org/bukkit/entity/Damageable.java
@@ -1908,7 +1889,7 @@ index fc4d3bcd9b16097086fef7975274d825b65adb10..0ada5e125ee88a606399b6437baa1af4
       * Gets the entity's health from 0 to {@link #getMaxHealth()}, where 0 is dead.
       *
 diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
-index 059dfc40edc6c52f95a30e9ac72f45b6aaf5f9a8..d7ee00524ac596ec17ffb40a5f6195b1e19f1427 100644
+index ffca32ae2464ea5a669029079a50585ca259a4f8..b668dfa2cb7cbc736b818009ded8e150b7c6198d 100644
 --- a/src/main/java/org/bukkit/entity/LivingEntity.java
 +++ b/src/main/java/org/bukkit/entity/LivingEntity.java
 @@ -4,6 +4,9 @@ import java.util.Collection;
@@ -1930,7 +1911,7 @@ index 059dfc40edc6c52f95a30e9ac72f45b6aaf5f9a8..d7ee00524ac596ec17ffb40a5f6195b1
  
      /**
       * Gets the height of the living entity's eyes above its Location.
-@@ -1094,7 +1097,6 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+@@ -1096,7 +1099,6 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
       * @param slot the slot
       */
      void broadcastSlotBreak(org.bukkit.inventory.@NotNull EquipmentSlot slot);
@@ -1938,7 +1919,7 @@ index 059dfc40edc6c52f95a30e9ac72f45b6aaf5f9a8..d7ee00524ac596ec17ffb40a5f6195b1
      /**
       * Notifies specified players that the item in the slot
       * of this entity broke.
-@@ -1148,4 +1150,8 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+@@ -1150,4 +1152,8 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
       */
      void setBodyYaw(float bodyYaw);
      // Paper end
@@ -1948,10 +1929,10 @@ index 059dfc40edc6c52f95a30e9ac72f45b6aaf5f9a8..d7ee00524ac596ec17ffb40a5f6195b1
 +    void sendParsedMessage(String text);
  }
 diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
-index 5f11b2e9c1bca121ae72dd0ec94ae4a86f80a324..22ba38a78bbc961a8a6d8687571126ecb5932398 100644
+index 4ee0eb177f6b5765a9d7263576bb36c8a8366979..0036ff4b095bb3f70397ea7a323b2cb88c3bcbb0 100644
 --- a/src/main/java/org/bukkit/entity/Player.java
 +++ b/src/main/java/org/bukkit/entity/Player.java
-@@ -1056,30 +1056,6 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -1118,30 +1118,6 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
      /**
       * Sends an Action Bar message to the client.
       *
@@ -1982,7 +1963,7 @@ index 5f11b2e9c1bca121ae72dd0ec94ae4a86f80a324..22ba38a78bbc961a8a6d8687571126ec
       * @deprecated use {@link #sendActionBar(net.kyori.adventure.text.Component)}
       */
      @Deprecated
-@@ -1112,7 +1088,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -1174,7 +1150,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
      /**
       * Sends an array of components as a single message to the specified screen position of this player
       *
@@ -1991,7 +1972,7 @@ index 5f11b2e9c1bca121ae72dd0ec94ae4a86f80a324..22ba38a78bbc961a8a6d8687571126ec
       * @param position the screen position
       * @param components the components to send
       */
-@@ -2829,6 +2805,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -2916,6 +2892,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
          /**
           * Sends an array of components as a single message to the specified screen position of this player
           *
@@ -1999,20 +1980,3 @@ index 5f11b2e9c1bca121ae72dd0ec94ae4a86f80a324..22ba38a78bbc961a8a6d8687571126ec
           * @param position the screen position
           * @param components the components to send
           * @deprecated use {@code sendMessage} methods that accept {@link net.kyori.adventure.text.Component}
-diff --git a/src/main/java/org/bukkit/entity/Projectile.java b/src/main/java/org/bukkit/entity/Projectile.java
-index d97904540ff5cf103604862a5a1a3a41f56dfe33..da3a6b0154fc5ec2d026ab131e66cf753b52182e 100644
---- a/src/main/java/org/bukkit/entity/Projectile.java
-+++ b/src/main/java/org/bukkit/entity/Projectile.java
-@@ -1,5 +1,6 @@
- package org.bukkit.entity;
- 
-+import de.erethon.papyrus.DamageType;
- import org.bukkit.projectiles.ProjectileSource;
- import org.jetbrains.annotations.Nullable;
- 
-@@ -119,4 +120,5 @@ public interface Projectile extends Entity {
-      */
-     void hitEntity(@org.jetbrains.annotations.NotNull Entity entity, @org.jetbrains.annotations.NotNull org.bukkit.util.Vector vector);
-     // Paper end
-+    void setDamageType(DamageType type); // Papyrus
- }

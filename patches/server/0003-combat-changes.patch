@@ -63,7 +63,7 @@ index 0000000000000000000000000000000000000000..afe4ed93f622cc46c0bb1faa12976e44
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-index 480cfbc37bf0cf7beb24bd1ecdbc34127d7fbe40..6157d73cc72f1901562373b32b155378ab89f2a6 100644
+index 6f459c774eb0f46a8450e03f45969f1e298b6b31..ffb44be6e56fcd3b593914ea59262d57f84f28f6 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
 +++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
 @@ -18,6 +18,9 @@ import java.util.Optional;
@@ -76,7 +76,7 @@ index 480cfbc37bf0cf7beb24bd1ecdbc34127d7fbe40..6157d73cc72f1901562373b32b155378
  import net.minecraft.BlockUtil;
  import net.minecraft.ChatFormatting;
  import net.minecraft.CrashReport;
-@@ -2114,7 +2117,7 @@ public class ServerPlayer extends Player {
+@@ -2161,7 +2164,7 @@ public class ServerPlayer extends Player {
          if (this.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
              this.setCamera(target);
          } else {
@@ -86,10 +86,10 @@ index 480cfbc37bf0cf7beb24bd1ecdbc34127d7fbe40..6157d73cc72f1901562373b32b155378
  
      }
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index e6e1c46a01961d47a774e34e430c8eacda22d558..42cfdad56694f36757d44276b30f120a16d4ddf8 100644
+index 29dbd3a902c2d620b9da191d0bcd9f6e9108034a..636eba5ca69c1c8f8c62fef77a343defb72e87dc 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-@@ -318,6 +318,7 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Tic
+@@ -321,6 +321,7 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Tic
          this.chatMessageChain = new FutureChain(server.chatExecutor); // CraftBukkit - async chat
          // CraftBukkit start - add fields and methods
          this.cserver = server.server;
@@ -98,7 +98,7 @@ index e6e1c46a01961d47a774e34e430c8eacda22d558..42cfdad56694f36757d44276b30f120a
  
      private final org.bukkit.craftbukkit.CraftServer cserver;
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index e25be74ef0a88541884ad62a4b84219400d5a142..5a59392c88b463ccb61835cf4b666717b18ca8aa 100644
+index 53fec4d15ac3d21e5f82c76133ee8dc449d1e67a..8b874b260b9306fa2d2d80d46ca5098c4e1d3d61 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
 @@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
@@ -109,7 +109,7 @@ index e25be74ef0a88541884ad62a4b84219400d5a142..5a59392c88b463ccb61835cf4b666717
  import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
  import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
  import java.util.Arrays;
-@@ -2050,6 +2051,16 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -2171,6 +2172,16 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
          }
      }
  
@@ -127,7 +127,7 @@ index e25be74ef0a88541884ad62a4b84219400d5a142..5a59392c88b463ccb61835cf4b666717
          return this.calculateViewVector(this.getViewXRot(tickDelta), this.getViewYRot(tickDelta));
      }
 diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
-index 636e601b004a412d02e5be86e97d489b52c28e1b..fee3c03b0053db1f0d4766f18dfd1a680524eee5 100644
+index f6eb032897c6d5d16ab5c8c287e49e189c24571c..e689c8b00dd8167d0027d261df4ae1f25ace4e6e 100644
 --- a/src/main/java/net/minecraft/world/entity/Mob.java
 +++ b/src/main/java/net/minecraft/world/entity/Mob.java
 @@ -9,6 +9,8 @@ import java.util.Optional;
@@ -139,7 +139,7 @@ index 636e601b004a412d02e5be86e97d489b52c28e1b..fee3c03b0053db1f0d4766f18dfd1a68
  import net.minecraft.core.BlockPos;
  import net.minecraft.core.NonNullList;
  import net.minecraft.core.Vec3i;
-@@ -1645,12 +1647,16 @@ public abstract class Mob extends LivingEntity implements Targeting {
+@@ -1647,12 +1649,16 @@ public abstract class Mob extends LivingEntity implements Targeting {
  
      @Override
      public boolean doHurtTarget(Entity target) {
@@ -160,7 +160,7 @@ index 636e601b004a412d02e5be86e97d489b52c28e1b..fee3c03b0053db1f0d4766f18dfd1a68
          }
  
          int i = EnchantmentHelper.getFireAspect(this);
-@@ -1665,12 +1671,12 @@ public abstract class Mob extends LivingEntity implements Targeting {
+@@ -1667,12 +1673,12 @@ public abstract class Mob extends LivingEntity implements Targeting {
              }
              // CraftBukkit end
          }
@@ -231,7 +231,7 @@ index 2878bcbfd41839249b160e67b83d5dad149c94db..57be3d8f01e53a1edf8f92cd6cf35bed
  
      private static Attribute register(String id, Attribute attribute) {
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
-index 0629c471d38a77c44fc1c86ccdfcb0690f61ca17..3aa5c994f5c7b719898e4e53d9dad0357cb4cdfc 100644
+index 58152160d609d0e9d105153aeb166a56a7955603..1a977285f028ee6082b810da75582c2f5968186b 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
 +++ b/src/main/java/net/minecraft/world/entity/player/Player.java
 @@ -16,6 +16,9 @@ import java.util.Optional;
@@ -244,7 +244,7 @@ index 0629c471d38a77c44fc1c86ccdfcb0690f61ca17..3aa5c994f5c7b719898e4e53d9dad035
  import net.minecraft.Util;
  import net.minecraft.advancements.CriteriaTriggers;
  import net.minecraft.core.BlockPos;
-@@ -131,7 +134,7 @@ public abstract class Player extends LivingEntity {
+@@ -132,7 +135,7 @@ public abstract class Player extends LivingEntity {
  
      private static final Logger LOGGER = LogUtils.getLogger();
      public static final int MAX_NAME_LENGTH = 16;
@@ -253,7 +253,7 @@ index 0629c471d38a77c44fc1c86ccdfcb0690f61ca17..3aa5c994f5c7b719898e4e53d9dad035
      public static final int SLEEP_DURATION = 100;
      public static final int WAKE_UP_DURATION = 10;
      public static final int ENDER_SLOT_OFFSET = 200;
-@@ -225,7 +228,8 @@ public abstract class Player extends LivingEntity {
+@@ -226,7 +229,8 @@ public abstract class Player extends LivingEntity {
      }
  
      public static AttributeSupplier.Builder createAttributes() {
@@ -263,8 +263,8 @@ index 0629c471d38a77c44fc1c86ccdfcb0690f61ca17..3aa5c994f5c7b719898e4e53d9dad035
      }
  
      @Override
-@@ -1238,6 +1242,15 @@ public abstract class Player extends LivingEntity {
-         return this.onGround || this.fallDistance < this.maxUpStep() && !this.level.noCollision(this, this.getBoundingBox().move(0.0D, (double) (this.fallDistance - this.maxUpStep()), 0.0D));
+@@ -1239,6 +1243,15 @@ public abstract class Player extends LivingEntity {
+         return this.onGround() || this.fallDistance < this.maxUpStep() && !this.level().noCollision(this, this.getBoundingBox().move(0.0D, (double) (this.fallDistance - this.maxUpStep()), 0.0D));
      }
  
 +    // Papyrus - combat rework
@@ -279,7 +279,7 @@ index 0629c471d38a77c44fc1c86ccdfcb0690f61ca17..3aa5c994f5c7b719898e4e53d9dad035
      public void attack(Entity target) {
          // Paper start - PlayerAttackEntityEvent
          boolean willAttack = target.isAttackable() && !target.skipAttackInteraction(this); // Vanilla logic
-@@ -1457,7 +1470,7 @@ public abstract class Player extends LivingEntity {
+@@ -1458,7 +1471,7 @@ public abstract class Player extends LivingEntity {
  
      @Override
      protected void doAutoAttackOnTouch(LivingEntity target) {
@@ -289,10 +289,10 @@ index 0629c471d38a77c44fc1c86ccdfcb0690f61ca17..3aa5c994f5c7b719898e4e53d9dad035
  
      public void disableShield(boolean sprinting) {
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
-index 0ae1fce0c1a2e3bfbbab756a088fc76545e263fa..e5847d5a54ef5c83fb1f92ab7cb1c2e82636281a 100644
+index 03bb444705916ffe0b9eb4b7496524dc3459ebe0..1608dc4de79445f7e0ceda7297e8420b83af02da 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
-@@ -168,8 +168,8 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+@@ -173,8 +173,8 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
      private final Map<UUID, Set<WeakReference<Plugin>>> invertedVisibilityEntities = new HashMap<>();
      private static final WeakHashMap<Plugin, WeakReference<Plugin>> pluginWeakReferences = new WeakHashMap<>();
      private int hash = 0;
