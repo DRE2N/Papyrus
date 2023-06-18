@@ -1980,3 +1980,20 @@ index 4ee0eb177f6b5765a9d7263576bb36c8a8366979..0036ff4b095bb3f70397ea7a323b2cb8
           * @param position the screen position
           * @param components the components to send
           * @deprecated use {@code sendMessage} methods that accept {@link net.kyori.adventure.text.Component}
+diff --git a/src/main/java/org/bukkit/entity/Projectile.java b/src/main/java/org/bukkit/entity/Projectile.java
+index 81ff7003e15e209358e8434a6875af79a4eb57f2..b89553f46a8c73888c371a724b37dbb0820b4ee2 100644
+--- a/src/main/java/org/bukkit/entity/Projectile.java
++++ b/src/main/java/org/bukkit/entity/Projectile.java
+@@ -1,5 +1,6 @@
+ package org.bukkit.entity;
+ 
++import de.erethon.papyrus.DamageType;
+ import org.bukkit.projectiles.ProjectileSource;
+ import org.jetbrains.annotations.Nullable;
+ 
+@@ -129,4 +130,5 @@ public interface Projectile extends Entity {
+     @Nullable
+     java.util.UUID getOwnerUniqueId();
+     // Paper end
++    void setDamageType(DamageType type);
+ }

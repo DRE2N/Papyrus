@@ -49,3 +49,86 @@ index 0000000000000000000000000000000000000000..1f20fd2c6128cd58ec160e95ca59d276
 +    }
 +
 +}
+diff --git a/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java b/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
+index 7ce8f1a26c1b33dd0eb6e6435952fd73abf49879..5f94cb25a5137b4e6a93c1b2850f55d4f9290a78 100644
+--- a/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
++++ b/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
+@@ -2,6 +2,8 @@ package org.bukkit.event.entity;
+ 
+ import com.google.common.base.Function;
+ import java.util.Map;
++
++import de.erethon.papyrus.DamageType;
+ import org.bukkit.entity.Entity;
+ import org.jetbrains.annotations.NotNull;
+ 
+@@ -18,6 +20,13 @@ public class EntityDamageByEntityEvent extends EntityDamageEvent {
+         this.critical = false; // Paper - add critical damage API
+     }
+ 
++    public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, final double damage, DamageType type) {
++        super(damagee, cause, damage);
++        this.damager = damager;
++        this.critical = false; // Paper - add critical damage API
++        this.damageType = type;
++    }
++
+     @Deprecated // Paper - add critical damage API
+     public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions) {
+         // Paper start - add critical damage API
+diff --git a/src/main/java/org/bukkit/event/entity/EntityDamageEvent.java b/src/main/java/org/bukkit/event/entity/EntityDamageEvent.java
+index 4773f537dec20d6ebd82e4b145a1cdea0077fe90..589b2781d14e84aaba11ee5bf8a2de0a7cc7fdaf 100644
+--- a/src/main/java/org/bukkit/event/entity/EntityDamageEvent.java
++++ b/src/main/java/org/bukkit/event/entity/EntityDamageEvent.java
+@@ -7,6 +7,8 @@ import com.google.common.collect.ImmutableMap;
+ import java.util.EnumMap;
+ import java.util.Map;
+ import java.util.Objects;
++
++import de.erethon.papyrus.DamageType;
+ import org.bukkit.Material;
+ import org.bukkit.WorldBorder;
+ import org.bukkit.entity.Entity;
+@@ -28,11 +30,19 @@ public class EntityDamageEvent extends EntityEvent implements Cancellable {
+     private boolean cancelled;
+     private final DamageCause cause;
+ 
++    protected DamageType damageType; // Papyrus
++
+     public EntityDamageEvent(@NotNull final Entity damagee, @NotNull final DamageCause cause, final double damage) {
+         this(damagee, cause, new EnumMap<DamageModifier, Double>(ImmutableMap.of(DamageModifier.BASE, damage)), new EnumMap<DamageModifier, Function<? super Double, Double>>(ImmutableMap.of(DamageModifier.BASE, ZERO)));
+     }
+ 
++    // Papyrus start - Damage types
+     public EntityDamageEvent(@NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions) {
++        this(damagee, cause, modifiers, modifierFunctions, DamageType.PURE);
++    }
++    // Papyrus end
++
++    public EntityDamageEvent(@NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions, DamageType type) {
+         super(damagee);
+         Preconditions.checkArgument(modifiers.containsKey(DamageModifier.BASE), "BASE DamageModifier missing");
+         Preconditions.checkArgument(!modifiers.containsKey(null), "Cannot have null DamageModifier");
+@@ -43,6 +53,7 @@ public class EntityDamageEvent extends EntityEvent implements Cancellable {
+         this.cause = cause;
+         this.modifiers = modifiers;
+         this.modifierFunctions = modifierFunctions;
++        this.damageType = type; // Papyrus
+     }
+ 
+     @Override
+@@ -204,6 +215,14 @@ public class EntityDamageEvent extends EntityEvent implements Cancellable {
+         return handlers;
+     }
+ 
++    public DamageType getDamageType() {
++        return damageType;
++    }
++
++    public void setDamageType(DamageType type) {
++        damageType = type;
++    }
++
+     /**
+      * An enum to specify the types of modifier
+      *

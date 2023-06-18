@@ -246,6 +246,53 @@ index ffb44be6e56fcd3b593914ea59262d57f84f28f6..98d3a28a4257408607c17eb10eb97203
          }
  
      }
+diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
+index 8547e7ff2f1f5b7701fb0f3c3010c14601a5f83e..bcdd12e0265159882c39ad61a2fe853d9b03ca29 100644
+--- a/src/main/java/net/minecraft/server/players/PlayerList.java
++++ b/src/main/java/net/minecraft/server/players/PlayerList.java
+@@ -8,6 +8,7 @@ import com.mojang.authlib.GameProfile;
+ import com.mojang.logging.LogUtils;
+ import com.mojang.serialization.DataResult;
+ import com.mojang.serialization.Dynamic;
++import de.erethon.papyrus.PlayerSwitchProfileEvent;
+ import io.netty.buffer.Unpooled;
+ import io.papermc.paper.adventure.PaperAdventure;
+ import java.io.File;
+@@ -547,6 +548,11 @@ public abstract class PlayerList {
+ 
+     @Nullable
+     public CompoundTag load(ServerPlayer player) {
++        return load(player, 0);
++    }
++
++    @Nullable
++    public CompoundTag load(ServerPlayer player, int profileID) {
+         CompoundTag nbttagcompound = this.server.getWorldData().getLoadedPlayerTag();
+         CompoundTag nbttagcompound1;
+ 
+@@ -555,7 +561,7 @@ public abstract class PlayerList {
+             player.load(nbttagcompound);
+             PlayerList.LOGGER.debug("loading single player");
+         } else {
+-            nbttagcompound1 = this.playerIo.load(player);
++            nbttagcompound1 = this.playerIo.load(player, profileID);
+         }
+ 
+         return nbttagcompound1;
+@@ -1554,4 +1560,13 @@ public abstract class PlayerList {
+     public boolean isAllowCheatsForAllPlayers() {
+         return this.allowCheatsForAllPlayers;
+     }
++
++    public void switchProfile(ServerPlayer player, int newID) {
++        save(player);
++        int oldID = player.selectedProfileID;
++        player.selectedProfileID = newID;
++        load(player, newID);
++        player.teleportTo((ServerLevel) player.level(), player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
++        new PlayerSwitchProfileEvent(player.getBukkitEntity(), oldID, newID).callEvent();
++    }
+ }
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
 index 8b874b260b9306fa2d2d80d46ca5098c4e1d3d61..26ad59839826ac467d734c8eb22439f3bb59fdfd 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
@@ -463,7 +510,7 @@ index 8b874b260b9306fa2d2d80d46ca5098c4e1d3d61..26ad59839826ac467d734c8eb22439f3
 +    }
  }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index eccd61f5401ecb2ef0b460337a3284d1844bd85f..46f90ef5d4fe39a4a395d4f73cfb6a5db047d39f 100644
+index eccd61f5401ecb2ef0b460337a3284d1844bd85f..65f2f02a56ac230fafb1dc6b68e7ca76d99cae15 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -19,6 +19,9 @@ import java.util.Optional;
@@ -558,7 +605,7 @@ index eccd61f5401ecb2ef0b460337a3284d1844bd85f..46f90ef5d4fe39a4a395d4f73cfb6a5d
          this.animStepO = this.animStep;
          this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
-@@ -1378,8 +1406,93 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -1378,8 +1406,96 @@ public abstract class LivingEntity extends Entity implements Attackable {
      }
      // Pufferfish end
  
@@ -576,20 +623,20 @@ index eccd61f5401ecb2ef0b460337a3284d1844bd85f..46f90ef5d4fe39a4a395d4f73cfb6a5d
 +        double finalDmg = amount;
 +        double resistance = getAttributeValue(type.getResAttr());
 +        if (attacker != null) {
-+            EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(source.getEntity().getBukkitEntity(), this.getBukkitLivingEntity(), EntityDamageEvent.DamageCause.ENTITY_ATTACK,amount);
-+            Bukkit.getServer().getPluginManager().callEvent(event);
-+            if (event.isCancelled()) {
-+                return false;
-+            }
 +            if (attacker instanceof LivingEntity living) {
 +                resistance = resistance - living.getAttributeValue(type.getPenAttribute()); // Remove the value of the attackers penetration attribute from the victims resistance
 +            }
 +            finalDmg = amount - resistance;
++            EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(source.getEntity().getBukkitEntity(), this.getBukkitLivingEntity(), EntityDamageEvent.DamageCause.ENTITY_ATTACK,finalDmg, type.getApiDamageType());
++            Bukkit.getServer().getPluginManager().callEvent(event);
++            if (event.isCancelled()) {
++                return false;
++            }
++            if (event.getDamageType() != type.getApiDamageType()) {
++                type = CraftDamageType.ofAPI(event.getDamageType());
++            }
 +            if (source.getEntity() instanceof net.minecraft.world.entity.player.Player player) {
 +                setLastHurtByPlayer(player);
-+                if (attacker instanceof LivingEntity living) {
-+                    player.getBukkitEntity().sendActionBar(Component.text(type +   ": "  + amount  + " | Res: "  + getAttributeValue(type.getResAttr()) +  " | Pen: " + living.getAttributeValue(type.getPenAttribute()) + " | = " +  finalDmg));
-+                }
 +            } else if (source.getEntity() instanceof LivingEntity livingEntity){
 +                setLastHurtByMob(livingEntity);
 +            }
@@ -631,6 +678,9 @@ index eccd61f5401ecb2ef0b460337a3284d1844bd85f..46f90ef5d4fe39a4a395d4f73cfb6a5d
 +            if (finalDmg <= 0) {
 +                return false;
 +            }
++            if (attacker instanceof LivingEntity living) {
++                living.getBukkitEntity().sendActionBar(Component.text(type +   ": "  + amount  + " | Res: "  + getAttributeValue(type.getResAttr()) +  " | Pen: " + living.getAttributeValue(type.getPenAttribute()) + " | = " +  finalDmg));
++            }
 +        }
 +        invulnerableTime = (int) getAttribute(Attributes.COMBAT_HURTINVUL).getValue();
 +        playHurtSound(source);
@@ -652,7 +702,7 @@ index eccd61f5401ecb2ef0b460337a3284d1844bd85f..46f90ef5d4fe39a4a395d4f73cfb6a5d
          if (this.isInvulnerableTo(source)) {
              return false;
          } else if (this.level().isClientSide) {
-@@ -1561,7 +1674,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -1561,7 +1677,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
  
              return flag2;
          }
