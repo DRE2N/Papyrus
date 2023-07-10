@@ -293,6 +293,44 @@ index 8547e7ff2f1f5b7701fb0f3c3010c14601a5f83e..bcdd12e0265159882c39ad61a2fe853d
 +        new PlayerSwitchProfileEvent(player.getBukkitEntity(), oldID, newID).callEvent();
 +    }
  }
+diff --git a/src/main/java/net/minecraft/world/damagesource/CombatTracker.java b/src/main/java/net/minecraft/world/damagesource/CombatTracker.java
+index c12d7bacf2c54f268b1bc5e46250a083ca041415..2e79e2f8e68b158a1a140db180d09f3deb64e3b9 100644
+--- a/src/main/java/net/minecraft/world/damagesource/CombatTracker.java
++++ b/src/main/java/net/minecraft/world/damagesource/CombatTracker.java
+@@ -15,10 +15,10 @@ import net.minecraft.world.entity.LivingEntity;
+ import net.minecraft.world.item.ItemStack;
+ 
+ public class CombatTracker {
+-    public static final int RESET_DAMAGE_STATUS_TIME = 100;
+-    public static final int RESET_COMBAT_STATUS_TIME = 300;
++    public static final int RESET_DAMAGE_STATUS_TIME = 200; // Papyrus
++    public static final int RESET_COMBAT_STATUS_TIME = 600; // Papyrus
+     private static final Style INTENTIONAL_GAME_DESIGN_STYLE = Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://bugs.mojang.com/browse/MCPE-28723")).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("MCPE-28723")));
+-    private final List<CombatEntry> entries = Lists.newArrayList();
++    public List<CombatEntry> entries = Lists.newArrayList(); // Papyrus
+     private final LivingEntity mob;
+     private int lastDamageTime;
+     private int combatStartTime;
+diff --git a/src/main/java/net/minecraft/world/damagesource/DamageSource.java b/src/main/java/net/minecraft/world/damagesource/DamageSource.java
+index 25a5a3b949a0eb632611355e74ccd4865be108ca..34fd30d7735734465aedef344fb3c6559a961f6d 100644
+--- a/src/main/java/net/minecraft/world/damagesource/DamageSource.java
++++ b/src/main/java/net/minecraft/world/damagesource/DamageSource.java
+@@ -20,6 +20,7 @@ public class DamageSource {
+     private final Entity directEntity;
+     @Nullable
+     private final Vec3 damageSourcePosition;
++    public long time; // Papyrus - damage source timestamp
+     // CraftBukkit start
+     private boolean sweep;
+     private boolean melting;
+@@ -71,6 +72,7 @@ public class DamageSource {
+         this.causingEntity = attacker;
+         this.directEntity = source;
+         this.damageSourcePosition = position;
++        this.time = System.currentTimeMillis(); // Papyrus
+     }
+ 
+     public DamageSource(Holder<DamageType> type, @Nullable Entity source, @Nullable Entity attacker) {
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
 index 8b874b260b9306fa2d2d80d46ca5098c4e1d3d61..26ad59839826ac467d734c8eb22439f3bb59fdfd 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
