@@ -49,6 +49,211 @@ index 0000000000000000000000000000000000000000..1f20fd2c6128cd58ec160e95ca59d276
 +    }
 +
 +}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
+index 9db25aed60af480255c42cb06d07308cfb7ee080..202abd3a8a52eb04abba2662e7c8c810cc11f3f5 100644
+--- a/src/main/java/de/erethon/spellbook/api/SpellCaster.java
++++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
+@@ -58,6 +58,10 @@ public interface SpellCaster {
+      */
+     Set<SpellTrait> getActiveTraits();
+ 
++    boolean isChanneling();
++
++    void setChanneling(boolean channeling);
++
+     default void tick() {
+         Iterator<SpellEffect> effectIterator = getEffects().iterator();
+         while(effectIterator.hasNext()) {
+@@ -318,5 +322,16 @@ public interface SpellCaster {
+         }
+     }
+ 
++    /**
++     * This will only interrupt channeling spells for now.
++     */
++    default void interrupt() {
++        for (SpellbookSpell spell : getActiveSpells()) {
++            if (spell.isChanneling) {
++                spell.interrupt();
++            }
++        }
++    }
++
+ 
+ }
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellChannelFinishEvent.java b/src/main/java/de/erethon/spellbook/api/SpellChannelFinishEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..3ab73e1736b09e3b1ed053463848993b81259bc0
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/SpellChannelFinishEvent.java
+@@ -0,0 +1,41 @@
++package de.erethon.spellbook.api;
++
++import org.bukkit.event.Event;
++import org.bukkit.event.HandlerList;
++import org.jetbrains.annotations.NotNull;
++
++public class SpellChannelFinishEvent extends Event {
++
++    private final SpellCaster caster;
++    private final SpellbookSpell spell;
++    private final boolean interrupted;
++
++    private static final HandlerList handlers = new HandlerList();
++
++    public SpellChannelFinishEvent(SpellCaster caster, SpellbookSpell spell, boolean interrupted) {
++        this.caster = caster;
++        this.spell = spell;
++        this.interrupted = interrupted;
++    }
++
++    public SpellCaster getCaster() {
++        return caster;
++    }
++
++    public SpellbookSpell getSpell() {
++        return spell;
++    }
++
++    public boolean wasInterrupted() {
++        return interrupted;
++    }
++
++    @Override
++    public @NotNull HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static @NotNull HandlerList getHandlerList() {
++        return handlers;
++    }
++}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellChannelStartEvent.java b/src/main/java/de/erethon/spellbook/api/SpellChannelStartEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..ff0571c54408568ef66cc149e10a9daa2528b1d4
+--- /dev/null
++++ b/src/main/java/de/erethon/spellbook/api/SpellChannelStartEvent.java
+@@ -0,0 +1,34 @@
++package de.erethon.spellbook.api;
++
++import org.bukkit.event.Event;
++import org.bukkit.event.HandlerList;
++import org.jetbrains.annotations.NotNull;
++
++public class SpellChannelStartEvent extends Event {
++    private final SpellCaster caster;
++    private final SpellbookSpell spell;
++
++    private static final HandlerList handlers = new HandlerList();
++
++    public SpellChannelStartEvent(SpellCaster caster, SpellbookSpell spell) {
++        this.caster = caster;
++        this.spell = spell;
++    }
++
++    public SpellCaster getCaster() {
++        return caster;
++    }
++
++    public SpellbookSpell getSpell() {
++        return spell;
++    }
++
++    @Override
++    public @NotNull HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static @NotNull HandlerList getHandlerList() {
++        return handlers;
++    }
++}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
+index a755287c75d9e4236c68cf70caa500d1dc530103..d2b3bb6617a036eac08c8ef4310b69eb781f149e 100644
+--- a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
++++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
+@@ -1,6 +1,7 @@
+ package de.erethon.spellbook.api;
+ 
+ import de.erethon.papyrus.DamageType;
++import org.bukkit.Bukkit;
+ import org.bukkit.entity.LivingEntity;
+ 
+ import java.util.Set;
+@@ -16,12 +17,15 @@ public abstract class SpellbookSpell {
+ 
+     protected int keepAliveTicks = 0;
+     protected int currentTicks = 0;
++    protected int channelDuration = 0;
++    protected int currentChannelTicks = 0;
+ 
+     protected int tickInterval = 1;
+     protected int currentTickInterval = 0;
+ 
+     protected boolean failed = false;
+     protected boolean interrupted = false;
++    public boolean isChanneling = false;
+ 
+     public SpellbookSpell(LivingEntity caster, SpellData spellData) {
+         this.data = spellData;
+@@ -67,6 +71,19 @@ public abstract class SpellbookSpell {
+         cleanup();
+     }
+ 
++    /**
++     * This is method is called after channeling was finished.
++     */
++    protected void onChannelFinish() {
++    }
++
++    /**
++     * This method is called when channeling is interrupted for whatever reason. cleanup() will be called afterwards
++     */
++    protected void onChannelInterrupt() {
++
++    }
++
+     /**
+      * This method should be used for cleaning up after a Spell cast. For example spawned entities should be
+      * removed here.
+@@ -170,9 +187,15 @@ public abstract class SpellbookSpell {
+ 
+     /**
+      * Interrupts the spell. It will stop ticking, but cleanup() will still
+-     * be called.
++     * be called. onChannelInterrupt() will be called first if the Spell is currently channeling.
+      */
+     public void interrupt() {
++        if (isChanneling) {
++            SpellChannelFinishEvent finishEvent = new SpellChannelFinishEvent(caster, this, true);
++            Bukkit.getPluginManager().callEvent(finishEvent);
++            onChannelInterrupt();
++            channelDuration = -1; // Don't continue channeling
++        }
+         interrupted = true;
+     }
+ 
+@@ -208,6 +231,20 @@ public abstract class SpellbookSpell {
+             cleanup();
+             return;
+         }
++        if (channelDuration > 0) {
++            currentChannelTicks++;
++            if (!isChanneling && currentChannelTicks < channelDuration) {
++                isChanneling = true;
++                caster.setChanneling(true);
++            }
++            if (currentChannelTicks == channelDuration) {
++                SpellChannelFinishEvent finishEvent = new SpellChannelFinishEvent(caster, this, false);
++                Bukkit.getPluginManager().callEvent(finishEvent);
++                onChannelFinish();
++                isChanneling = false;
++                caster.setChanneling(false);
++            }
++        }
+         currentTicks++;
+         if (currentTickInterval >= tickInterval) {
+             currentTickInterval = 0;
 diff --git a/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java b/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
 index 7ce8f1a26c1b33dd0eb6e6435952fd73abf49879..5f94cb25a5137b4e6a93c1b2850f55d4f9290a78 100644
 --- a/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java

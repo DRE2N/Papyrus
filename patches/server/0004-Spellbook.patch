@@ -246,6 +246,22 @@ index ffb44be6e56fcd3b593914ea59262d57f84f28f6..98d3a28a4257408607c17eb10eb97203
          }
  
      }
+diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+index 636eba5ca69c1c8f8c62fef77a343defb72e87dc..e3d78912ca3afedb45012cb811fcf3b48d90106c 100644
+--- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
++++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+@@ -1394,7 +1394,10 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Tic
+                 if (this.tickCount == 0) {
+                     this.resetPosition();
+                 }
+-
++                // Papyrus - Cancel channels on move input
++                if (getCraftPlayer().isChanneling()) {
++                    getCraftPlayer().interrupt();
++                }
+                 if (this.awaitingPositionFromClient != null) {
+                     if (false && this.tickCount - this.awaitingTeleportTime > 20) { // Paper - this will greatly screw with clients with > 1000ms RTT
+                         this.awaitingTeleportTime = this.tickCount;
 diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
 index 8547e7ff2f1f5b7701fb0f3c3010c14601a5f83e..bcdd12e0265159882c39ad61a2fe853d9b03ca29 100644
 --- a/src/main/java/net/minecraft/server/players/PlayerList.java
@@ -1396,7 +1412,7 @@ index a407e802164603c74ec1f4ad3c98bc50398954bc..c7fdecbcd6eb7571a09883637bee4150
      public double getHealth() {
          return this.getParent().getHealth();
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
-index 7880631fe8a4b06f29ef69ab850129737a99521b..caf17dd15e1da06863d145b5ba7ce7c28c2c011b 100644
+index 7880631fe8a4b06f29ef69ab850129737a99521b..ab8aeb308694e7f5a6fb99c80c5a4abe1c79f33d 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
 @@ -3,12 +3,16 @@ package org.bukkit.craftbukkit.entity;
@@ -1422,7 +1438,7 @@ index 7880631fe8a4b06f29ef69ab850129737a99521b..caf17dd15e1da06863d145b5ba7ce7c2
  import net.minecraft.sounds.SoundEvent;
  import net.minecraft.world.InteractionHand;
  import net.minecraft.world.damagesource.DamageSource;
-@@ -85,6 +89,20 @@ import org.bukkit.util.Vector;
+@@ -85,6 +89,21 @@ import org.bukkit.util.Vector;
  public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      private CraftEntityEquipment equipment;
  
@@ -1438,12 +1454,13 @@ index 7880631fe8a4b06f29ef69ab850129737a99521b..caf17dd15e1da06863d145b5ba7ce7c2
 +    Set<SpellbookSpell> runningPassiveSpells = new HashSet<>();
 +    private int maxEnergy = 0;
 +    private int energy = 0;
++    private boolean channeling = false;
 +    // Papyrus end
 +
      public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
          super(server, entity);
  
-@@ -360,7 +378,12 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -360,7 +379,12 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      // Paper End - Bee Stinger API
      @Override
      public void damage(double amount) {
@@ -1457,7 +1474,7 @@ index 7880631fe8a4b06f29ef69ab850129737a99521b..caf17dd15e1da06863d145b5ba7ce7c2
      }
  
      @Override
-@@ -378,6 +401,18 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -378,6 +402,18 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
          entity.hurt(reason, (float) amount);
      }
  
@@ -1476,7 +1493,7 @@ index 7880631fe8a4b06f29ef69ab850129737a99521b..caf17dd15e1da06863d145b5ba7ce7c2
      @Override
      public Location getEyeLocation() {
          Location loc = getLocation();
-@@ -1063,6 +1098,89 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+@@ -1063,6 +1099,99 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      public void knockback(double strength, double directionX, double directionZ) {
          Preconditions.checkArgument(strength > 0, "Knockback strength must be > 0");
          getHandle().knockback(strength, directionX, directionZ);
@@ -1565,6 +1582,16 @@ index 7880631fe8a4b06f29ef69ab850129737a99521b..caf17dd15e1da06863d145b5ba7ce7c2
 +    public int removeEnergy(int e) {
 +        energy = Math.max(energy - e, 0);
 +        return energy;
++    }
++
++    @Override
++    public boolean isChanneling() {
++        return channeling;
++    }
++
++    @Override
++    public void setChanneling(boolean channeling) {
++        this.channeling = channeling;
 +    }
 +    // Papyrus end
  }
