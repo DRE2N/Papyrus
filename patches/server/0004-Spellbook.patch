@@ -247,7 +247,7 @@ index ffb44be6e56fcd3b593914ea59262d57f84f28f6..98d3a28a4257408607c17eb10eb97203
  
      }
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 636eba5ca69c1c8f8c62fef77a343defb72e87dc..12f2d832de7e942232e622697125f0bcd8b6b017 100644
+index 636eba5ca69c1c8f8c62fef77a343defb72e87dc..4a6adef6047a811d9b2e26733424e60536760561 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 @@ -1394,7 +1394,6 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Tic
@@ -258,18 +258,18 @@ index 636eba5ca69c1c8f8c62fef77a343defb72e87dc..12f2d832de7e942232e622697125f0bc
                  if (this.awaitingPositionFromClient != null) {
                      if (false && this.tickCount - this.awaitingTeleportTime > 20) { // Paper - this will greatly screw with clients with > 1000ms RTT
                          this.awaitingTeleportTime = this.tickCount;
-@@ -1644,6 +1643,11 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Tic
-                                 this.lastGoodX = this.player.getX();
-                                 this.lastGoodY = this.player.getY();
-                                 this.lastGoodZ = this.player.getZ();
-+                                // Papyrus - Cancel channels on move input
-+                                if (packet.hasPos && getCraftPlayer().isChanneling()) {
-+                                    getCraftPlayer().interrupt();
-+                                    getCraftPlayer().setChanneling(false);
-+                                }
-                             }
-                         }
-                     }
+@@ -1628,6 +1627,11 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Tic
+                                             this.justTeleported = false;
+                                             return;
+                                         }
++                                        // Papyrus - Cancel channels on move input
++                                        if (packet.hasPos && getCraftPlayer().isChanneling()) {
++                                            getCraftPlayer().interrupt();
++                                            getCraftPlayer().setChanneling(false);
++                                        }
+                                     }
+                                 }
+                                 // CraftBukkit end
 diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
 index 8547e7ff2f1f5b7701fb0f3c3010c14601a5f83e..bcdd12e0265159882c39ad61a2fe853d9b03ca29 100644
 --- a/src/main/java/net/minecraft/server/players/PlayerList.java
