@@ -169,7 +169,7 @@ index 0000000000000000000000000000000000000000..ff0571c54408568ef66cc149e10a9daa
 +    }
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
-index a755287c75d9e4236c68cf70caa500d1dc530103..2a8c8215282c2e16741e5fbd5e1a846946cb1047 100644
+index a755287c75d9e4236c68cf70caa500d1dc530103..21ba6a3576314a18a326566fa1f3d1990fef4033 100644
 --- a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 @@ -1,6 +1,7 @@
@@ -184,8 +184,8 @@ index a755287c75d9e4236c68cf70caa500d1dc530103..2a8c8215282c2e16741e5fbd5e1a8469
  
      protected int keepAliveTicks = 0;
      protected int currentTicks = 0;
-+    protected int channelDuration = 0;
-+    protected int currentChannelTicks = 0;
++    public int channelDuration = 0;
++    public int currentChannelTicks = 0;
  
      protected int tickInterval = 1;
      protected int currentTickInterval = 0;
