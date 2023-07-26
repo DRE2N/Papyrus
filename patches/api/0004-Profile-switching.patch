@@ -169,7 +169,7 @@ index 0000000000000000000000000000000000000000..ff0571c54408568ef66cc149e10a9daa
 +    }
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
-index a755287c75d9e4236c68cf70caa500d1dc530103..d2b3bb6617a036eac08c8ef4310b69eb781f149e 100644
+index a755287c75d9e4236c68cf70caa500d1dc530103..2a8c8215282c2e16741e5fbd5e1a846946cb1047 100644
 --- a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 @@ -1,6 +1,7 @@
@@ -233,7 +233,7 @@ index a755287c75d9e4236c68cf70caa500d1dc530103..d2b3bb6617a036eac08c8ef4310b69eb
          interrupted = true;
      }
  
-@@ -208,6 +231,20 @@ public abstract class SpellbookSpell {
+@@ -208,6 +231,22 @@ public abstract class SpellbookSpell {
              cleanup();
              return;
          }
@@ -242,6 +242,8 @@ index a755287c75d9e4236c68cf70caa500d1dc530103..d2b3bb6617a036eac08c8ef4310b69eb
 +            if (!isChanneling && currentChannelTicks < channelDuration) {
 +                isChanneling = true;
 +                caster.setChanneling(true);
++                SpellChannelStartEvent startEvent = new SpellChannelStartEvent(caster, this);
++                Bukkit.getPluginManager().callEvent(startEvent);
 +            }
 +            if (currentChannelTicks == channelDuration) {
 +                SpellChannelFinishEvent finishEvent = new SpellChannelFinishEvent(caster, this, false);
