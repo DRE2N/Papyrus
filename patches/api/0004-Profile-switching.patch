@@ -50,7 +50,7 @@ index 0000000000000000000000000000000000000000..1f20fd2c6128cd58ec160e95ca59d276
 +
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-index 9db25aed60af480255c42cb06d07308cfb7ee080..202abd3a8a52eb04abba2662e7c8c810cc11f3f5 100644
+index 9db25aed60af480255c42cb06d07308cfb7ee080..dbd2c348cf94d687f7153cfc8e5e8d08694689b6 100644
 --- a/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 @@ -58,6 +58,10 @@ public interface SpellCaster {
@@ -64,7 +64,7 @@ index 9db25aed60af480255c42cb06d07308cfb7ee080..202abd3a8a52eb04abba2662e7c8c810
      default void tick() {
          Iterator<SpellEffect> effectIterator = getEffects().iterator();
          while(effectIterator.hasNext()) {
-@@ -318,5 +322,16 @@ public interface SpellCaster {
+@@ -318,5 +322,26 @@ public interface SpellCaster {
          }
      }
  
@@ -75,6 +75,16 @@ index 9db25aed60af480255c42cb06d07308cfb7ee080..202abd3a8a52eb04abba2662e7c8c810
 +        for (SpellbookSpell spell : getActiveSpells()) {
 +            if (spell.isChanneling) {
 +                spell.interrupt();
++                setChanneling(false);
++            }
++        }
++    }
++
++    default void interruptFromMovement() {
++        for (SpellbookSpell spell : getActiveSpells()) {
++            if (spell.isChanneling && spell.isMovementInterrupted) {
++                spell.interrupt();
++                setChanneling(false);
 +            }
 +        }
 +    }
@@ -169,7 +179,7 @@ index 0000000000000000000000000000000000000000..ff0571c54408568ef66cc149e10a9daa
 +    }
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
-index a755287c75d9e4236c68cf70caa500d1dc530103..21ba6a3576314a18a326566fa1f3d1990fef4033 100644
+index a755287c75d9e4236c68cf70caa500d1dc530103..855c8da2b94424a9af550e81128124ca2114d47a 100644
 --- a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 @@ -1,6 +1,7 @@
@@ -180,11 +190,12 @@ index a755287c75d9e4236c68cf70caa500d1dc530103..21ba6a3576314a18a326566fa1f3d199
  import org.bukkit.entity.LivingEntity;
  
  import java.util.Set;
-@@ -16,12 +17,15 @@ public abstract class SpellbookSpell {
+@@ -16,12 +17,16 @@ public abstract class SpellbookSpell {
  
      protected int keepAliveTicks = 0;
      protected int currentTicks = 0;
 +    public int channelDuration = 0;
++    public boolean isMovementInterrupted = false;
 +    public int currentChannelTicks = 0;
  
      protected int tickInterval = 1;
@@ -196,7 +207,7 @@ index a755287c75d9e4236c68cf70caa500d1dc530103..21ba6a3576314a18a326566fa1f3d199
  
      public SpellbookSpell(LivingEntity caster, SpellData spellData) {
          this.data = spellData;
-@@ -67,6 +71,19 @@ public abstract class SpellbookSpell {
+@@ -67,6 +72,19 @@ public abstract class SpellbookSpell {
          cleanup();
      }
  
@@ -216,7 +227,7 @@ index a755287c75d9e4236c68cf70caa500d1dc530103..21ba6a3576314a18a326566fa1f3d199
      /**
       * This method should be used for cleaning up after a Spell cast. For example spawned entities should be
       * removed here.
-@@ -170,9 +187,15 @@ public abstract class SpellbookSpell {
+@@ -170,9 +188,15 @@ public abstract class SpellbookSpell {
  
      /**
       * Interrupts the spell. It will stop ticking, but cleanup() will still
@@ -233,7 +244,7 @@ index a755287c75d9e4236c68cf70caa500d1dc530103..21ba6a3576314a18a326566fa1f3d199
          interrupted = true;
      }
  
-@@ -208,6 +231,22 @@ public abstract class SpellbookSpell {
+@@ -208,6 +232,22 @@ public abstract class SpellbookSpell {
              cleanup();
              return;
          }
