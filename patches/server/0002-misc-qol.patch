@@ -30,8 +30,61 @@ index 9d46536f80b5b3e6641fd377c02166a431edfd77..6f459c774eb0f46a8450e03f45969f1e
      public ServerPlayer(MinecraftServer server, ServerLevel world, GameProfile profile) {
          super(world, world.getSharedSpawnPos(), world.getSharedSpawnAngle(), profile);
          this.chatVisibility = ChatVisiblity.FULL;
+diff --git a/src/main/java/net/minecraft/world/level/block/ChorusFlowerBlock.java b/src/main/java/net/minecraft/world/level/block/ChorusFlowerBlock.java
+index 1cc4a1f85f99869625c9e059055643a327918695..0dcbaee3766fc021bbb8eb829fbb7073b01de9ec 100644
+--- a/src/main/java/net/minecraft/world/level/block/ChorusFlowerBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/ChorusFlowerBlock.java
+@@ -33,19 +33,21 @@ public class ChorusFlowerBlock extends Block {
+ 
+     @Override
+     public void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
+-        if (!state.canSurvive(world, pos)) {
++        /*if (!state.canSurvive(world, pos)) {
+             world.destroyBlock(pos, true);
+-        }
++        }*/
+ 
+     }
+ 
+     @Override
+     public boolean isRandomlyTicking(BlockState state) {
+-        return (Integer) state.getValue(ChorusFlowerBlock.AGE) < 5;
++        //return (Integer) state.getValue(ChorusFlowerBlock.AGE) < 5;
++        return false;
+     }
+ 
+     @Override
+     public void randomTick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
++        if (true) return; // Papyrus - Disable ticking
+         BlockPos blockposition1 = pos.above();
+ 
+         if (world.isEmptyBlock(blockposition1) && blockposition1.getY() < world.getMaxBuildHeight()) {
+@@ -160,6 +162,7 @@ public class ChorusFlowerBlock extends Block {
+ 
+     @Override
+     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
++        if (true) return state; // Papyrus
+         if (direction != Direction.UP && !state.canSurvive(world, pos)) {
+             world.scheduleTick(pos, (Block) this, 1);
+         }
+@@ -169,6 +172,7 @@ public class ChorusFlowerBlock extends Block {
+ 
+     @Override
+     public boolean canSurvive(BlockState state, LevelReader world, BlockPos pos) {
++        if (true) return true; // Papyrus
+         BlockState iblockdata1 = world.getBlockState(pos.below());
+ 
+         if (!iblockdata1.is((Block) this.plant) && !iblockdata1.is(Blocks.END_STONE)) {
+@@ -259,6 +263,7 @@ public class ChorusFlowerBlock extends Block {
+ 
+     @Override
+     public void onProjectileHit(Level world, BlockState state, BlockHitResult hit, Projectile projectile) {
++        if (true) return; // Papyrus
+         BlockPos blockposition = hit.getBlockPos();
+ 
+         if (!world.isClientSide && projectile.mayInteract(world, blockposition) && projectile.getType().is(EntityTypeTags.IMPACT_PROJECTILES)) {
 diff --git a/src/main/java/net/minecraft/world/level/block/ChorusPlantBlock.java b/src/main/java/net/minecraft/world/level/block/ChorusPlantBlock.java
-index a6c25647fb37f59307de0d390f8e8cf55504d7d3..be7e9023a56a8c50be223e55bf4647042a260879 100644
+index a6c25647fb37f59307de0d390f8e8cf55504d7d3..e9fb308da5f7a37204727310ec76821091b3296a 100644
 --- a/src/main/java/net/minecraft/world/level/block/ChorusPlantBlock.java
 +++ b/src/main/java/net/minecraft/world/level/block/ChorusPlantBlock.java
 @@ -21,6 +21,7 @@ public class ChorusPlantBlock extends PipeBlock {
@@ -50,7 +103,7 @@ index a6c25647fb37f59307de0d390f8e8cf55504d7d3..be7e9023a56a8c50be223e55bf464704
          if (!state.canSurvive(world, pos)) {
              world.scheduleTick(pos, this, 1);
              return super.updateShape(state, direction, neighborState, world, pos, neighborPos);
-@@ -47,9 +49,9 @@ public class ChorusPlantBlock extends PipeBlock {
+@@ -47,14 +49,15 @@ public class ChorusPlantBlock extends PipeBlock {
  
      @Override
      public void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
@@ -62,6 +115,20 @@ index a6c25647fb37f59307de0d390f8e8cf55504d7d3..be7e9023a56a8c50be223e55bf464704
  
      }
  
+     @Override
+     public boolean canSurvive(BlockState state, LevelReader world, BlockPos pos) {
++        if (true) return true; // Papyrus - Leaves
+         BlockState blockState = world.getBlockState(pos.below());
+         boolean bl = !world.getBlockState(pos.above()).isAir() && !blockState.isAir();
+ 
+@@ -83,6 +86,6 @@ public class ChorusPlantBlock extends PipeBlock {
+ 
+     @Override
+     public boolean isPathfindable(BlockState state, BlockGetter world, BlockPos pos, PathComputationType type) {
+-        return false;
++        return true; // Papyrus - Leaves
+     }
+ }
 diff --git a/src/main/java/net/minecraft/world/level/block/CoralBlock.java b/src/main/java/net/minecraft/world/level/block/CoralBlock.java
 index 88faea00be60a519f56f975a5311df5e1eb3e6b8..0a6f89dbce23decb94d05a7c8d6c82e8173d595b 100644
 --- a/src/main/java/net/minecraft/world/level/block/CoralBlock.java
