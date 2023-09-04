@@ -257,7 +257,7 @@ index 9235a0f5cc3f08e2b599101e514e67d6b8ad7c57..3d1484dafe199f4bee742364e68438cd
                                  }
                                  // CraftBukkit end
 diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
-index f097ec5b4e3ad6b1a7c464a8cff4f8b2568fcf4f..53e1bbd03fe62eaaabe8cdcb7693df0ea6c8439b 100644
+index f097ec5b4e3ad6b1a7c464a8cff4f8b2568fcf4f..aa3561df1d66aa77ac12f3e79661001086c83ebb 100644
 --- a/src/main/java/net/minecraft/server/players/PlayerList.java
 +++ b/src/main/java/net/minecraft/server/players/PlayerList.java
 @@ -8,6 +8,7 @@ import com.mojang.authlib.GameProfile;
@@ -289,7 +289,16 @@ index f097ec5b4e3ad6b1a7c464a8cff4f8b2568fcf4f..53e1bbd03fe62eaaabe8cdcb7693df0e
          }
  
          return nbttagcompound1;
-@@ -1578,4 +1584,13 @@ public abstract class PlayerList {
+@@ -572,7 +578,7 @@ public abstract class PlayerList {
+     protected void save(ServerPlayer player) {
+         if (!player.getBukkitEntity().isPersistent()) return; // CraftBukkit
+         player.lastSave = MinecraftServer.currentTick; // Paper
+-        this.playerIo.save(player);
++        this.playerIo.save(player, player.selectedProfileID);
+         ServerStatsCounter serverstatisticmanager = (ServerStatsCounter) player.getStats(); // CraftBukkit
+ 
+         if (serverstatisticmanager != null) {
+@@ -1578,4 +1584,14 @@ public abstract class PlayerList {
      public boolean isAllowCheatsForAllPlayers() {
          return this.allowCheatsForAllPlayers;
      }
@@ -300,6 +309,7 @@ index f097ec5b4e3ad6b1a7c464a8cff4f8b2568fcf4f..53e1bbd03fe62eaaabe8cdcb7693df0e
 +        player.selectedProfileID = newID;
 +        load(player, newID);
 +        player.teleportTo((ServerLevel) player.level(), player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
++        player.setGameMode(player.gameMode.getGameModeForPlayer()); // Client desyncs otherwise
 +        new PlayerSwitchProfileEvent(player.getBukkitEntity(), oldID, newID).callEvent();
 +    }
  }
@@ -1590,7 +1600,7 @@ index f0ce29d21fe9af803ce4e41b8c037b2ec5d1b124..4d7d42e2b7b7b730fac6813fab97e40e
 +    // Papyrus end
  }
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
-index b5bcc80b460dbb58db633ad55d25d92d3e3cad3d..2ea95434894c9fd2e3ab8ba2d64fbf9c140ab8e9 100644
+index b5bcc80b460dbb58db633ad55d25d92d3e3cad3d..b3ad3ea2eeec228c59c296abfb5a9079ede3b246 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 @@ -368,14 +368,12 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
@@ -1608,6 +1618,15 @@ index b5bcc80b460dbb58db633ad55d25d92d3e3cad3d..2ea95434894c9fd2e3ab8ba2d64fbf9c
      @Deprecated
      public void sendActionBar(char alternateChar, String message) {
          if (message == null || message.isEmpty()) return;
+@@ -1424,7 +1422,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+ 
+     @Override
+     public void saveData() {
+-        server.getHandle().playerIo.save(this.getHandle());
++        server.getHandle().playerIo.save(this.getHandle(), this.getHandle().selectedProfileID);
+     }
+ 
+     @Deprecated
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftProjectile.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftProjectile.java
 index fd5beb956f643532e08613366ebd380d7999e79f..ab8bbb407f6a51ead5ad05188e29de4c8fd74c70 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftProjectile.java
