@@ -1810,10 +1810,10 @@ index 0000000000000000000000000000000000000000..64c572212d00193e39f6bbde6cb7c25f
 +    }
 +}
 diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
-index 5b225bbb128893d67251a96ab318035802a0cf76..fb57173f4c11b41ab3f0590409ba5504f1c6c602 100644
+index 8d8fe04e6b09d2a5b1cc05002073df5c58cdcb96..2a317cbddfeb5c0bf62212d8d8a7947365f26c45 100644
 --- a/src/main/java/org/bukkit/Server.java
 +++ b/src/main/java/org/bukkit/Server.java
-@@ -13,6 +13,7 @@ import java.util.Set;
+@@ -14,6 +14,7 @@ import java.util.Set;
  import java.util.UUID;
  import java.util.function.Consumer;
  import java.util.logging.Logger;
@@ -1821,10 +1821,11 @@ index 5b225bbb128893d67251a96ab318035802a0cf76..fb57173f4c11b41ab3f0590409ba5504
  import org.bukkit.Warning.WarningState;
  import org.bukkit.advancement.Advancement;
  import org.bukkit.block.data.BlockData;
-@@ -2175,4 +2176,7 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+@@ -2404,4 +2405,8 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
       */
-     @NotNull org.bukkit.potion.PotionBrewer getPotionBrewer();
-     // Paper end
+     boolean isOwnedByCurrentRegion(@NotNull Entity entity);
+     // Paper end - Folia region threading API
++
 +    // Papyrus start
 +    SpellbookAPI getSpellbookAPI();
 +    // Papyrus end
@@ -1889,7 +1890,7 @@ index fc4d3bcd9b16097086fef7975274d825b65adb10..0ada5e125ee88a606399b6437baa1af4
       * Gets the entity's health from 0 to {@link #getMaxHealth()}, where 0 is dead.
       *
 diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
-index ffca32ae2464ea5a669029079a50585ca259a4f8..b668dfa2cb7cbc736b818009ded8e150b7c6198d 100644
+index 19e58e62ae442ef9be02ca7fa2f55e370a54afa4..5cdace11b57f2f3f220af32ed109b4fdb2ee3500 100644
 --- a/src/main/java/org/bukkit/entity/LivingEntity.java
 +++ b/src/main/java/org/bukkit/entity/LivingEntity.java
 @@ -4,6 +4,9 @@ import java.util.Collection;
@@ -1911,7 +1912,7 @@ index ffca32ae2464ea5a669029079a50585ca259a4f8..b668dfa2cb7cbc736b818009ded8e150
  
      /**
       * Gets the height of the living entity's eyes above its Location.
-@@ -1096,7 +1099,6 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+@@ -1138,7 +1141,6 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
       * @param slot the slot
       */
      void broadcastSlotBreak(org.bukkit.inventory.@NotNull EquipmentSlot slot);
@@ -1919,7 +1920,7 @@ index ffca32ae2464ea5a669029079a50585ca259a4f8..b668dfa2cb7cbc736b818009ded8e150
      /**
       * Notifies specified players that the item in the slot
       * of this entity broke.
-@@ -1150,4 +1152,8 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+@@ -1192,4 +1194,8 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
       */
      void setBodyYaw(float bodyYaw);
      // Paper end
@@ -1929,10 +1930,10 @@ index ffca32ae2464ea5a669029079a50585ca259a4f8..b668dfa2cb7cbc736b818009ded8e150
 +    void sendParsedMessage(String text);
  }
 diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
-index 4ee0eb177f6b5765a9d7263576bb36c8a8366979..0036ff4b095bb3f70397ea7a323b2cb88c3bcbb0 100644
+index f9dd00210c1762a40259f823aeb8d8a5ddc78e3e..741e08b84bedc9e5b636657bb4965b1afd814443 100644
 --- a/src/main/java/org/bukkit/entity/Player.java
 +++ b/src/main/java/org/bukkit/entity/Player.java
-@@ -1118,30 +1118,6 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -1274,30 +1274,6 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
      /**
       * Sends an Action Bar message to the client.
       *
@@ -1963,7 +1964,7 @@ index 4ee0eb177f6b5765a9d7263576bb36c8a8366979..0036ff4b095bb3f70397ea7a323b2cb8
       * @deprecated use {@link #sendActionBar(net.kyori.adventure.text.Component)}
       */
      @Deprecated
-@@ -1174,7 +1150,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -1330,7 +1306,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
      /**
       * Sends an array of components as a single message to the specified screen position of this player
       *
@@ -1972,7 +1973,7 @@ index 4ee0eb177f6b5765a9d7263576bb36c8a8366979..0036ff4b095bb3f70397ea7a323b2cb8
       * @param position the screen position
       * @param components the components to send
       */
-@@ -2916,6 +2892,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -3100,6 +3076,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
          /**
           * Sends an array of components as a single message to the specified screen position of this player
           *
