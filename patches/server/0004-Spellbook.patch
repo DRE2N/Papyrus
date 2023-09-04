@@ -1325,6 +1325,34 @@ index 06d1bdb9bd124b201c36d284c50d22bf50d3735a..c36f66f5a0f51cb56934117445138174
              }
  
              if (flag && entity instanceof LivingEntity) {
+diff --git a/src/main/java/net/minecraft/world/level/block/NoteBlock.java b/src/main/java/net/minecraft/world/level/block/NoteBlock.java
+index e46d84750bdd7c940f400efda226e12a3fdc3848..8258a25f92f256dea5ac0d68096a85a178bfe078 100644
+--- a/src/main/java/net/minecraft/world/level/block/NoteBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/NoteBlock.java
+@@ -103,6 +103,7 @@ public class NoteBlock extends Block {
+ 
+     @Override
+     public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
++        if (true) return InteractionResult.PASS; // Papyrus - allow block placing
+         ItemStack itemstack = player.getItemInHand(hand);
+ 
+         if (itemstack.is(ItemTags.NOTE_BLOCK_TOP_INSTRUMENTS) && hit.getDirection() == Direction.UP) {
+@@ -120,6 +121,7 @@ public class NoteBlock extends Block {
+ 
+     @Override
+     public void attack(BlockState state, Level world, BlockPos pos, Player player) {
++        if (true) return; // Papyrus - disable sound
+         if (!world.isClientSide) {
+             this.playNote(player, state, world, pos);
+             player.awardStat(Stats.PLAY_NOTEBLOCK);
+@@ -132,6 +134,7 @@ public class NoteBlock extends Block {
+ 
+     @Override
+     public boolean triggerEvent(BlockState state, Level world, BlockPos pos, int type, int data) {
++        if (true) return false; // Papyrus - disable sound
+         NoteBlockInstrument blockpropertyinstrument = (NoteBlockInstrument) state.getValue(NoteBlock.INSTRUMENT);
+         // Paper start - move NotePlayEvent call to fix instrument/note changes
+         org.bukkit.event.block.NotePlayEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNotePlayEvent(world, pos, blockpropertyinstrument, state.getValue(NOTE));
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 index 85105b2b6f43441f80c3d0d947bdf32009ec8e6f..a4fe100f32f5542aeb912412e6ae07c68928ab66 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
