@@ -1346,10 +1346,10 @@ index 0000000000000000000000000000000000000000..633828d54c4b67d82bbd400870e7b73a
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..a755287c75d9e4236c68cf70caa500d1dc530103
+index 0000000000000000000000000000000000000000..126043ae25550e2694c84ba34474b322dbfd1eb4
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
-@@ -0,0 +1,250 @@
+@@ -0,0 +1,277 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -1491,10 +1491,27 @@ index 0000000000000000000000000000000000000000..a755287c75d9e4236c68cf70caa500d1
 +
 +    /**
 +     * Triggers traits that might be activated by this spell
++     * @param target the target
++     */
++    public void triggerTraits(LivingEntity target) {
++        executeTraitTrigger(new TraitTrigger(this, target));
++    }
++
++    /**
++     * Triggers traits that might be activated by this spell
 +     * @param targets set of entities affected by the spell
 +     */
 +    public void triggerTraits(Set<LivingEntity> targets) {
 +        executeTraitTrigger(new TraitTrigger(this, targets));
++    }
++
++    /**
++     * Triggers traits that might be activated by this spell
++     * @param target the target
++     * @param id id that can be used for references
++     */
++    public void triggerTraits(LivingEntity target, int id) {
++        executeTraitTrigger(new TraitTrigger(this, target, id));
 +    }
 +
 +    /**
@@ -1504,6 +1521,16 @@ index 0000000000000000000000000000000000000000..a755287c75d9e4236c68cf70caa500d1
 +     */
 +    public void triggerTraits(Set<LivingEntity> targets, int id) {
 +        executeTraitTrigger(new TraitTrigger(this, targets, id));
++    }
++
++    /**
++     * Triggers traits that might be activated by this spell
++     * @param target the target
++     * @param id id that can be used for references
++     * @param optional other objects to be passed to the trait
++     */
++    public void triggerTraits(LivingEntity target, int id, Object... optional) {
++        executeTraitTrigger(new TraitTrigger(this, target, id, optional));
 +    }
 +
 +    /**

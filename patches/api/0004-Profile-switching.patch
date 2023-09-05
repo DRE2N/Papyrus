@@ -179,7 +179,7 @@ index 0000000000000000000000000000000000000000..ff0571c54408568ef66cc149e10a9daa
 +    }
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
-index a755287c75d9e4236c68cf70caa500d1dc530103..855c8da2b94424a9af550e81128124ca2114d47a 100644
+index 126043ae25550e2694c84ba34474b322dbfd1eb4..242c0bb13f9b54fb627a6c792b19a651fe7d2300 100644
 --- a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 @@ -1,6 +1,7 @@
@@ -227,7 +227,7 @@ index a755287c75d9e4236c68cf70caa500d1dc530103..855c8da2b94424a9af550e81128124ca
      /**
       * This method should be used for cleaning up after a Spell cast. For example spawned entities should be
       * removed here.
-@@ -170,9 +188,15 @@ public abstract class SpellbookSpell {
+@@ -197,9 +215,15 @@ public abstract class SpellbookSpell {
  
      /**
       * Interrupts the spell. It will stop ticking, but cleanup() will still
@@ -244,7 +244,7 @@ index a755287c75d9e4236c68cf70caa500d1dc530103..855c8da2b94424a9af550e81128124ca
          interrupted = true;
      }
  
-@@ -208,6 +232,22 @@ public abstract class SpellbookSpell {
+@@ -235,6 +259,22 @@ public abstract class SpellbookSpell {
              cleanup();
              return;
          }
