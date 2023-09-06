@@ -568,7 +568,7 @@ index f91dbe93fefaafa845bbefe1280f7a10a4819b26..785efe4f02834a84b672e49311a133fa
 +    }
  }
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index e07140ef2f4c5b0019550eb3100c724699e7a05c..bf710588e56f37455407506ce1fc64e3ac305d95 100644
+index e07140ef2f4c5b0019550eb3100c724699e7a05c..a8cf1124a3a79ebd8f889b57bb44ee24a77fa373 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
 @@ -19,6 +19,9 @@ import java.util.Optional;
@@ -663,7 +663,7 @@ index e07140ef2f4c5b0019550eb3100c724699e7a05c..bf710588e56f37455407506ce1fc64e3
          this.animStepO = this.animStep;
          this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
-@@ -1381,8 +1409,96 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -1381,8 +1409,97 @@ public abstract class LivingEntity extends Entity implements Attackable {
      }
      // Pufferfish end
  
@@ -693,6 +693,7 @@ index e07140ef2f4c5b0019550eb3100c724699e7a05c..bf710588e56f37455407506ce1fc64e3
 +            if (event.getDamageType() != type.getApiDamageType()) {
 +                type = CraftDamageType.ofAPI(event.getDamageType());
 +            }
++            finalDmg = event.getDamage();
 +            if (source.getEntity() instanceof net.minecraft.world.entity.player.Player player) {
 +                setLastHurtByPlayer(player);
 +            } else if (source.getEntity() instanceof LivingEntity livingEntity){
@@ -760,7 +761,7 @@ index e07140ef2f4c5b0019550eb3100c724699e7a05c..bf710588e56f37455407506ce1fc64e3
          if (this.isInvulnerableTo(source)) {
              return false;
          } else if (this.level().isClientSide) {
-@@ -1555,7 +1671,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -1555,7 +1672,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
  
              return flag2;
          }
