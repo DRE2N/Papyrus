@@ -197,10 +197,10 @@ index 0000000000000000000000000000000000000000..9597c69b1fd9825abfdedd316c5874b7
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..fccc2e48e4fb5ff5defe89729720e66d9d234ac3
+index 0000000000000000000000000000000000000000..7260506a0830a69278e6276174857f588c1c6125
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-@@ -0,0 +1,319 @@
+@@ -0,0 +1,322 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -482,7 +482,7 @@ index 0000000000000000000000000000000000000000..fccc2e48e4fb5ff5defe89729720e66d
 +            if (!trait.active) {
 +                continue;
 +            }
-+            if (trait.data.affectsSpell(spell.data)) {
++            if (trait.data.affectedBySpell(spell.data)) {
 +                if (trait.onSpellCast(spell) == null) {
 +                    spell.cancel();
 +                }
@@ -500,7 +500,10 @@ index 0000000000000000000000000000000000000000..fccc2e48e4fb5ff5defe89729720e66d
 +            if (!trait.active) {
 +                continue;
 +            }
-+            if(trait.data.affectsSpell(trigger.getSpell().data)) {
++            if (trigger.getSpell() != null && trait.data.affectedBySpell(trigger.getSpell().data)) {
++                trait.onTrigger(trigger);
++            }
++            if (trigger.getTrait() != null && trait.data.affectedByTrait(trigger.getTrait().data)) {
 +                trait.onTrigger(trigger);
 +            }
 +        }
@@ -522,10 +525,10 @@ index 0000000000000000000000000000000000000000..fccc2e48e4fb5ff5defe89729720e66d
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellData.java b/src/main/java/de/erethon/spellbook/api/SpellData.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..2daca08426dd71e6c099f3c13185e8112c6791de
+index 0000000000000000000000000000000000000000..1f8dd5a590298a7b0bbb2b47354163eb671cec37
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellData.java
-@@ -0,0 +1,128 @@
+@@ -0,0 +1,127 @@
 +package de.erethon.spellbook.api;
 +
 +import net.kyori.adventure.text.Component;
@@ -642,7 +645,6 @@ index 0000000000000000000000000000000000000000..2daca08426dd71e6c099f3c13185e811
 +    public void load(@NotNull File file) throws IOException, InvalidConfigurationException {
 +        super.load(file);
 +        String className = getString("class");
-+        spellbookAPI.getServer().getLogger().info("de.erethon.spellbook.spells." + className);
 +        try {
 +            spellClass = (Class<? extends SpellbookSpell>) Class.forName("de.erethon.spellbook.spells." + className, true, classLoader);
 +        } catch (ClassNotFoundException e) {
@@ -876,10 +878,10 @@ index 0000000000000000000000000000000000000000..b829b5b7ee2bd4d121cc541ad0ed3866
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellLibrary.java b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..f5be369ded36c4bc78a6ecd09d1c9c547c3a1fd3
+index 0000000000000000000000000000000000000000..1e8ab36a5b22be06975ea01643a578029d6db4d3
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellLibrary.java
-@@ -0,0 +1,136 @@
+@@ -0,0 +1,133 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.Bukkit;
@@ -946,13 +948,12 @@ index 0000000000000000000000000000000000000000..f5be369ded36c4bc78a6ecd09d1c9c54
 +        }
 +        ClassLoader classLoader = plugin.getClass().getClassLoader();
 +        try {
-+            for (File f : getFilesForFolder(spellFolder)) {
-+                if (!f.getName().endsWith(".yml") || f.getAbsolutePath().contains("effects") || f.getAbsolutePath().contains("traits")) {
++            for (File f : getFilesForFolder(new File(spellFolder, "spells"))) {
++                if (!f.getName().endsWith(".yml")) {
 +                    continue;
 +                }
 +                String id = f.getName().replace(".yml", "");
 +
-+                spellbookAPI.getServer().getLogger().info("Loading spell " + id);
 +                SpellData spellData = new SpellData(spellbookAPI, id, classLoader);
 +                try {
 +                    spellData.load(f);
@@ -964,11 +965,10 @@ index 0000000000000000000000000000000000000000..f5be369ded36c4bc78a6ecd09d1c9c54
 +            spellbookAPI.getServer().getLogger().info("Loaded " + loadedSpells.size() + " spells.");
 +
 +            for (File f : getFilesForFolder(new File(spellFolder, "effects"))) {
-+                if (!f.getName().endsWith(".yml") || f.getAbsolutePath().contains("traits")) {
++                if (!f.getName().endsWith(".yml")) {
 +                    continue;
 +                }
 +                String id = f.getName().replace(".yml", "");
-+                spellbookAPI.getServer().getLogger().info("Loading effect " + id);
 +                EffectData effectData = new EffectData(spellbookAPI, id, classLoader);
 +                try {
 +                    effectData.load(f);
@@ -984,7 +984,6 @@ index 0000000000000000000000000000000000000000..f5be369ded36c4bc78a6ecd09d1c9c54
 +                    continue;
 +                }
 +                String id = f.getName().replace(".yml", "");
-+                spellbookAPI.getServer().getLogger().info("Loading trait " + id);
 +                TraitData traitData = new TraitData(spellbookAPI, id, classLoader);
 +                try {
 +                    traitData.load(f);
@@ -1175,14 +1174,16 @@ index 0000000000000000000000000000000000000000..4cffcc1e150ca13850301e2c479810c4
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellTrait.java b/src/main/java/de/erethon/spellbook/api/SpellTrait.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..031af75e4ecb7ba611952bd56ab21f8e7a7a7627
+index 0000000000000000000000000000000000000000..96ec2b714f8e9f8c69f26811ee2878d20dfee5b6
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellTrait.java
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,189 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
 +import org.bukkit.entity.LivingEntity;
++
++import java.util.Set;
 +
 +/**
 + * A SpellTrait is a passive ability that can be used to enhance or change existing Spells.
@@ -1289,6 +1290,79 @@ index 0000000000000000000000000000000000000000..031af75e4ecb7ba611952bd56ab21f8e
 +
 +    public void setActive(boolean bool) {
 +        active = bool;
++    }
++
++    /**
++     * Triggers traits that might be activated by this spell
++     */
++    public void triggerTraits() {
++        executeTraitTrigger(new TraitTrigger(this));
++    }
++
++    /**
++     * Triggers traits that might be activated by this spell
++     * @param id id that can be used for references
++     */
++    public void triggerTraits(int id) {
++        executeTraitTrigger(new TraitTrigger(this, id));
++    }
++
++    /**
++     * Triggers traits that might be activated by this spell
++     * @param target the target
++     */
++    public void triggerTraits(LivingEntity target) {
++        executeTraitTrigger(new TraitTrigger(this, target));
++    }
++
++    /**
++     * Triggers traits that might be activated by this spell
++     * @param targets set of entities affected by the spell
++     */
++    public void triggerTraits(Set<LivingEntity> targets) {
++        executeTraitTrigger(new TraitTrigger(this, targets));
++    }
++
++    /**
++     * Triggers traits that might be activated by this spell
++     * @param target the target
++     * @param id id that can be used for references
++     */
++    public void triggerTraits(LivingEntity target, int id) {
++        executeTraitTrigger(new TraitTrigger(this, target, id));
++    }
++
++    /**
++     * Triggers traits that might be activated by this spell
++     * @param targets set of entities affected by the spell
++     * @param id id that can be used for references
++     */
++    public void triggerTraits(Set<LivingEntity> targets, int id) {
++        executeTraitTrigger(new TraitTrigger(this, targets, id));
++    }
++
++    /**
++     * Triggers traits that might be activated by this spell
++     * @param target the target
++     * @param id id that can be used for references
++     * @param optional other objects to be passed to the trait
++     */
++    public void triggerTraits(LivingEntity target, int id, Object... optional) {
++        executeTraitTrigger(new TraitTrigger(this, target, id, optional));
++    }
++
++    /**
++     * Triggers traits that might be activated by this spell
++     * @param targets set of entities affected by the spell
++     * @param id id that can be used for references
++     * @param optional other objects to be passed to the trait
++     */
++    public void triggerTraits(Set<LivingEntity> targets, int id, Object... optional) {
++        executeTraitTrigger(new TraitTrigger(this, targets, id, optional));
++    }
++
++    private void executeTraitTrigger(TraitTrigger trigger) {
++        caster.triggerTraits(trigger);
 +    }
 +
 +
@@ -1629,10 +1703,10 @@ index 0000000000000000000000000000000000000000..126043ae25550e2694c84ba34474b322
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/TraitData.java b/src/main/java/de/erethon/spellbook/api/TraitData.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..91c7c9d4b39b47be7c891aef4ca27c0aafde91f0
+index 0000000000000000000000000000000000000000..5c78b4f736ad271dcc512d1c85f83728d956dc00
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/TraitData.java
-@@ -0,0 +1,133 @@
+@@ -0,0 +1,150 @@
 +package de.erethon.spellbook.api;
 +
 +import net.kyori.adventure.text.Component;
@@ -1664,6 +1738,7 @@ index 0000000000000000000000000000000000000000..91c7c9d4b39b47be7c891aef4ca27c0a
 +    private Component name;
 +    private final List<String> description = new ArrayList<>();
 +    private final Set<SpellData> affectedSpells = new HashSet<>();
++    private final Set<TraitData> affectedTraits = new HashSet<>();
 +
 +    public TraitData(SpellbookAPI spellbookAPI, String id, ClassLoader classLoader) {
 +        this.spellbookAPI = spellbookAPI;
@@ -1725,11 +1800,18 @@ index 0000000000000000000000000000000000000000..91c7c9d4b39b47be7c891aef4ca27c0a
 +        return affectedSpells;
 +    }
 +
-+    public boolean affectsSpell(SpellData spellData) {
++    public boolean affectedBySpell(SpellData spellData) {
 +        if (affectedSpells.isEmpty()) {
 +            return true;
 +        }
 +        return affectedSpells.contains(spellData);
++    }
++
++    public boolean affectedByTrait(TraitData traitData) {
++        if (affectedTraits.isEmpty()) {
++            return true;
++        }
++        return affectedTraits.contains(traitData);
 +    }
 +
 +    public SpellTrait getActiveTrait(LivingEntity caster) {
@@ -1764,14 +1846,23 @@ index 0000000000000000000000000000000000000000..91c7c9d4b39b47be7c891aef4ca27c0a
 +            }
 +            affectedSpells.add(data);
 +        }
++        List<String> affectedTraitIDs = getStringList("affectedTraits");
++        for (String id : affectedTraitIDs) {
++            TraitData data = spellbookAPI.getLibrary().getTraitByID(id);
++            if (data == null) {
++                spellbookAPI.getServer().getLogger().warning("Could not find trait with ID " + id + " (Trait: " + id + ")");
++                continue;
++            }
++            affectedTraits.add(data);
++        }
 +    }
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/TraitTrigger.java b/src/main/java/de/erethon/spellbook/api/TraitTrigger.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..720ae82af0daed2082024a659a38ae00c7254ecf
+index 0000000000000000000000000000000000000000..8b72dba1a152833a89730155ff166328cc3cecaf
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/TraitTrigger.java
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,130 @@
 +package de.erethon.spellbook.api;
 +
 +import org.bukkit.entity.LivingEntity;
@@ -1782,18 +1873,27 @@ index 0000000000000000000000000000000000000000..720ae82af0daed2082024a659a38ae00
 +public class TraitTrigger {
 +
 +    private SpellbookSpell spell;
++    private SpellTrait trait;
 +    private LivingEntity target = null;
 +    private final Set<LivingEntity> targets = new HashSet<>();
 +    private int id = 0;
 +    private Object[] optionals = null;
 +
-+
 +    TraitTrigger(SpellbookSpell spell) {
 +        this.spell = spell;
 +    }
 +
++    TraitTrigger(SpellTrait trait) {
++        this.trait = trait;
++    }
++
 +    TraitTrigger(SpellbookSpell spell, int id) {
 +        this.spell = spell;
++        this.id = id;
++    }
++
++    TraitTrigger(SpellTrait trait, int id) {
++        this.trait = trait;
 +        this.id = id;
 +    }
 +
@@ -1802,13 +1902,29 @@ index 0000000000000000000000000000000000000000..720ae82af0daed2082024a659a38ae00
 +        this.target = target;
 +    }
 +
++    TraitTrigger(SpellTrait trait, LivingEntity target) {
++        this.trait = trait;
++        this.target = target;
++    }
++
 +    TraitTrigger(SpellbookSpell spell, Set<LivingEntity> targets) {
 +        this.spell = spell;
 +        this.targets.addAll(targets);
 +    }
 +
++    TraitTrigger(SpellTrait trait, Set<LivingEntity> targets) {
++        this.trait = trait;
++        this.targets.addAll(targets);
++    }
++
 +    TraitTrigger(SpellbookSpell spell, LivingEntity target, int id) {
 +        this.spell = spell;
++        this.target = target;
++        this.id = id;
++    }
++
++    TraitTrigger(SpellTrait trait, LivingEntity target, int id) {
++        this.trait = trait;
 +        this.target = target;
 +        this.id = id;
 +    }
@@ -1819,8 +1935,21 @@ index 0000000000000000000000000000000000000000..720ae82af0daed2082024a659a38ae00
 +        this.id = id;
 +    }
 +
++    TraitTrigger(SpellTrait trait, Set<LivingEntity> targets, int id) {
++        this.trait = trait;
++        this.targets.addAll(targets);
++        this.id = id;
++    }
++
 +    TraitTrigger(SpellbookSpell spell, LivingEntity target, int id, Object... optional) {
 +        this.spell = spell;
++        this.target = target;
++        this.id = id;
++        this.optionals = optional;
++    }
++
++    TraitTrigger(SpellTrait trait, LivingEntity target, int id, Object... optional) {
++        this.trait = trait;
 +        this.target = target;
 +        this.id = id;
 +        this.optionals = optional;
@@ -1833,8 +1962,19 @@ index 0000000000000000000000000000000000000000..720ae82af0daed2082024a659a38ae00
 +        this.optionals = optional;
 +    }
 +
++    TraitTrigger(SpellTrait trait, Set<LivingEntity> targets, int id, Object... optional) {
++        this.trait = trait;
++        this.targets.addAll(targets);
++        this.id = id;
++        this.optionals = optional;
++    }
++
 +    public SpellbookSpell getSpell() {
 +        return spell;
++    }
++
++    public SpellTrait getTrait() {
++        return trait;
 +    }
 +
 +    public Set<LivingEntity> getTargets() {

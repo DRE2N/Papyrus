@@ -50,7 +50,7 @@ index 0000000000000000000000000000000000000000..1f20fd2c6128cd58ec160e95ca59d276
 +
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-index fccc2e48e4fb5ff5defe89729720e66d9d234ac3..5a9eb47d80ec1166c403076279f4d6d4fb24f881 100644
+index 7260506a0830a69278e6276174857f588c1c6125..a38037f73ff1b150c9bfd51b0f56c9d8d72db351 100644
 --- a/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 @@ -58,6 +58,10 @@ public interface SpellCaster {
@@ -64,7 +64,7 @@ index fccc2e48e4fb5ff5defe89729720e66d9d234ac3..5a9eb47d80ec1166c403076279f4d6d4
      default void tick() {
          Iterator<SpellEffect> effectIterator = getEffects().iterator();
          while(effectIterator.hasNext()) {
-@@ -315,5 +319,26 @@ public interface SpellCaster {
+@@ -318,5 +322,26 @@ public interface SpellCaster {
          }
      }
  
