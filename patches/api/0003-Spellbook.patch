@@ -658,10 +658,10 @@ index 0000000000000000000000000000000000000000..1f8dd5a590298a7b0bbb2b47354163eb
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..80ac112f79426c811fd88dfcf3c3423ae0ae2aa5
+index 0000000000000000000000000000000000000000..00e3dc889b0c4978fa20a76f233ede7bea34f878
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
-@@ -0,0 +1,101 @@
+@@ -0,0 +1,113 @@
 +package de.erethon.spellbook.api;
 +
 +import de.erethon.papyrus.DamageType;
@@ -669,7 +669,7 @@ index 0000000000000000000000000000000000000000..80ac112f79426c811fd88dfcf3c3423a
 +
 +public class SpellEffect {
 +
-+    protected final LivingEntity target;
++    protected LivingEntity target;
 +    protected final LivingEntity caster;
 +    public final EffectData data;
 +
@@ -743,8 +743,16 @@ index 0000000000000000000000000000000000000000..80ac112f79426c811fd88dfcf3c3423a
 +        return stacks;
 +    }
 +
++    public void setStacks(int stacks) {
++        this.stacks = stacks;
++    }
++
 +    public int getTicksLeft() {
 +        return ticksLeft;
++    }
++
++    public void setTicksLeft(int ticksLeft) {
++        this.ticksLeft = ticksLeft;
 +    }
 +
 +    public LivingEntity getCaster() {
@@ -753,6 +761,10 @@ index 0000000000000000000000000000000000000000..80ac112f79426c811fd88dfcf3c3423a
 +
 +    public LivingEntity getTarget() {
 +        return target;
++    }
++
++    public void setTarget(LivingEntity target) {
++        this.target = target;
 +    }
 +
 +    @Override
