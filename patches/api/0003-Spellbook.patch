@@ -1432,7 +1432,7 @@ index 0000000000000000000000000000000000000000..633828d54c4b67d82bbd400870e7b73a
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..126043ae25550e2694c84ba34474b322dbfd1eb4
+index 0000000000000000000000000000000000000000..c4a07139e108bbd54e33d499bb883b6ec6eb8baa
 --- /dev/null
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 @@ -0,0 +1,277 @@
@@ -1654,8 +1654,8 @@ index 0000000000000000000000000000000000000000..126043ae25550e2694c84ba34474b322
 +            trait.onSpellPreCast(this);
 +        }
 +        if (onPrecast()) {
++            caster.onSpellCast(this);
 +            if (onCast()) {
-+                caster.onSpellCast(this);
 +                onAfterCast();
 +            } else {
 +                failed = true;
