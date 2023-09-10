@@ -1326,6 +1326,31 @@ index 06d1bdb9bd124b201c36d284c50d22bf50d3735a..c36f66f5a0f51cb56934117445138174
              }
  
              if (flag && entity instanceof LivingEntity) {
+diff --git a/src/main/java/net/minecraft/world/item/DebugStickItem.java b/src/main/java/net/minecraft/world/item/DebugStickItem.java
+index bb39241bb9951fba4dd9d9b254edaab2e8721526..aed85a3c4029aa9ee1ab7da5960cc685039ffdcd 100644
+--- a/src/main/java/net/minecraft/world/item/DebugStickItem.java
++++ b/src/main/java/net/minecraft/world/item/DebugStickItem.java
+@@ -1,6 +1,6 @@
+ // mc-dev import
+ package net.minecraft.world.item;
+-
++Item
+ import java.util.Collection;
+ import javax.annotation.Nullable;
+ import net.minecraft.Util;
+diff --git a/src/main/java/net/minecraft/world/item/ItemStack.java b/src/main/java/net/minecraft/world/item/ItemStack.java
+index 879cc823d56625867eb73bb621db6a13f40ad81c..481215913385cad5cdfcf9612c03255a048bcd42 100644
+--- a/src/main/java/net/minecraft/world/item/ItemStack.java
++++ b/src/main/java/net/minecraft/world/item/ItemStack.java
+@@ -136,7 +136,7 @@ public final class ItemStack {
+     private static final String TAG_HIDE_FLAGS = "HideFlags";
+     private static final Component DISABLED_ITEM_TOOLTIP = Component.translatable("item.disabled").withStyle(ChatFormatting.RED);
+     private static final int DONT_HIDE_TOOLTIP = 0;
+-    private static final Style LORE_STYLE = Style.EMPTY.withColor(ChatFormatting.DARK_PURPLE).withItalic(true);
++    private static final Style LORE_STYLE = Style.EMPTY; //.withColor(ChatFormatting.DARK_PURPLE).withItalic(true); - Papyrus
+     private int count;
+     private int popTime;
+     /** @deprecated */
 diff --git a/src/main/java/net/minecraft/world/level/block/NoteBlock.java b/src/main/java/net/minecraft/world/level/block/NoteBlock.java
 index e46d84750bdd7c940f400efda226e12a3fdc3848..8258a25f92f256dea5ac0d68096a85a178bfe078 100644
 --- a/src/main/java/net/minecraft/world/level/block/NoteBlock.java
