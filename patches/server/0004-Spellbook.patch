@@ -1327,14 +1327,13 @@ index 06d1bdb9bd124b201c36d284c50d22bf50d3735a..c36f66f5a0f51cb56934117445138174
  
              if (flag && entity instanceof LivingEntity) {
 diff --git a/src/main/java/net/minecraft/world/item/DebugStickItem.java b/src/main/java/net/minecraft/world/item/DebugStickItem.java
-index bb39241bb9951fba4dd9d9b254edaab2e8721526..aed85a3c4029aa9ee1ab7da5960cc685039ffdcd 100644
+index bb39241bb9951fba4dd9d9b254edaab2e8721526..dcf76b9f83ade54f5f1e2773138adc764088fcf1 100644
 --- a/src/main/java/net/minecraft/world/item/DebugStickItem.java
 +++ b/src/main/java/net/minecraft/world/item/DebugStickItem.java
-@@ -1,6 +1,6 @@
+@@ -1,6 +1,5 @@
  // mc-dev import
  package net.minecraft.world.item;
 -
-+Item
  import java.util.Collection;
  import javax.annotation.Nullable;
  import net.minecraft.Util;
