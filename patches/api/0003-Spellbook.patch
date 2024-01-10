@@ -2006,7 +2006,7 @@ index 0000000000000000000000000000000000000000..8b72dba1a152833a89730155ff166328
 +    }
 +}
 diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
-index 8d8fe04e6b09d2a5b1cc05002073df5c58cdcb96..2a317cbddfeb5c0bf62212d8d8a7947365f26c45 100644
+index 9af4bc16da09e59009c47911219e99450cdf2aa5..4b8ea9554c3bc05225d62dadac317145091d4a50 100644
 --- a/src/main/java/org/bukkit/Server.java
 +++ b/src/main/java/org/bukkit/Server.java
 @@ -14,6 +14,7 @@ import java.util.Set;
@@ -2017,7 +2017,7 @@ index 8d8fe04e6b09d2a5b1cc05002073df5c58cdcb96..2a317cbddfeb5c0bf62212d8d8a79473
  import org.bukkit.Warning.WarningState;
  import org.bukkit.advancement.Advancement;
  import org.bukkit.block.data.BlockData;
-@@ -2404,4 +2405,8 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+@@ -2481,4 +2482,8 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
       */
      boolean isOwnedByCurrentRegion(@NotNull Entity entity);
      // Paper end - Folia region threading API
@@ -2027,10 +2027,10 @@ index 8d8fe04e6b09d2a5b1cc05002073df5c58cdcb96..2a317cbddfeb5c0bf62212d8d8a79473
 +    // Papyrus end
  }
 diff --git a/src/main/java/org/bukkit/attribute/Attribute.java b/src/main/java/org/bukkit/attribute/Attribute.java
-index dc820ba494e92a0fc770703c7d5020cb2af549fd..20980356b061f00e0f4d496ae2afcc08cfcc342d 100644
+index 896eccf8d0c4df01acc2e76d8952e369fa615a49..e5e1cfa661eaff8dbd135c2d8af7c683cc0f72f6 100644
 --- a/src/main/java/org/bukkit/attribute/Attribute.java
 +++ b/src/main/java/org/bukkit/attribute/Attribute.java
-@@ -75,15 +75,22 @@ public enum Attribute implements Keyed, net.kyori.adventure.translation.Translat
+@@ -79,15 +79,22 @@ public enum Attribute implements Keyed, net.kyori.adventure.translation.Translat
      ADV_PURE("advantage.pure"),
      ADV_PHYSICAL("advantage.physical"),
      ADV_MAGIC("advantage.magic"),
@@ -2086,7 +2086,7 @@ index fc4d3bcd9b16097086fef7975274d825b65adb10..0ada5e125ee88a606399b6437baa1af4
       * Gets the entity's health from 0 to {@link #getMaxHealth()}, where 0 is dead.
       *
 diff --git a/src/main/java/org/bukkit/entity/LivingEntity.java b/src/main/java/org/bukkit/entity/LivingEntity.java
-index 19e58e62ae442ef9be02ca7fa2f55e370a54afa4..5cdace11b57f2f3f220af32ed109b4fdb2ee3500 100644
+index 47b0154928b3d36e2602da202df07defbcf82108..a30feb13568cb6ee5d63fe23912be7dc958c8dfd 100644
 --- a/src/main/java/org/bukkit/entity/LivingEntity.java
 +++ b/src/main/java/org/bukkit/entity/LivingEntity.java
 @@ -4,6 +4,9 @@ import java.util.Collection;
@@ -2099,7 +2099,7 @@ index 19e58e62ae442ef9be02ca7fa2f55e370a54afa4..5cdace11b57f2f3f220af32ed109b4fd
  import org.bukkit.FluidCollisionMode;
  import org.bukkit.Location;
  import org.bukkit.Material;
-@@ -25,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
+@@ -27,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  /**
   * Represents a living entity, such as a monster or player
   */
@@ -2108,7 +2108,7 @@ index 19e58e62ae442ef9be02ca7fa2f55e370a54afa4..5cdace11b57f2f3f220af32ed109b4fd
  
      /**
       * Gets the height of the living entity's eyes above its Location.
-@@ -1138,7 +1141,6 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+@@ -1222,7 +1225,6 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
       * @param slot the slot
       */
      void broadcastSlotBreak(org.bukkit.inventory.@NotNull EquipmentSlot slot);
@@ -2116,7 +2116,7 @@ index 19e58e62ae442ef9be02ca7fa2f55e370a54afa4..5cdace11b57f2f3f220af32ed109b4fd
      /**
       * Notifies specified players that the item in the slot
       * of this entity broke.
-@@ -1192,4 +1194,8 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
+@@ -1276,4 +1278,8 @@ public interface LivingEntity extends Attributable, Damageable, ProjectileSource
       */
      void setBodyYaw(float bodyYaw);
      // Paper end
@@ -2126,10 +2126,10 @@ index 19e58e62ae442ef9be02ca7fa2f55e370a54afa4..5cdace11b57f2f3f220af32ed109b4fd
 +    void sendParsedMessage(String text);
  }
 diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
-index f9dd00210c1762a40259f823aeb8d8a5ddc78e3e..741e08b84bedc9e5b636657bb4965b1afd814443 100644
+index ae61a39b25267b84fe0b8766e4b12d9b24b44ded..cd9afc6654f2078c11666fa3c5af46f02bc1656f 100644
 --- a/src/main/java/org/bukkit/entity/Player.java
 +++ b/src/main/java/org/bukkit/entity/Player.java
-@@ -1274,30 +1274,6 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -1338,30 +1338,6 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
      /**
       * Sends an Action Bar message to the client.
       *
@@ -2160,7 +2160,7 @@ index f9dd00210c1762a40259f823aeb8d8a5ddc78e3e..741e08b84bedc9e5b636657bb4965b1a
       * @deprecated use {@link #sendActionBar(net.kyori.adventure.text.Component)}
       */
      @Deprecated
-@@ -1330,7 +1306,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -1394,7 +1370,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
      /**
       * Sends an array of components as a single message to the specified screen position of this player
       *
@@ -2169,7 +2169,7 @@ index f9dd00210c1762a40259f823aeb8d8a5ddc78e3e..741e08b84bedc9e5b636657bb4965b1a
       * @param position the screen position
       * @param components the components to send
       */
-@@ -3100,6 +3076,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
+@@ -3379,6 +3355,7 @@ public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginM
          /**
           * Sends an array of components as a single message to the specified screen position of this player
           *
@@ -2178,7 +2178,7 @@ index f9dd00210c1762a40259f823aeb8d8a5ddc78e3e..741e08b84bedc9e5b636657bb4965b1a
           * @param components the components to send
           * @deprecated use {@code sendMessage} methods that accept {@link net.kyori.adventure.text.Component}
 diff --git a/src/main/java/org/bukkit/entity/Projectile.java b/src/main/java/org/bukkit/entity/Projectile.java
-index 81ff7003e15e209358e8434a6875af79a4eb57f2..b89553f46a8c73888c371a724b37dbb0820b4ee2 100644
+index c3933fb5cd9708826effeef2ad2f81c9f7900a37..9fe73c563e015c37d2056218599ba21f283ae980 100644
 --- a/src/main/java/org/bukkit/entity/Projectile.java
 +++ b/src/main/java/org/bukkit/entity/Projectile.java
 @@ -1,5 +1,6 @@
@@ -2188,7 +2188,7 @@ index 81ff7003e15e209358e8434a6875af79a4eb57f2..b89553f46a8c73888c371a724b37dbb0
  import org.bukkit.projectiles.ProjectileSource;
  import org.jetbrains.annotations.Nullable;
  
-@@ -129,4 +130,5 @@ public interface Projectile extends Entity {
+@@ -127,4 +128,5 @@ public interface Projectile extends Entity {
      @Nullable
      java.util.UUID getOwnerUniqueId();
      // Paper end

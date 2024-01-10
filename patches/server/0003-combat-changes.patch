@@ -63,20 +63,18 @@ index 0000000000000000000000000000000000000000..afe4ed93f622cc46c0bb1faa12976e44
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-index 37b3c142d55a88167e1685c7e0b8ca3f84c9b6e4..28305ae8d83b20406a3d6c02b230186eae49eb16 100644
+index 48ae5c5c48a1ad016acee57468973aaab687ab72..beeaa5e67520be1f5e02516f91e84b32b8db5151 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
 +++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-@@ -18,6 +18,9 @@ import java.util.Optional;
- import java.util.OptionalInt;
- import java.util.Set;
- import javax.annotation.Nullable;
-+
+@@ -6,6 +6,7 @@ import com.mojang.datafixers.util.Either;
+ import com.mojang.logging.LogUtils;
+ import com.mojang.serialization.DataResult;
+ import com.mojang.serialization.Dynamic;
 +import de.erethon.papyrus.DamageType;
-+import net.kyori.adventure.text.minimessage.MiniMessage;
- import net.minecraft.BlockUtil;
- import net.minecraft.ChatFormatting;
- import net.minecraft.CrashReport;
-@@ -2167,7 +2170,7 @@ public class ServerPlayer extends Player {
+ import io.papermc.paper.adventure.PaperAdventure;
+ import net.minecraft.*;
+ import net.minecraft.advancements.CriteriaTriggers;
+@@ -2203,7 +2204,7 @@ public class ServerPlayer extends Player {
          if (this.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
              this.setCamera(target);
          } else {
@@ -86,19 +84,19 @@ index 37b3c142d55a88167e1685c7e0b8ca3f84c9b6e4..28305ae8d83b20406a3d6c02b230186e
  
      }
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index 776c7df81d2b71a5610fe90475f4e8044850beab..9235a0f5cc3f08e2b599101e514e67d6b8ad7c57 100644
+index df07e24ad5e1eaf5211d307965107ec1776cfa19..7645c68694b64f6161ade4e2fc929ca4dee0628d 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-@@ -323,6 +323,7 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Tic
+@@ -307,6 +307,7 @@ public class ServerGamePacketListenerImpl extends ServerCommonPacketListenerImpl
+         Objects.requireNonNull(server);
+         this.signedMessageDecoder = SignedMessageChain.Decoder.unsigned(uuid, server::enforceSecureProfile);
          this.chatMessageChain = new FutureChain(server.chatExecutor); // CraftBukkit - async chat
-         // CraftBukkit start - add fields and methods
-         this.cserver = server.server;
 +        LOGGER.info("Initialized packet listener for " + player.getScoreboardName());
      }
  
-     private final org.bukkit.craftbukkit.CraftServer cserver;
+     // CraftBukkit start - add fields
 diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
-index 36795968f4c296f680f79cc5a795391ae13c64e4..f91dbe93fefaafa845bbefe1280f7a10a4819b26 100644
+index 5cbe6cb0676ac23e184e7586e2dacbbc1d5fb218..3345e06351d6daa4cad0971a738a36b0f97165f4 100644
 --- a/src/main/java/net/minecraft/world/entity/Entity.java
 +++ b/src/main/java/net/minecraft/world/entity/Entity.java
 @@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
@@ -109,7 +107,7 @@ index 36795968f4c296f680f79cc5a795391ae13c64e4..f91dbe93fefaafa845bbefe1280f7a10
  import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
  import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
  import java.util.Arrays;
-@@ -2185,6 +2186,16 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+@@ -2183,6 +2184,16 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource, S
          }
      }
  
@@ -127,10 +125,10 @@ index 36795968f4c296f680f79cc5a795391ae13c64e4..f91dbe93fefaafa845bbefe1280f7a10
          return this.calculateViewVector(this.getViewXRot(tickDelta), this.getViewYRot(tickDelta));
      }
 diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
-index f6eb032897c6d5d16ab5c8c287e49e189c24571c..e689c8b00dd8167d0027d261df4ae1f25ace4e6e 100644
+index 40fbf1bc4409c289fe9ca154ff306be52708540d..b5f85491721d81ccda13593a7fbbd57af92a8d32 100644
 --- a/src/main/java/net/minecraft/world/entity/Mob.java
 +++ b/src/main/java/net/minecraft/world/entity/Mob.java
-@@ -9,6 +9,8 @@ import java.util.Optional;
+@@ -10,6 +10,8 @@ import java.util.Optional;
  import java.util.UUID;
  import java.util.function.Predicate;
  import javax.annotation.Nullable;
@@ -139,7 +137,7 @@ index f6eb032897c6d5d16ab5c8c287e49e189c24571c..e689c8b00dd8167d0027d261df4ae1f2
  import net.minecraft.core.BlockPos;
  import net.minecraft.core.NonNullList;
  import net.minecraft.core.Vec3i;
-@@ -1647,12 +1649,16 @@ public abstract class Mob extends LivingEntity implements Targeting {
+@@ -1662,12 +1664,16 @@ public abstract class Mob extends LivingEntity implements Targeting {
  
      @Override
      public boolean doHurtTarget(Entity target) {
@@ -160,7 +158,7 @@ index f6eb032897c6d5d16ab5c8c287e49e189c24571c..e689c8b00dd8167d0027d261df4ae1f2
          }
  
          int i = EnchantmentHelper.getFireAspect(this);
-@@ -1667,12 +1673,12 @@ public abstract class Mob extends LivingEntity implements Targeting {
+@@ -1682,12 +1688,12 @@ public abstract class Mob extends LivingEntity implements Targeting {
              }
              // CraftBukkit end
          }
@@ -178,27 +176,34 @@ index f6eb032897c6d5d16ab5c8c287e49e189c24571c..e689c8b00dd8167d0027d261df4ae1f2
              }
  
 diff --git a/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java b/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
-index 2878bcbfd41839249b160e67b83d5dad149c94db..57be3d8f01e53a1edf8f92cd6cf35bede099602f 100644
+index 80a83bb6123bbacadcd84674686235f322910779..89acc14db04496b4273ce4db8d2cd37cd998e72c 100644
 --- a/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
 +++ b/src/main/java/net/minecraft/world/entity/ai/attributes/Attributes.java
-@@ -6,12 +6,12 @@ import net.minecraft.core.registries.BuiltInRegistries;
+@@ -6,21 +6,49 @@ import net.minecraft.core.registries.BuiltInRegistries;
  
  public class Attributes {
  
--    public static final Attribute MAX_HEALTH = Attributes.register("generic.max_health", (new RangedAttribute("attribute.name.generic.max_health", 20.0D, 1.0D, org.spigotmc.SpigotConfig.maxHealth)).setSyncable(true));
-+    public static final Attribute MAX_HEALTH = Attributes.register("generic.max_health", new RangedAttribute("attribute.name.generic.max_health", 500.0D, 1.0D, org.spigotmc.SpigotConfig.maxHealth).setSyncable(true));
-     public static final Attribute FOLLOW_RANGE = Attributes.register("generic.follow_range", new RangedAttribute("attribute.name.generic.follow_range", 32.0D, 0.0D, 2048.0D));
-     public static final Attribute KNOCKBACK_RESISTANCE = Attributes.register("generic.knockback_resistance", new RangedAttribute("attribute.name.generic.knockback_resistance", 0.0D, 0.0D, 1.0D));
-     public static final Attribute MOVEMENT_SPEED = Attributes.register("generic.movement_speed", (new RangedAttribute("attribute.name.generic.movement_speed", 0.699999988079071D, 0.0D, org.spigotmc.SpigotConfig.movementSpeed)).setSyncable(true));
-     public static final Attribute FLYING_SPEED = Attributes.register("generic.flying_speed", (new RangedAttribute("attribute.name.generic.flying_speed", 0.4000000059604645D, 0.0D, 1024.0D)).setSyncable(true));
++
+     public static final Attribute ARMOR = Attributes.register("generic.armor", (new RangedAttribute("attribute.name.generic.armor", 0.0D, 0.0D, 30.0D)).setSyncable(true));
+     public static final Attribute ARMOR_TOUGHNESS = Attributes.register("generic.armor_toughness", (new RangedAttribute("attribute.name.generic.armor_toughness", 0.0D, 0.0D, 20.0D)).setSyncable(true));
 -    public static final Attribute ATTACK_DAMAGE = Attributes.register("generic.attack_damage", new RangedAttribute("attribute.name.generic.attack_damage", 2.0D, 0.0D, org.spigotmc.SpigotConfig.attackDamage));
++    public static final Attribute MAX_HEALTH = Attributes.register("generic.max_health", (new RangedAttribute("attribute.name.generic.max_health", 20.0D, 1.0D, org.spigotmc.SpigotConfig.maxHealth)).setSyncable(true));
++    public static final Attribute FOLLOW_RANGE = Attributes.register("generic.follow_range", new RangedAttribute("attribute.name.generic.follow_range", 32.0D, 0.0D, 2048.0D));
++    public static final Attribute KNOCKBACK_RESISTANCE = Attributes.register("generic.knockback_resistance", new RangedAttribute("attribute.name.generic.knockback_resistance", 0.0D, 0.0D, 1.0D));
++    public static final Attribute MOVEMENT_SPEED = Attributes.register("generic.movement_speed", (new RangedAttribute("attribute.name.generic.movement_speed", 0.699999988079071D, 0.0D, org.spigotmc.SpigotConfig.movementSpeed)).setSyncable(true));
++    public static final Attribute FLYING_SPEED = Attributes.register("generic.flying_speed", (new RangedAttribute("attribute.name.generic.flying_speed", 0.4000000059604645D, 0.0D, 1024.0D)).setSyncable(true));
 +    public static final Attribute ATTACK_DAMAGE = Attributes.register("generic.attack_damage", new RangedAttribute("attribute.name.generic.attack_damage", 20.0D, 0.0D, org.spigotmc.SpigotConfig.attackDamage));
      public static final Attribute ATTACK_KNOCKBACK = Attributes.register("generic.attack_knockback", new RangedAttribute("attribute.name.generic.attack_knockback", 0.0D, 0.0D, 5.0D));
      public static final Attribute ATTACK_SPEED = Attributes.register("generic.attack_speed", (new RangedAttribute("attribute.name.generic.attack_speed", 4.0D, 0.0D, 1024.0D)).setSyncable(true));
-     public static final Attribute ARMOR = Attributes.register("generic.armor", (new RangedAttribute("attribute.name.generic.armor", 0.0D, 0.0D, 30.0D)).setSyncable(true));
-@@ -20,6 +20,33 @@ public class Attributes {
-     public static final Attribute SPAWN_REINFORCEMENTS_CHANCE = Attributes.register("zombie.spawn_reinforcements", new RangedAttribute("attribute.name.zombie.spawn_reinforcements", 0.0D, 0.0D, 1.0D));
+-    public static final Attribute FLYING_SPEED = Attributes.register("generic.flying_speed", (new RangedAttribute("attribute.name.generic.flying_speed", 0.4000000059604645D, 0.0D, 1024.0D)).setSyncable(true));
+-    public static final Attribute FOLLOW_RANGE = Attributes.register("generic.follow_range", new RangedAttribute("attribute.name.generic.follow_range", 32.0D, 0.0D, 2048.0D));
      public static final Attribute JUMP_STRENGTH = Attributes.register("horse.jump_strength", (new RangedAttribute("attribute.name.horse.jump_strength", 0.7D, 0.0D, 2.0D)).setSyncable(true));
+-    public static final Attribute KNOCKBACK_RESISTANCE = Attributes.register("generic.knockback_resistance", new RangedAttribute("attribute.name.generic.knockback_resistance", 0.0D, 0.0D, 1.0D));
+     public static final Attribute LUCK = Attributes.register("generic.luck", (new RangedAttribute("attribute.name.generic.luck", 0.0D, -1024.0D, 1024.0D)).setSyncable(true));
+     public static final Attribute MAX_ABSORPTION = Attributes.register("generic.max_absorption", new RangedAttribute("attribute.name.generic.max_absorption", 0.0D, 0.0D, 2048.0D)).setSyncable(true);
+-    public static final Attribute MAX_HEALTH = Attributes.register("generic.max_health", (new RangedAttribute("attribute.name.generic.max_health", 20.0D, 1.0D, org.spigotmc.SpigotConfig.maxHealth)).setSyncable(true));
+-    public static final Attribute MOVEMENT_SPEED = Attributes.register("generic.movement_speed", (new RangedAttribute("attribute.name.generic.movement_speed", 0.699999988079071D, 0.0D, org.spigotmc.SpigotConfig.movementSpeed)).setSyncable(true));
+     public static final Attribute SPAWN_REINFORCEMENTS_CHANCE = Attributes.register("zombie.spawn_reinforcements", new RangedAttribute("attribute.name.zombie.spawn_reinforcements", 0.0D, 0.0D, 1.0D));
  
 +    // Papyrus start - combat changes
 +    // Element resistance
@@ -231,29 +236,113 @@ index 2878bcbfd41839249b160e67b83d5dad149c94db..57be3d8f01e53a1edf8f92cd6cf35bed
  
      private static Attribute register(String id, Attribute attribute) {
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
-index 58152160d609d0e9d105153aeb166a56a7955603..1a977285f028ee6082b810da75582c2f5968186b 100644
+index ccc1caafb0ada52c7b99b7358253826f5390843e..84bc777cdb43f8f4b038deec46e4538fa03dfadb 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
 +++ b/src/main/java/net/minecraft/world/entity/player/Player.java
-@@ -16,6 +16,9 @@ import java.util.Optional;
- import java.util.OptionalInt;
- import java.util.function.Predicate;
- import javax.annotation.Nullable;
-+import net.minecraft.SharedConstants;
+@@ -7,15 +7,7 @@ import com.mojang.authlib.GameProfile;
+ import com.mojang.datafixers.util.Either;
+ import com.mojang.logging.LogUtils;
+ import com.mojang.serialization.DataResult;
+-import java.util.Collection;
+-import java.util.Iterator;
+-import java.util.List;
+-import java.util.Map;
+-import java.util.Objects;
+-import java.util.Optional;
+-import java.util.OptionalInt;
+-import java.util.function.Predicate;
+-import javax.annotation.Nullable;
 +import de.erethon.papyrus.DamageType;
-+import net.minecraft.SharedConstants;
  import net.minecraft.Util;
  import net.minecraft.advancements.CriteriaTriggers;
  import net.minecraft.core.BlockPos;
-@@ -132,7 +135,7 @@ public abstract class Player extends LivingEntity {
+@@ -24,11 +16,7 @@ import net.minecraft.core.GlobalPos;
+ import net.minecraft.core.particles.ParticleOptions;
+ import net.minecraft.core.particles.ParticleTypes;
+ import net.minecraft.core.registries.Registries;
+-import net.minecraft.nbt.CompoundTag;
+-import net.minecraft.nbt.ListTag;
+-import net.minecraft.nbt.NbtOps;
+-import net.minecraft.nbt.NbtUtils;
+-import net.minecraft.nbt.Tag;
++import net.minecraft.nbt.*;
+ import net.minecraft.network.chat.ClickEvent;
+ import net.minecraft.network.chat.Component;
+ import net.minecraft.network.chat.MutableComponent;
+@@ -49,27 +37,12 @@ import net.minecraft.tags.DamageTypeTags;
+ import net.minecraft.tags.FluidTags;
+ import net.minecraft.util.Mth;
+ import net.minecraft.util.Unit;
+-import net.minecraft.world.Container;
+-import net.minecraft.world.Difficulty;
+-import net.minecraft.world.InteractionHand;
+-import net.minecraft.world.InteractionResult;
+-import net.minecraft.world.MenuProvider;
++import net.minecraft.world.*;
+ import net.minecraft.world.damagesource.DamageSource;
+ import net.minecraft.world.effect.MobEffectInstance;
+ import net.minecraft.world.effect.MobEffectUtil;
+ import net.minecraft.world.effect.MobEffects;
+-import net.minecraft.world.entity.Entity;
+-import net.minecraft.world.entity.EntityDimensions;
+-import net.minecraft.world.entity.EntityType;
+-import net.minecraft.world.entity.EquipmentSlot;
+-import net.minecraft.world.entity.HumanoidArm;
+-import net.minecraft.world.entity.LivingEntity;
+-import net.minecraft.world.entity.Mob;
+-import net.minecraft.world.entity.MobType;
+-import net.minecraft.world.entity.MoverType;
+-import net.minecraft.world.entity.Pose;
+-import net.minecraft.world.entity.SlotAccess;
+-import net.minecraft.world.entity.TamableAnimal;
++import net.minecraft.world.entity.*;
+ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+ import net.minecraft.world.entity.ai.attributes.Attributes;
+ import net.minecraft.world.entity.animal.Parrot;
+@@ -84,12 +57,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
+ import net.minecraft.world.inventory.ClickAction;
+ import net.minecraft.world.inventory.InventoryMenu;
+ import net.minecraft.world.inventory.PlayerEnderChestContainer;
+-import net.minecraft.world.item.ElytraItem;
+-import net.minecraft.world.item.ItemCooldowns;
+-import net.minecraft.world.item.ItemStack;
+-import net.minecraft.world.item.Items;
+-import net.minecraft.world.item.ProjectileWeaponItem;
+-import net.minecraft.world.item.SwordItem;
++import net.minecraft.world.item.*;
+ import net.minecraft.world.item.crafting.RecipeHolder;
+ import net.minecraft.world.item.enchantment.EnchantmentHelper;
+ import net.minecraft.world.item.trading.MerchantOffers;
+@@ -111,7 +79,6 @@ import net.minecraft.world.phys.AABB;
+ import net.minecraft.world.phys.Vec3;
+ import net.minecraft.world.scores.PlayerTeam;
+ import net.minecraft.world.scores.Scoreboard;
+-import org.slf4j.Logger;
+ import org.bukkit.craftbukkit.entity.CraftHumanEntity;
+ import org.bukkit.craftbukkit.event.CraftEventFactory;
+ import org.bukkit.craftbukkit.util.CraftVector;
+@@ -121,6 +88,11 @@ import org.bukkit.event.entity.EntityCombustByEntityEvent;
+ import org.bukkit.event.entity.EntityExhaustionEvent;
+ import org.bukkit.event.player.PlayerDropItemEvent;
+ import org.bukkit.event.player.PlayerVelocityEvent;
++import org.slf4j.Logger;
++
++import javax.annotation.Nullable;
++import java.util.*;
++import java.util.function.Predicate;
+ // CraftBukkit end
  
-     private static final Logger LOGGER = LogUtils.getLogger();
+ public abstract class Player extends LivingEntity {
+@@ -129,7 +101,7 @@ public abstract class Player extends LivingEntity {
      public static final int MAX_NAME_LENGTH = 16;
+     public static final HumanoidArm DEFAULT_MAIN_HAND = HumanoidArm.RIGHT;
+     public static final int DEFAULT_MODEL_CUSTOMIZATION = 0;
 -    public static final int MAX_HEALTH = 20;
 +    public static final int MAX_HEALTH = 500;
      public static final int SLEEP_DURATION = 100;
      public static final int WAKE_UP_DURATION = 10;
      public static final int ENDER_SLOT_OFFSET = 200;
-@@ -226,7 +229,8 @@ public abstract class Player extends LivingEntity {
+@@ -222,7 +194,8 @@ public abstract class Player extends LivingEntity {
      }
  
      public static AttributeSupplier.Builder createAttributes() {
@@ -263,7 +352,7 @@ index 58152160d609d0e9d105153aeb166a56a7955603..1a977285f028ee6082b810da75582c2f
      }
  
      @Override
-@@ -1239,6 +1243,15 @@ public abstract class Player extends LivingEntity {
+@@ -1240,6 +1213,15 @@ public abstract class Player extends LivingEntity {
          return this.onGround() || this.fallDistance < this.maxUpStep() && !this.level().noCollision(this, this.getBoundingBox().move(0.0D, (double) (this.fallDistance - this.maxUpStep()), 0.0D));
      }
  
@@ -273,13 +362,13 @@ index 58152160d609d0e9d105153aeb166a56a7955603..1a977285f028ee6082b810da75582c2f
 +            return;
 +        }
 +        float damage = (float) (getAttributeValue(Attributes.ATTACK_DAMAGE) + getAttributeValue(type.getAdvAttr()));
-+        target.hurt(DamageSource.playerAttack(this), damage, type);
++        target.hurt(damageSources().playerAttack(this), damage, type);
 +    }
 +
      public void attack(Entity target) {
          // Paper start - PlayerAttackEntityEvent
          boolean willAttack = target.isAttackable() && !target.skipAttackInteraction(this); // Vanilla logic
-@@ -1458,7 +1471,7 @@ public abstract class Player extends LivingEntity {
+@@ -1459,7 +1441,7 @@ public abstract class Player extends LivingEntity {
  
      @Override
      protected void doAutoAttackOnTouch(LivingEntity target) {
@@ -287,9 +376,9 @@ index 58152160d609d0e9d105153aeb166a56a7955603..1a977285f028ee6082b810da75582c2f
 +        this.attack(target, DamageType.PHYSICAL); // Papyrus
      }
  
-     public void disableShield(boolean sprinting) {
+     @io.papermc.paper.annotation.DoNotUse // Paper - add player shield disable event
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
-index 4e6fea7cf11b1e29ae7c7098a6f5d06bb5f93cc2..b5bcc80b460dbb58db633ad55d25d92d3e3cad3d 100644
+index da63b4050be25dcb91d04df8c2fcc643cbb0751d..715337c292e2b9f3c18ec606f62daefabd40210f 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 @@ -185,8 +185,8 @@ public class CraftPlayer extends CraftHumanEntity implements Player {

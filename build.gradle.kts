@@ -4,7 +4,7 @@ plugins {
     java
     `maven-publish`
     id("com.github.johnrengelman.shadow") version "8.1.1" apply false
-    id("io.papermc.paperweight.patcher") version "1.5.5"
+    id("io.papermc.paperweight.patcher") version "1.5.11"
 }
 
 repositories {
@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    remapper("net.fabricmc:tiny-remapper:0.8.6:fat")
+    remapper("net.fabricmc:tiny-remapper:0.8.10:fat")
     decompiler("net.minecraftforge:forgeflower:2.0.627.2")
     paperclip("io.papermc:paperclip:3.0.3")
 }
@@ -82,10 +82,6 @@ paperweight {
     }
 }
 
-//
-// Everything below here is optional if you don't care about publishing API or dev bundles to your repository
-//
-
 tasks.generateDevelopmentBundle {
     apiCoordinates.set("de.erethon.papyrus:papyrus-api")
     mojangApiCoordinates.set("io.papermc.paper:paper-mojangapi")
@@ -95,29 +91,9 @@ tasks.generateDevelopmentBundle {
             "https://libraries.minecraft.net/",
             "https://papermc.io/repo/repository/maven-public/",
             "https://maven.quiltmc.org/repository/release/",
-            // "https://my.repo/", // This should be a repo hosting your API (in this example, 'com.example.paperfork:forktest-api')
+            "https://erethon.de/repo"
         )
     )
-}
-
-allprojects {
-    // Publishing API:
-    // ./gradlew :ForkTest-API:publish[ToMavenLocal]
-    publishing {
-        repositories {
-            maven {
-                name = "erethon"
-                url = uri("sftp://grebe.bloom.host:2022")
-                credentials(PasswordCredentials::class) // Put credentials in ~/.gradle/gradle.properties
-            }
-        }
-        // Always publish dev bundle
-        publications.create<MavenPublication>("devBundle") {
-            artifact(rootProject.tasks.generateDevelopmentBundle) {
-                artifactId = "dev-bundle"
-            }
-        }
-    }
 }
 
 publishing {
