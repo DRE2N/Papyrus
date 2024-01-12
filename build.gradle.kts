@@ -96,6 +96,26 @@ tasks.generateDevelopmentBundle {
     )
 }
 
+allprojects {
+    // Publishing API:
+    // ./gradlew :ForkTest-API:publish[ToMavenLocal]
+    publishing {
+        repositories {
+            maven {
+                name = "erethon"
+                url = uri("sftp://grebe.bloom.host:2022")
+                credentials(PasswordCredentials::class) // Put credentials in ~/.gradle/gradle.properties
+            }
+        }
+        // Always publish dev bundle
+        publications.create<MavenPublication>("devBundle") {
+            artifact(rootProject.tasks.generateDevelopmentBundle) {
+                artifactId = "dev-bundle"
+            }
+        }
+    }
+}
+
 publishing {
     // Publishing dev bundle:
     // ./gradlew publishDevBundlePublicationTo(MavenLocal|MyRepoSnapshotsRepository) -PpublishDevBundle

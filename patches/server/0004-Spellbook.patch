@@ -4,6 +4,44 @@ Date: Fri, 5 Aug 2022 22:03:37 +0200
 Subject: [PATCH] Spellbook
 
 
+diff --git a/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java b/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..e672340310a8863a627c083cbea2c08a8d6049b9
+--- /dev/null
++++ b/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java
+@@ -0,0 +1,32 @@
++package de.erethon.papyrus;
++
++import net.minecraft.core.NonNullList;
++import net.minecraft.world.item.ItemStack;
++import org.bukkit.event.Event;
++import org.bukkit.event.HandlerList;
++import org.jetbrains.annotations.NotNull;
++
++public class ContainerLoadEvent extends Event {
++
++    private static final HandlerList handlers = new HandlerList();
++
++    private NonNullList<ItemStack> itemStacks;
++
++    public ContainerLoadEvent(NonNullList<ItemStack> items) {
++        this.itemStacks = items;
++    }
++
++    public NonNullList<ItemStack> getItemStacks() {
++        return itemStacks;
++    }
++
++    @NotNull
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}
 diff --git a/src/main/java/de/erethon/papyrus/CraftDamageType.java b/src/main/java/de/erethon/papyrus/CraftDamageType.java
 new file mode 100644
 index 0000000000000000000000000000000000000000..dd13ca3b8962d7bc1c700b5a7a2ef03fde1dd234
@@ -126,6 +164,63 @@ index 0000000000000000000000000000000000000000..6650bb2ffb961035a7e598990097621c
 +        this.dz = dz;
 +        this.entity = entity;
 +        this.id = id;
++    }
++}
+diff --git a/src/main/java/de/erethon/papyrus/PlayerInventoryLoadEvent.java b/src/main/java/de/erethon/papyrus/PlayerInventoryLoadEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..b2b41831a9513f7ad60b0817a9d2175f6c224cfd
+--- /dev/null
++++ b/src/main/java/de/erethon/papyrus/PlayerInventoryLoadEvent.java
+@@ -0,0 +1,51 @@
++package de.erethon.papyrus;
++
++import net.minecraft.core.NonNullList;
++import net.minecraft.world.entity.player.Player;
++import net.minecraft.world.item.ItemStack;
++import org.bukkit.event.Event;
++import org.bukkit.event.HandlerList;
++import org.jetbrains.annotations.NotNull;
++
++public class PlayerInventoryLoadEvent extends Event {
++
++    private static final HandlerList handlers = new HandlerList();
++
++    private Player player;
++    private NonNullList<ItemStack> items;
++    private NonNullList<ItemStack> armor;
++    private NonNullList<ItemStack> offhand;
++
++    public PlayerInventoryLoadEvent(Player player, NonNullList<ItemStack> itemStacks, NonNullList<ItemStack> armor, NonNullList<ItemStack> offhand) {
++        this.player = player;
++        this.items = itemStacks;
++        this.armor = armor;
++        this.offhand = offhand;
++    }
++
++    public Player getPlayer() {
++        return player;
++    }
++
++    public NonNullList<ItemStack> getItems() {
++        return items;
++    }
++
++    public NonNullList<ItemStack> getArmor() {
++        return armor;
++    }
++
++    public NonNullList<ItemStack> getOffhand() {
++        return offhand;
++    }
++
++    @NotNull
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java b/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
@@ -420,6 +515,33 @@ index e98a455b6bca9d094d0da323bddd7b3f2c07bb23..72f52c120feddfb007c7a70f68ff087f
 +        new PlayerSwitchProfileEvent(player.getBukkitEntity(), oldID, newID).callEvent();
 +    }
  }
+diff --git a/src/main/java/net/minecraft/world/ContainerHelper.java b/src/main/java/net/minecraft/world/ContainerHelper.java
+index 4092c7a8c2b0d9d26e6f4d97386735236300d132..01063c3bc672eecdf8fe1c5b5a89fbf576c940f3 100644
+--- a/src/main/java/net/minecraft/world/ContainerHelper.java
++++ b/src/main/java/net/minecraft/world/ContainerHelper.java
+@@ -2,10 +2,13 @@ package net.minecraft.world;
+ 
+ import java.util.List;
+ import java.util.function.Predicate;
++
++import de.erethon.papyrus.ContainerLoadEvent;
+ import net.minecraft.core.NonNullList;
+ import net.minecraft.nbt.CompoundTag;
+ import net.minecraft.nbt.ListTag;
+ import net.minecraft.world.item.ItemStack;
++import org.bukkit.Bukkit;
+ 
+ public class ContainerHelper {
+     public static ItemStack removeItem(List<ItemStack> stacks, int slot, int amount) {
+@@ -50,6 +53,8 @@ public class ContainerHelper {
+                 stacks.set(j, ItemStack.of(compoundTag));
+             }
+         }
++        ContainerLoadEvent loadEvent = new ContainerLoadEvent(stacks);
++        Bukkit.getPluginManager().callEvent(loadEvent);
+ 
+     }
+ 
 diff --git a/src/main/java/net/minecraft/world/damagesource/CombatTracker.java b/src/main/java/net/minecraft/world/damagesource/CombatTracker.java
 index 9c99b2e365aacb8309f29acb9025faccd2c676b3..dd8fa9b1f8fd91176cad118b23078322b805bd2d 100644
 --- a/src/main/java/net/minecraft/world/damagesource/CombatTracker.java
@@ -1221,6 +1343,38 @@ index 580dff41d746d9591f718081d9dfe4ac77e7eeaa..5b55a660e14931c1245fab3464c4f08f
          this.goalSelector.addGoal(2, new WaterAvoidingRandomStrollGoal(this, 1.0D));
          this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
          this.goalSelector.addGoal(3, new RandomLookAroundGoal(this));
+diff --git a/src/main/java/net/minecraft/world/entity/player/Inventory.java b/src/main/java/net/minecraft/world/entity/player/Inventory.java
+index b1c24a02b87aca7b180a6efbce177f2300db49c1..66946c68a09197563dd0c0edc2adde67821d4975 100644
+--- a/src/main/java/net/minecraft/world/entity/player/Inventory.java
++++ b/src/main/java/net/minecraft/world/entity/player/Inventory.java
+@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableList;
+ import java.util.Iterator;
+ import java.util.List;
+ import java.util.function.Predicate;
++
++import de.erethon.papyrus.PlayerInventoryLoadEvent;
+ import net.minecraft.CrashReport;
+ import net.minecraft.CrashReportCategory;
+ import net.minecraft.ReportedException;
+@@ -27,6 +29,8 @@ import net.minecraft.world.item.ItemStack;
+ import net.minecraft.world.level.block.state.BlockState;
+ // CraftBukkit start
+ import java.util.ArrayList;
++
++import org.bukkit.Bukkit;
+ import org.bukkit.Location;
+ import org.bukkit.craftbukkit.entity.CraftHumanEntity;
+ import org.bukkit.entity.HumanEntity;
+@@ -559,7 +563,8 @@ public class Inventory implements Container, Nameable {
+                 }
+             }
+         }
+-
++        PlayerInventoryLoadEvent loadEvent = new PlayerInventoryLoadEvent(player, items, armor, offhand);
++        Bukkit.getPluginManager().callEvent(loadEvent);
+     }
+ 
+     @Override
 diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
 index 84bc777cdb43f8f4b038deec46e4538fa03dfadb..61efc3f374fc5b98a49d6d8e8f8ecfe20aea653b 100644
 --- a/src/main/java/net/minecraft/world/entity/player/Player.java
