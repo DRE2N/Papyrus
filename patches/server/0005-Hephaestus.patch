@@ -1,0 +1,683 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Malfrador <malfrador@gmail.com>
+Date: Fri, 12 Jan 2024 13:22:05 +0100
+Subject: [PATCH] Hephaestus
+
+
+diff --git a/src/main/java/de/erethon/hephaestus/HItem.java b/src/main/java/de/erethon/hephaestus/HItem.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..9da7b335c06b1267fc763c7cffa0329b0999bd25
+--- /dev/null
++++ b/src/main/java/de/erethon/hephaestus/HItem.java
+@@ -0,0 +1,89 @@
++package de.erethon.hephaestus;
++
++import de.erethon.hephaestus.HItemBehaviour;
++import net.minecraft.core.registries.BuiltInRegistries;
++import net.minecraft.resources.ResourceLocation;
++import net.minecraft.world.entity.EquipmentSlot;
++import net.minecraft.world.item.Item;
++import net.minecraft.world.item.ItemStack;
++
++public class HItem {
++
++    private final ResourceLocation id;
++    private HItemConfig config;
++    private HItemBehaviour behaviour;
++
++    private Item baseItem;
++    private ItemStack stack;
++
++
++    public HItem(ResourceLocation resourceLocation) {
++        this.id = resourceLocation;
++    }
++
++    public HItem(HItemConfig config) {
++        this.config = config;
++        this.id = config.getId();
++    }
++
++    public ResourceLocation getId() {
++        return id;
++    }
++
++    public boolean needsUpdating(ItemStack stack) {
++        return !ItemStack.matches(stack, this.stack);
++    }
++
++    public ItemStack getStack() {
++        return stack;
++    }
++
++    public org.bukkit.inventory.ItemStack getBukkitStack() {
++        return stack.getBukkitStack();
++    }
++
++    public void setBehaviour(HItemBehaviour behaviour) {
++        this.behaviour = behaviour;
++    }
++
++    public HItemBehaviour getBehaviour() {
++        return behaviour;
++    }
++
++    public HItemConfig config() {
++        return config;
++    }
++
++    public boolean isEnabled() {
++        return config.isEnabled();
++    }
++
++    public HItem replaceWith() {
++        return config.getReplaceWith();
++    }
++
++    // TODO: Call this on inventory load
++    public void update(ItemStack original) {
++        if (!needsUpdating(original)) {
++            return;
++        }
++        int count = original.getCount();
++        ItemStack updated = stack.copyWithCount(count);
++        if (config.getReplaceWith() != null) {
++            updated = config.getReplaceWith().getStack();
++        }
++    }
++
++    public void prepare() {
++        baseItem = BuiltInRegistries.ITEM.get(new ResourceLocation(config.getMojangID()));
++        stack = new ItemStack(baseItem);
++        for (EquipmentSlot slot : EquipmentSlot.values()) {
++            stack.getAttributeModifiers(slot).clear();
++        }
++        stack.getOrCreateTag().putInt("CustomModelData", config.getModelData());
++        stack.getOrCreateTag().putString("HephaestusID", id.toString());
++    }
++
++
++
++}
+diff --git a/src/main/java/de/erethon/hephaestus/HItemBehaviour.java b/src/main/java/de/erethon/hephaestus/HItemBehaviour.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..711360d21298683e96332af780d7fb75562d51e8
+--- /dev/null
++++ b/src/main/java/de/erethon/hephaestus/HItemBehaviour.java
+@@ -0,0 +1,35 @@
++package de.erethon.hephaestus;
++
++import net.minecraft.core.BlockPos;
++import net.minecraft.world.InteractionResult;
++import net.minecraft.world.entity.Entity;
++import net.minecraft.world.entity.LivingEntity;
++import net.minecraft.world.entity.player.Player;
++import net.minecraft.world.item.ItemStack;
++import net.minecraft.world.level.Level;
++import net.minecraft.world.level.block.state.BlockState;
++
++public abstract class HItemBehaviour {
++
++    public HItem hItem;
++
++    public HItemBehaviour(HItem item) {
++        this.hItem = item;
++    }
++
++    public abstract void onLeftClick();
++    public abstract void onRightClick();
++    public abstract boolean onDrop();
++    public abstract boolean onPickup();
++    public abstract void onEquip();
++    public abstract void onUnequip();
++    public abstract boolean onAttack(ItemStack stack, LivingEntity target, Player attacker);
++    public abstract double onDamaged();
++    public abstract int onItemHurt(ItemStack stack, int amount);
++    public abstract boolean onMine(ItemStack stack, Level world, BlockState state, BlockPos pos, Player miner);
++    public abstract InteractionResult onInteractLiving(ItemStack stack, Player player, LivingEntity living);
++    public abstract boolean onSpellCast();
++
++    public abstract void onTick(ItemStack stack, Entity entity, int slot, boolean selected);
++
++}
+diff --git a/src/main/java/de/erethon/hephaestus/HItemConfig.java b/src/main/java/de/erethon/hephaestus/HItemConfig.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..9f498235fe573bf2d88587572e0040634ee0923d
+--- /dev/null
++++ b/src/main/java/de/erethon/hephaestus/HItemConfig.java
+@@ -0,0 +1,126 @@
++package de.erethon.hephaestus;
++
++import de.erethon.hephaestus.HItemBehaviour;
++import net.kyori.adventure.text.Component;
++import net.kyori.adventure.text.minimessage.MiniMessage;
++import net.minecraft.resources.ResourceLocation;
++import net.minecraft.server.MinecraftServer;
++import net.minecraft.world.entity.EquipmentSlot;
++import net.minecraft.world.entity.ai.attributes.AttributeModifier;
++import org.bukkit.Bukkit;
++import org.bukkit.configuration.InvalidConfigurationException;
++import org.bukkit.configuration.file.YamlConfiguration;
++import org.jetbrains.annotations.NotNull;
++
++import java.io.File;
++import java.io.IOException;
++import java.util.List;
++import java.util.Map;
++import java.util.logging.Level;
++
++public class HItemConfig extends YamlConfiguration {
++
++    private final MiniMessage mm = MiniMessage.miniMessage();
++
++    private ResourceLocation id;
++    private HItemBehaviour behaviour;
++    private Component displayName;
++    private List<Component> lore;
++    private String mojangID;
++    private int modelData;
++    private Map<EquipmentSlot, AttributeModifier> modifierMap;
++    private int maxStackSize;
++    private int maxDurability;
++
++    private boolean isEnabled = true;
++    private HItem replaceWith = null;
++
++
++    public HItemConfig(File file) {
++        super();
++        try {
++            load(file);
++        } catch (IOException | InvalidConfigurationException e) {
++            Bukkit.getLogger().log(Level.WARNING, "[Hephaestus] Failed to load " + file.getName());
++            Bukkit.getLogger().log(Level.WARNING, e.getMessage());
++            throw new RuntimeException(e);
++        }
++    }
++
++    public ResourceLocation getId() {
++        return id;
++    }
++
++    public Component getDisplayName() {
++        return displayName;
++    }
++
++    public List<Component> getLore() {
++        return lore;
++    }
++
++    public String getMojangID() {
++        return mojangID;
++    }
++
++    public int getModelData() {
++        return modelData;
++    }
++
++    public Map<EquipmentSlot, AttributeModifier> getModifierMap() {
++        return modifierMap;
++    }
++
++    public int getMaxStackSize() {
++        return maxStackSize;
++    }
++
++    public int getMaxDurability() {
++        return maxDurability;
++    }
++
++    public boolean isEnabled() {
++        return isEnabled;
++    }
++
++    public HItem getReplaceWith() {
++        return replaceWith;
++    }
++
++    public HItem getItem() {
++        return getItem(1);
++    }
++
++    public HItem getItem(int count) {
++        HItem item = new HItem(id);
++        item.setBehaviour(behaviour);
++        item.prepare();
++        item.getStack().setCount(count);
++        return item;
++    }
++
++    @Override
++    public void load(@NotNull File file) throws IOException, InvalidConfigurationException {
++        super.load(file);
++        id = ResourceLocation.tryParse(getString("id", "minecraft:stone"));
++        isEnabled = getBoolean("enabled", true);
++        displayName = mm.deserialize(getString("displayName", ""));
++        for (String string : getStringList("lore")) {
++            lore.add(mm.deserialize(string));
++        }
++        mojangID = getString("mojangID", "minecraft:stone");
++        modelData = getInt("modelData", 0);
++        maxStackSize = getInt("maxStackSize", 1);
++        maxDurability = getInt("maxDurability", 0);
++        if (contains("modifiers")) {
++            for (String slot : getConfigurationSection("modifiers").getKeys(false)) {
++                EquipmentSlot equipmentSlot = EquipmentSlot.byName(slot);
++                AttributeModifier modifier = new AttributeModifier(
++                    getString("modifiers." + slot + ".name", "HephaestusModifier"),
++                    getDouble("modifiers." + slot + ".amount", 0),
++                    AttributeModifier.Operation.valueOf(getString("modifiers." + slot + ".operation", "ADD_NUMBER")));
++                modifierMap.put(equipmentSlot, modifier);
++            }
++        }
++    }
++}
+diff --git a/src/main/java/de/erethon/hephaestus/ItemLibrary.java b/src/main/java/de/erethon/hephaestus/ItemLibrary.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..2ab51ccb2e9f182d9f1bba79e2922fdd8a79608b
+--- /dev/null
++++ b/src/main/java/de/erethon/hephaestus/ItemLibrary.java
+@@ -0,0 +1,106 @@
++package de.erethon.hephaestus;
++
++import de.erethon.spellbook.api.SpellLibrary;
++import net.minecraft.core.registries.BuiltInRegistries;
++import net.minecraft.core.registries.Registries;
++import net.minecraft.resources.ResourceLocation;
++import net.minecraft.server.MinecraftServer;
++import net.minecraft.world.item.Item;
++import net.minecraft.world.item.Items;
++import org.bukkit.Bukkit;
++import org.bukkit.Server;
++import org.bukkit.configuration.InvalidConfigurationException;
++import org.bukkit.configuration.file.YamlConfiguration;
++import org.bukkit.inventory.ItemStack;
++import org.jetbrains.annotations.Nullable;
++
++import java.io.File;
++import java.io.IOException;
++import java.util.HashMap;
++import java.util.Locale;
++import java.util.logging.Level;
++import java.util.logging.Logger;
++
++import static net.minecraft.server.MinecraftServer.LOGGER;
++
++public class ItemLibrary {
++
++    private final File folder;
++
++    private final HashMap<ResourceLocation, HItem> items = new HashMap<>();
++
++    public ItemLibrary(File folder) {
++        this.folder = new File(folder + "/plugins/Hephaestus/items");
++        if (!folder.exists()) {
++            folder.mkdirs();
++        }
++        generateVanillaItemFiles();
++        loadItems();
++    }
++
++    @Nullable
++    public HItem get(ResourceLocation key) {
++        return items.get(key);
++    }
++
++
++    @Nullable
++    public HItem get(ItemStack bukkitStack) {
++        return get(net.minecraft.world.item.ItemStack.fromBukkitCopy(bukkitStack).hItem.getBukkitStack());
++    }
++
++    public boolean registerItem(HItem item) {
++        if (items.containsKey(item.getId())) {
++            Bukkit.getLogger().log(Level.WARNING, "[Hephaestus] Item with ID " + item.getId() + " is already registered.");
++            return false;
++        }
++        items.put(item.getId(), item);
++        return true;
++    }
++
++
++    public boolean unregisterItem(HItem item) {
++        if (!items.containsKey(item.getId())) {
++            Bukkit.getLogger().log(Level.WARNING, "[Hephaestus] Item with ID " + item.getId() + " is not registered.");
++            return false;
++        }
++        items.remove(item.getId());
++        return true;
++    }
++
++    private void generateVanillaItemFiles() {
++        for (Item item : BuiltInRegistries.ITEM.stream().toList()) {
++            File vanillaFolder = new File(folder, "vanilla");
++            if (!vanillaFolder.exists()) {
++                vanillaFolder.mkdirs();
++            }
++            YamlConfiguration configuration = new YamlConfiguration();
++            ResourceLocation location = BuiltInRegistries.ITEM.getKey(item);
++            configuration.set("id", location.toString());
++            configuration.set("mojangID", location.toString());
++            configuration.set("maxStackSize", item.getMaxStackSize());
++            configuration.set("maxDurability", item.getMaxDamage());
++            File file = new File(vanillaFolder, location.getPath() + ".yml");
++            if (file.exists()) {
++                return;
++            }
++            try {
++                configuration.save(file);
++            } catch (IOException e) {
++                throw new RuntimeException(e);
++            }
++        }
++    }
++
++    private void loadItems() {
++        for (File file : SpellLibrary.getFilesForFolder(folder)) {
++            if (!file.getName().contains(".yml")) {
++                continue;
++            }
++            HItemConfig config = new HItemConfig(file);
++            HItem hItem = new HItem(config);
++            items.put(hItem.getId(), hItem);
++        }
++        LOGGER.info("[Hephaestus] Loaded " + items.keySet().size() + " items.");
++    }
++}
+diff --git a/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java b/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java
+index e672340310a8863a627c083cbea2c08a8d6049b9..b6e1158585a4a8971a2fcc5fcea55e9d467b03e6 100644
+--- a/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java
++++ b/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java
+@@ -12,7 +12,12 @@ public class ContainerLoadEvent extends Event {
+ 
+     private NonNullList<ItemStack> itemStacks;
+ 
+-    public ContainerLoadEvent(NonNullList<ItemStack> items) {
++    /**
++     * Note: This event may be triggered async during feature placement.
++     * This shouldn't happen on Erethon, but who knows.
++     */
++    public ContainerLoadEvent(NonNullList<ItemStack> items, boolean async) {
++        super(async);
+         this.itemStacks = items;
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/Bootstrap.java b/src/main/java/net/minecraft/server/Bootstrap.java
+index 5816998cde8504d58732e63eb2179a5d828f35bb..96ac8c11b80abeaee1a218fc4ab53571f8eec995 100644
+--- a/src/main/java/net/minecraft/server/Bootstrap.java
++++ b/src/main/java/net/minecraft/server/Bootstrap.java
+@@ -1,7 +1,10 @@
+ package net.minecraft.server;
+ 
+ import com.mojang.logging.LogUtils;
++
++import java.io.File;
+ import java.io.PrintStream;
++import java.nio.file.Paths;
+ import java.time.Duration;
+ import java.time.Instant;
+ import java.util.Set;
+@@ -9,6 +12,8 @@ import java.util.TreeSet;
+ import java.util.concurrent.atomic.AtomicLong;
+ import java.util.function.Function;
+ import java.util.function.Supplier;
++
++import de.erethon.hephaestus.ItemLibrary;
+ import net.minecraft.SharedConstants;
+ import net.minecraft.commands.Commands;
+ import net.minecraft.commands.arguments.selector.options.EntitySelectorOptions;
+@@ -69,6 +74,7 @@ public class Bootstrap {
+             } else {
+                 FireBlock.bootStrap();
+                 ComposterBlock.bootStrap();
++                Main.itemLibrary = new ItemLibrary(new File(Paths.get("").toUri())); // Papyrus
+                 if (EntityType.getKey(EntityType.PLAYER) == null) {
+                     throw new IllegalStateException("Failed loading EntityTypes");
+                 } else {
+diff --git a/src/main/java/net/minecraft/server/Main.java b/src/main/java/net/minecraft/server/Main.java
+index 7573c12a77797146c51ef2dfe4b2a636df45e21a..e86db50efb6196db4ecae1d8b38b18cc1ae1507d 100644
+--- a/src/main/java/net/minecraft/server/Main.java
++++ b/src/main/java/net/minecraft/server/Main.java
+@@ -16,6 +16,8 @@ import java.nio.file.Paths;
+ import java.util.Optional;
+ import java.util.function.BooleanSupplier;
+ import javax.annotation.Nullable;
++
++import de.erethon.hephaestus.ItemLibrary;
+ import joptsimple.NonOptionArgumentSpec;
+ import joptsimple.OptionParser;
+ import joptsimple.OptionSet;
+@@ -71,6 +73,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
+ public class Main {
+ 
+     private static final Logger LOGGER = LogUtils.getLogger();
++    public static ItemLibrary itemLibrary; // Papyrus
+ 
+     public Main() {}
+ 
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index c535eb33ef8e820d11d75702059613043982deee..3dac663daf000e443b141d11c1432ec2524d33de 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -14,6 +14,7 @@ import com.mojang.authlib.GameProfileRepository;
+ import com.mojang.authlib.minecraft.MinecraftSessionService;
+ import com.mojang.datafixers.DataFixer;
+ import com.mojang.logging.LogUtils;
++import de.erethon.hephaestus.ItemLibrary;
+ import it.unimi.dsi.fastutil.longs.LongIterator;
+ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+ import java.awt.image.BufferedImage;
+diff --git a/src/main/java/net/minecraft/world/ContainerHelper.java b/src/main/java/net/minecraft/world/ContainerHelper.java
+index 01063c3bc672eecdf8fe1c5b5a89fbf576c940f3..949207f366aa0659c563fa123047112d30b6a4ec 100644
+--- a/src/main/java/net/minecraft/world/ContainerHelper.java
++++ b/src/main/java/net/minecraft/world/ContainerHelper.java
+@@ -53,8 +53,13 @@ public class ContainerHelper {
+                 stacks.set(j, ItemStack.of(compoundTag));
+             }
+         }
+-        ContainerLoadEvent loadEvent = new ContainerLoadEvent(stacks);
+-        Bukkit.getPluginManager().callEvent(loadEvent);
++        ContainerLoadEvent loadEvent = new ContainerLoadEvent(stacks, false);
++        try {
++            Bukkit.getPluginManager().callEvent(loadEvent);
++        } catch (IllegalStateException e) { // This really only happens during feature placement which shouldn't happen in production anyways
++            loadEvent = new ContainerLoadEvent(stacks, true);
++            Bukkit.getPluginManager().callEvent(loadEvent);
++        }
+ 
+     }
+ 
+diff --git a/src/main/java/net/minecraft/world/item/ItemStack.java b/src/main/java/net/minecraft/world/item/ItemStack.java
+index 4ab0452af6eeae9316311d473be23de9a74d9e4b..35ada1c9ba5fa2256c24fe2dfe4a401855afc662 100644
+--- a/src/main/java/net/minecraft/world/item/ItemStack.java
++++ b/src/main/java/net/minecraft/world/item/ItemStack.java
+@@ -23,6 +23,9 @@ import java.util.function.Predicate;
+ import java.util.stream.Collectors;
+ import java.util.stream.Stream;
+ import javax.annotation.Nullable;
++
++import de.erethon.hephaestus.HItem;
++import de.erethon.hephaestus.HItemBehaviour;
+ import net.minecraft.ChatFormatting;
+ import net.minecraft.Util;
+ import net.minecraft.advancements.CriteriaTriggers;
+@@ -47,6 +50,8 @@ import net.minecraft.network.chat.MutableComponent;
+ import net.minecraft.network.chat.Style;
+ import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+ import net.minecraft.resources.ResourceLocation;
++import net.minecraft.server.Bootstrap;
++import net.minecraft.server.Main;
+ import net.minecraft.tags.TagKey;
+ import net.minecraft.util.ExtraCodecs;
+ import net.minecraft.util.RandomSource;
+@@ -79,6 +84,8 @@ import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.block.BaseEntityBlock;
+ import net.minecraft.world.level.block.BedBlock;
+ import net.minecraft.world.level.block.Block;
++import org.bukkit.Bukkit;
++import org.bukkit.craftbukkit.CraftServer;
+ import org.slf4j.Logger;
+ 
+ // CraftBukkit start
+@@ -234,6 +241,9 @@ public final class ItemStack {
+         return net.minecraft.nbt.StringTag.valueOf(org.bukkit.craftbukkit.util.CraftChatMessage.toJSON(component));
+     }
+     // Paper end
++    // Papyrus start
++    public HItem hItem;
++    public HItemBehaviour behaviour;
+ 
+     public ItemStack(ItemLike item) {
+         this(item, 1);
+@@ -258,6 +268,15 @@ public final class ItemStack {
+         if (this.item.canBeDepleted()) {
+             this.setDamageValue(this.getDamageValue());
+         }
++        HItem hItem1 = Main.itemLibrary.get(BuiltInRegistries.ITEM.getKey(item.asItem()));
++        if (hItem1 != null) {
++            hItem = hItem1;
++            if (hItem.getBehaviour() != null) {
++                behaviour = hItem.getBehaviour();
++            }
++        } else {
++            LOGGER.info("[Hephaestus] Unable to find vanilla hItem for " + item.asItem().toString());
++        }
+ 
+     }
+ 
+@@ -289,7 +308,28 @@ public final class ItemStack {
+         if (this.getItem().canBeDepleted()) {
+             this.setDamageValue(this.getDamageValue());
+         }
+-
++        if (nbttagcompound.contains("HephaestusID")) { // Papyrus - Hephaestus
++            String id = nbttagcompound.getString("HephaestusID");
++            HItem hItem1 = Main.itemLibrary.get(new ResourceLocation(id));
++            if (hItem1!= null) {
++                hItem = hItem1;
++                if (hItem.getBehaviour() != null) {
++                    behaviour = hItem.getBehaviour();
++                }
++            } else {
++                LOGGER.info("[Hephaestus] Unable to find hItem for " + id);
++            }
++        } else {
++            HItem hItem1 = Main.itemLibrary.get(BuiltInRegistries.ITEM.getKey(item.asItem()));
++            if (hItem1 != null) {
++                hItem = hItem1;
++                if (hItem.getBehaviour() != null) {
++                    behaviour = hItem.getBehaviour();
++                }
++            } else {
++                LOGGER.info("[Hephaestus] Unable to find vanilla hItem for " + item.asItem().toString());
++            }
++        }
+     }
+ 
+     private ItemStack(CompoundTag nbt) {
+@@ -311,7 +351,7 @@ public final class ItemStack {
+     }
+ 
+     public boolean isItemEnabled(FeatureFlagSet enabledFeatures) {
+-        return this.isEmpty() || this.getItem().isEnabled(enabledFeatures);
++        return this.isEmpty() || (this.getItem().isEnabled(enabledFeatures) && hItem.isEnabled()); // Papyrus
+     }
+ 
+     public ItemStack split(int amount) {
+@@ -591,7 +631,10 @@ public final class ItemStack {
+     }
+ 
+     public int getMaxStackSize() {
+-        return this.getItem().getMaxStackSize();
++        if (hItem == null) {
++            getItem().getMaxStackSize();
++        }
++        return hItem.config().getMaxStackSize(); // Papyrus
+     }
+ 
+     public boolean isStackable() {
+@@ -621,7 +664,10 @@ public final class ItemStack {
+     }
+ 
+     public int getMaxDamage() {
+-        return this.getItem().getMaxDamage();
++        if (hItem == null) {
++            return getItem().getMaxDamage();
++        }
++        return hItem.config().getMaxDurability();
+     }
+ 
+     public boolean hurt(int amount, RandomSource random, @Nullable LivingEntity player) { // Paper - allow any living entity instead of only ServerPlayers
+@@ -675,6 +721,9 @@ public final class ItemStack {
+             }
+ 
+             j = this.getDamageValue() + amount;
++            if (behaviour != null) {
++                j = behaviour.onItemHurt(this, j);
++            }
+             this.setDamageValue(j);
+             return j >= this.getMaxDamage();
+         }
+@@ -727,7 +776,7 @@ public final class ItemStack {
+     public void hurtEnemy(LivingEntity target, net.minecraft.world.entity.player.Player attacker) {
+         Item item = this.getItem();
+ 
+-        if (item.hurtEnemy(this, target, attacker)) {
++        if (item.hurtEnemy(this, target, attacker) && (behaviour != null && behaviour.onAttack(this, target, attacker)) ) {
+             attacker.awardStat(Stats.ITEM_USED.get(item));
+         }
+ 
+@@ -736,7 +785,7 @@ public final class ItemStack {
+     public void mineBlock(Level world, net.minecraft.world.level.block.state.BlockState state, BlockPos pos, net.minecraft.world.entity.player.Player miner) {
+         Item item = this.getItem();
+ 
+-        if (item.mineBlock(this, world, state, pos, miner)) {
++        if (item.mineBlock(this, world, state, pos, miner) && (behaviour != null && behaviour.onMine(this, world, state, pos, miner))) {
+             miner.awardStat(Stats.ITEM_USED.get(item));
+         }
+ 
+@@ -747,6 +796,9 @@ public final class ItemStack {
+     }
+ 
+     public InteractionResult interactLivingEntity(net.minecraft.world.entity.player.Player user, LivingEntity entity, InteractionHand hand) {
++        if (behaviour != null) {
++            return behaviour.onInteractLiving(this, user, entity);
++        }
+         return this.getItem().interactLivingEntity(this, user, entity, hand);
+     }
+ 
+@@ -811,6 +863,9 @@ public final class ItemStack {
+ 
+         if (this.getItem() != null) {
+             this.getItem().inventoryTick(this, world, entity, slot, selected);
++            if (behaviour != null) {
++                behaviour.onTick(this, entity, slot, selected);
++            }
+         }
+ 
+     }
+diff --git a/src/main/java/net/minecraft/world/level/block/Block.java b/src/main/java/net/minecraft/world/level/block/Block.java
+index e21867d3956078bb0db4ceed45e5811e9acd7377..9e1ae79ad84045933e435cc5cb08e7137dfa0790 100644
+--- a/src/main/java/net/minecraft/world/level/block/Block.java
++++ b/src/main/java/net/minecraft/world/level/block/Block.java
+@@ -304,7 +304,7 @@ public class Block extends BlockBehaviour implements ItemLike {
+     public static List<ItemStack> getDrops(BlockState state, ServerLevel world, BlockPos pos, @Nullable BlockEntity blockEntity, @Nullable Entity entity, ItemStack stack) {
+         LootParams.Builder lootparams_a = (new LootParams.Builder(world)).withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pos)).withParameter(LootContextParams.TOOL, stack).withOptionalParameter(LootContextParams.THIS_ENTITY, entity).withOptionalParameter(LootContextParams.BLOCK_ENTITY, blockEntity);
+ 
+-        return state.getDrops(lootparams_a);
++        return state.   getDrops(lootparams_a);
+     }
+ 
+     public static void dropResources(BlockState state, Level world, BlockPos pos) {
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index c0cb4358e013372aa880aac9e40639f865246e6b..07a373f7ccbe298e579e7db268b1662a0df5d393 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -14,6 +14,7 @@ import com.mojang.brigadier.tree.CommandNode;
+ import com.mojang.brigadier.tree.LiteralCommandNode;
+ import com.mojang.serialization.Dynamic;
+ import com.mojang.serialization.Lifecycle;
++import de.erethon.hephaestus.ItemLibrary;
+ import de.erethon.spellbook.api.SpellbookAPI;
+ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+ import java.awt.image.BufferedImage;
