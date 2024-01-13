@@ -186,7 +186,7 @@ index 0000000000000000000000000000000000000000..522ebf35e2088bee34bcd51bb18a3f96
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItem.java b/src/main/java/de/erethon/hephaestus/HItem.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..9d660a968a9dfa12e808cc527ea70d1878717182
+index 0000000000000000000000000000000000000000..4365efb2f6cc8b62839aff003ff1cec4895552f3
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItem.java
 @@ -0,0 +1,248 @@
@@ -391,7 +391,7 @@ index 0000000000000000000000000000000000000000..9d660a968a9dfa12e808cc527ea70d18
 +
 +
 +    public void save(File file) {
-+        set("id", id);
++        set("id", id.toString());
 +        set("class", classURL);
 +        set("enabled", isEnabled);
 +        set("mojangID", mojangID);
