@@ -198,10 +198,10 @@ index 0000000000000000000000000000000000000000..68d94f8c2b57da6bfb807ea886ef1883
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItem.java b/src/main/java/de/erethon/hephaestus/HItem.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..efc1c1c859284e25e9272fae4fd45a1af518aaa0
+index 0000000000000000000000000000000000000000..a3de055ee63ad1674750129b29c9d73a463459b0
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItem.java
-@@ -0,0 +1,253 @@
+@@ -0,0 +1,258 @@
 +package de.erethon.hephaestus;
 +
 +import io.papermc.paper.adventure.PaperAdventure;
@@ -229,6 +229,8 @@ index 0000000000000000000000000000000000000000..efc1c1c859284e25e9272fae4fd45a1a
 +import java.util.List;
 +import java.util.Map;
 +import java.util.logging.Level;
++
++import static net.minecraft.server.MinecraftServer.LOGGER;
 +
 +public class HItem extends YamlConfiguration {
 +
@@ -330,6 +332,10 @@ index 0000000000000000000000000000000000000000..efc1c1c859284e25e9272fae4fd45a1a
 +        return hasBehaviour;
 +    }
 +
++    public HItemBehaviour getBehaviour() {
++        return behaviour;
++    }
++
 +    public void setPlugin(Plugin plugin) {
 +        this.plugin = plugin;
 +    }
@@ -340,9 +346,6 @@ index 0000000000000000000000000000000000000000..efc1c1c859284e25e9272fae4fd45a1a
 +
 +    public HItemStack getItem(int count) {
 +        HItemStack item = prepareNewStack().hItemStack;
-+        if (behaviour != null) {
-+            item.setBehaviour(behaviour);
-+        }
 +        item.getStack().setCount(count);
 +        return item;
 +    }
@@ -374,6 +377,8 @@ index 0000000000000000000000000000000000000000..efc1c1c859284e25e9272fae4fd45a1a
 +        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 +            throw new RuntimeException(e);
 +        }
++        LOGGER.info("Loaded behaviour for " + id + ": " + behaviour.getClass().getName());
++        hasBehaviour = true;
 +    }
 +
 +    @Override
@@ -545,10 +550,10 @@ index 0000000000000000000000000000000000000000..df678ecffd9a70a44107024df0699e38
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItemStack.java b/src/main/java/de/erethon/hephaestus/HItemStack.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..0eddb94a5f24089091e9dee4690d29a099e19182
+index 0000000000000000000000000000000000000000..541b474891771473d0a61854c3f54ec26c281810
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItemStack.java
-@@ -0,0 +1,63 @@
+@@ -0,0 +1,58 @@
 +package de.erethon.hephaestus;
 +
 +import net.minecraft.resources.ResourceLocation;
@@ -557,7 +562,6 @@ index 0000000000000000000000000000000000000000..0eddb94a5f24089091e9dee4690d29a0
 +public class HItemStack {
 +
 +    private HItem item;
-+    private HItemBehaviour behaviour;
 +    private ItemStack stack;
 +
 +    public HItemStack(ItemStack stack, HItem config) {
@@ -581,12 +585,8 @@ index 0000000000000000000000000000000000000000..0eddb94a5f24089091e9dee4690d29a0
 +        return stack.getBukkitStack();
 +    }
 +
-+    public void setBehaviour(HItemBehaviour behaviour) {
-+        this.behaviour = behaviour;
-+    }
-+
 +    public HItemBehaviour getBehaviour() {
-+        return behaviour;
++        return item.getBehaviour();
 +    }
 +
 +    public HItem config() {
@@ -614,7 +614,7 @@ index 0000000000000000000000000000000000000000..0eddb94a5f24089091e9dee4690d29a0
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/ItemLibrary.java b/src/main/java/de/erethon/hephaestus/ItemLibrary.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..e10084a291bcf9109697166cba93c2f79b329c8b
+index 0000000000000000000000000000000000000000..103a56066e9a14945e8a7be4f1a9c043af7fae24
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/ItemLibrary.java
 @@ -0,0 +1,161 @@
@@ -772,7 +772,7 @@ index 0000000000000000000000000000000000000000..e10084a291bcf9109697166cba93c2f7
 +    }
 +
 +    public static @Nullable HItemStack getHItemFromBukkit(ItemStack stack) {
-+        CraftItemStack craftItemStack = (CraftItemStack) stack;
++        CraftItemStack craftItemStack = CraftItemStack.asCraftCopy(stack);
 +        if (craftItemStack.handle == null) { // why in the fuck are there craft stacks that have no nms stack???
 +            return null;
 +        }
