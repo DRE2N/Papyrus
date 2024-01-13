@@ -6,10 +6,10 @@ Subject: [PATCH] Hephaestus
 
 diff --git a/src/main/java/de/erethon/hephaestus/HBukkitHandler.java b/src/main/java/de/erethon/hephaestus/HBukkitHandler.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..68d94f8c2b57da6bfb807ea886ef1883494d504b
+index 0000000000000000000000000000000000000000..6b4314c65507933a63a764126c949d9783960e45
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HBukkitHandler.java
-@@ -0,0 +1,186 @@
+@@ -0,0 +1,189 @@
 +package de.erethon.hephaestus;
 +
 +import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
@@ -35,6 +35,8 @@ index 0000000000000000000000000000000000000000..68d94f8c2b57da6bfb807ea886ef1883
 +import org.bukkit.plugin.Plugin;
 +import org.bukkit.plugin.java.JavaPlugin;
 +
++import static net.minecraft.server.MinecraftServer.LOGGER;
++
 +public class HBukkitHandler implements Listener {
 +
 +    private final Plugin plugin;
@@ -44,6 +46,7 @@ index 0000000000000000000000000000000000000000..68d94f8c2b57da6bfb807ea886ef1883
 +        this.lib = library;
 +        this.plugin = pl;
 +        Bukkit.getPluginManager().registerEvents(this, plugin);
++        LOGGER.info("Initialised HBukkitHandler using " + plugin.getName());
 +    }
 +
 +    @EventHandler
@@ -198,10 +201,10 @@ index 0000000000000000000000000000000000000000..68d94f8c2b57da6bfb807ea886ef1883
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItem.java b/src/main/java/de/erethon/hephaestus/HItem.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..a3de055ee63ad1674750129b29c9d73a463459b0
+index 0000000000000000000000000000000000000000..b73d264279ef303a24584804e11b31e38b88d360
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItem.java
-@@ -0,0 +1,258 @@
+@@ -0,0 +1,275 @@
 +package de.erethon.hephaestus;
 +
 +import io.papermc.paper.adventure.PaperAdventure;
@@ -248,6 +251,7 @@ index 0000000000000000000000000000000000000000..a3de055ee63ad1674750129b29c9d73a
 +    private int maxDurability;
 +    private String classURL;
 +    private boolean hasBehaviour = false;
++    private String pluginName;
 +    private Plugin plugin;
 +    private Class<? extends HItemBehaviour> behaviourClass;
 +    private ClassLoader classLoader;
@@ -324,8 +328,17 @@ index 0000000000000000000000000000000000000000..a3de055ee63ad1674750129b29c9d73a
 +    public HItemStack getReplaceWith() {
 +        return replaceWith;
 +    }
++
 +    public @Nullable String getClassURL() {
 +        return classURL;
++    }
++
++    public String getOwningPlugin() {
++        return pluginName;
++    }
++
++    public void setOwningPlugin(String name) {
++        pluginName = name;
 +    }
 +
 +    public boolean hasBehaviour() {
@@ -364,7 +377,10 @@ index 0000000000000000000000000000000000000000..a3de055ee63ad1674750129b29c9d73a
 +
 +    public void loadBehaviour() {
 +        if (plugin == null) {
-+            throw new RuntimeException("Tried loading behaviours for item without plugin: " + getId().toString());
++            plugin = Bukkit.getPluginManager().getPlugin(pluginName);
++            if (plugin == null) {
++                LOGGER.info("Failed to find plugin " + pluginName + " for item " + id.toString());
++            }
 +        }
 +        classLoader = plugin.getClass().getClassLoader();
 +        try {
@@ -387,6 +403,7 @@ index 0000000000000000000000000000000000000000..a3de055ee63ad1674750129b29c9d73a
 +        id = ResourceLocation.tryParse(getString("id", "minecraft:stone"));
 +        if (contains("class")) {
 +            classURL = getString("class");
++            pluginName = getString("owningPlugin");
 +            hasBehaviour = true;
 +        }
 +        isEnabled = getBoolean("enabled", true);
@@ -414,6 +431,7 @@ index 0000000000000000000000000000000000000000..a3de055ee63ad1674750129b29c9d73a
 +
 +    public void save(File file) {
 +        set("id", id.toString());
++        set("owningPlugin", pluginName);
 +        set("class", classURL);
 +        set("enabled", isEnabled);
 +        set("mojangID", mojangID);
@@ -438,6 +456,8 @@ index 0000000000000000000000000000000000000000..a3de055ee63ad1674750129b29c9d73a
 +        public Builder behaviour(HItemBehaviour behaviour) {
 +            this.behaviour = behaviour;
 +            item.setClassURL(behaviour.getClass().getName());
++            item.setOwningPlugin(plugin.getName());
++            item.setPlugin(plugin);
 +            return this;
 +        }
 +        public Builder baseItem(Material material) {
