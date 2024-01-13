@@ -186,7 +186,7 @@ index 0000000000000000000000000000000000000000..522ebf35e2088bee34bcd51bb18a3f96
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItem.java b/src/main/java/de/erethon/hephaestus/HItem.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..4365efb2f6cc8b62839aff003ff1cec4895552f3
+index 0000000000000000000000000000000000000000..d1b5954caba7283816d4a5d56093f826aa7b7c1d
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItem.java
 @@ -0,0 +1,248 @@
@@ -333,7 +333,7 @@ index 0000000000000000000000000000000000000000..4365efb2f6cc8b62839aff003ff1cec4
 +    private ItemStack prepareNewStack() {
 +        ItemStack baseItem = new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(getMojangID())));
 +        for (EquipmentSlot slot : EquipmentSlot.values()) {
-+            baseItem.getAttributeModifiers(slot).clear();
++            // baseItem.getAttributeModifiers(slot).clear(); this is immutable apparently
 +        }
 +        baseItem.getTag().putInt("CustomModelData", getModelData());
 +        baseItem.getTag().putString("HephaestusID", id.toString());
@@ -597,10 +597,10 @@ index 0000000000000000000000000000000000000000..0eddb94a5f24089091e9dee4690d29a0
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/ItemLibrary.java b/src/main/java/de/erethon/hephaestus/ItemLibrary.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..acb455c1e689ff4700fed4062113691e269d8e76
+index 0000000000000000000000000000000000000000..2a9b9639b2e182e42347b40b31ec56dd1a80de4b
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/ItemLibrary.java
-@@ -0,0 +1,145 @@
+@@ -0,0 +1,149 @@
 +package de.erethon.hephaestus;
 +
 +import de.erethon.spellbook.api.SpellLibrary;
@@ -742,8 +742,12 @@ index 0000000000000000000000000000000000000000..acb455c1e689ff4700fed4062113691e
 +        return folder;
 +    }
 +
-+    public static HItemStack getHItemFromBukkit(ItemStack stack) {
-+        return ((CraftItemStack) stack).handle.hItemStack;
++    public static @Nullable HItemStack getHItemFromBukkit(ItemStack stack) {
++        CraftItemStack craftItemStack = (CraftItemStack) stack;
++        if (craftItemStack.handle == null) { // why in the fuck are there craft stacks that have no nms stack???
++            return null;
++        }
++        return craftItemStack.handle.hItemStack;
 +     }
 +}
 diff --git a/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java b/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java
