@@ -201,7 +201,7 @@ index 0000000000000000000000000000000000000000..6b4314c65507933a63a764126c949d97
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItem.java b/src/main/java/de/erethon/hephaestus/HItem.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..b73d264279ef303a24584804e11b31e38b88d360
+index 0000000000000000000000000000000000000000..6d448e58069f4a94d53af2dc9680fab5280d30a4
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItem.java
 @@ -0,0 +1,275 @@
@@ -389,7 +389,7 @@ index 0000000000000000000000000000000000000000..b73d264279ef303a24584804e11b31e3
 +            throw new RuntimeException(e);
 +        }
 +        try {
-+            behaviour = behaviourClass.getDeclaredConstructor(HItemStack.class).newInstance(this);
++            behaviour = behaviourClass.getDeclaredConstructor(HItem.class).newInstance(this);
 +        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 +            throw new RuntimeException(e);
 +        }
@@ -482,10 +482,10 @@ index 0000000000000000000000000000000000000000..b73d264279ef303a24584804e11b31e3
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItemBehaviour.java b/src/main/java/de/erethon/hephaestus/HItemBehaviour.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..df678ecffd9a70a44107024df0699e38e2111cb9
+index 0000000000000000000000000000000000000000..531f0b667bfda1f22b0e63cb795401df313c20e4
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItemBehaviour.java
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,88 @@
 +package de.erethon.hephaestus;
 +
 +import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
@@ -511,6 +511,12 @@ index 0000000000000000000000000000000000000000..df678ecffd9a70a44107024df0699e38
 +import org.bukkit.event.player.PlayerInteractEvent;
 +
 +public class HItemBehaviour {
++
++    protected HItem item;
++
++    public HItemBehaviour(HItem item) {
++        this.item = item;
++    }
 +
 +    public void onLeftClick(ItemStack stack, org.bukkit.entity.Player player, PlayerInteractEvent event) {
 +    }
