@@ -6,10 +6,10 @@ Subject: [PATCH] Hephaestus
 
 diff --git a/src/main/java/de/erethon/hephaestus/HBukkitHandler.java b/src/main/java/de/erethon/hephaestus/HBukkitHandler.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..522ebf35e2088bee34bcd51bb18a3f9691cfb482
+index 0000000000000000000000000000000000000000..68d94f8c2b57da6bfb807ea886ef1883494d504b
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HBukkitHandler.java
-@@ -0,0 +1,174 @@
+@@ -0,0 +1,186 @@
 +package de.erethon.hephaestus;
 +
 +import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
@@ -30,6 +30,7 @@ index 0000000000000000000000000000000000000000..522ebf35e2088bee34bcd51bb18a3f96
 +import org.bukkit.event.player.PlayerAttemptPickupItemEvent;
 +import org.bukkit.event.player.PlayerDropItemEvent;
 +import org.bukkit.event.player.PlayerInteractEvent;
++import org.bukkit.event.server.ServerLoadEvent;
 +import org.bukkit.inventory.ItemStack;
 +import org.bukkit.plugin.Plugin;
 +import org.bukkit.plugin.java.JavaPlugin;
@@ -70,6 +71,9 @@ index 0000000000000000000000000000000000000000..522ebf35e2088bee34bcd51bb18a3f96
 +                item.getBehaviour().onDamaged(CraftItemStack.unwrap(offHand), living, event);
 +            }
 +            for (ItemStack armor : living.getEquipment().getArmorContents()) {
++                if (armor == null) {
++                    continue;
++                }
 +                item = ItemLibrary.getHItemFromBukkit(armor);
 +                if (item != null && item.getBehaviour() != null) {
 +                    item.getBehaviour().onDamaged(CraftItemStack.unwrap(armor), living, event);
@@ -93,6 +97,9 @@ index 0000000000000000000000000000000000000000..522ebf35e2088bee34bcd51bb18a3f96
 +                item.getBehaviour().onSpellCast(CraftItemStack.unwrap(offHand), living, event);
 +            }
 +            for (ItemStack armor : living.getEquipment().getArmorContents()) {
++                if (armor == null) {
++                    continue;
++                }
 +                item = ItemLibrary.getHItemFromBukkit(armor);
 +                if (item != null && item.getBehaviour() != null) {
 +                    item.getBehaviour().onSpellCast(CraftItemStack.unwrap(armor), living, event);
@@ -183,13 +190,18 @@ index 0000000000000000000000000000000000000000..522ebf35e2088bee34bcd51bb18a3f96
 +        }
 +    }
 +
++    @EventHandler
++    private void onServerStartFinish(ServerLoadEvent event) {
++        lib.readyBehaviours();
++    }
++
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItem.java b/src/main/java/de/erethon/hephaestus/HItem.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..d1b5954caba7283816d4a5d56093f826aa7b7c1d
+index 0000000000000000000000000000000000000000..efc1c1c859284e25e9272fae4fd45a1af518aaa0
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItem.java
-@@ -0,0 +1,248 @@
+@@ -0,0 +1,253 @@
 +package de.erethon.hephaestus;
 +
 +import io.papermc.paper.adventure.PaperAdventure;
@@ -233,6 +245,7 @@ index 0000000000000000000000000000000000000000..d1b5954caba7283816d4a5d56093f826
 +    private int maxStackSize;
 +    private int maxDurability;
 +    private String classURL;
++    private boolean hasBehaviour = false;
 +    private Plugin plugin;
 +    private Class<? extends HItemBehaviour> behaviourClass;
 +    private ClassLoader classLoader;
@@ -313,6 +326,10 @@ index 0000000000000000000000000000000000000000..d1b5954caba7283816d4a5d56093f826
 +        return classURL;
 +    }
 +
++    public boolean hasBehaviour() {
++        return hasBehaviour;
++    }
++
 +    public void setPlugin(Plugin plugin) {
 +        this.plugin = plugin;
 +    }
@@ -335,14 +352,14 @@ index 0000000000000000000000000000000000000000..d1b5954caba7283816d4a5d56093f826
 +        for (EquipmentSlot slot : EquipmentSlot.values()) {
 +            // baseItem.getAttributeModifiers(slot).clear(); this is immutable apparently
 +        }
-+        baseItem.getTag().putInt("CustomModelData", getModelData());
-+        baseItem.getTag().putString("HephaestusID", id.toString());
++        baseItem.getOrCreateTag().putInt("CustomModelData", getModelData());
++        baseItem.getOrCreateTag().putString("HephaestusID", id.toString());
 +        baseItem.setHoverName(PaperAdventure.asVanilla(displayName));
 +        baseItem.getBukkitStack().editMeta(m -> m.lore(lore)); // Annoying but oh well.
 +        return baseItem;
 +    }
 +
-+    private void loadBehaviour() {
++    public void loadBehaviour() {
 +        if (plugin == null) {
 +            throw new RuntimeException("Tried loading behaviours for item without plugin: " + getId().toString());
 +        }
@@ -365,7 +382,7 @@ index 0000000000000000000000000000000000000000..d1b5954caba7283816d4a5d56093f826
 +        id = ResourceLocation.tryParse(getString("id", "minecraft:stone"));
 +        if (contains("class")) {
 +            classURL = getString("class");
-+            loadBehaviour();
++            hasBehaviour = true;
 +        }
 +        isEnabled = getBoolean("enabled", true);
 +        displayName = mm.deserialize(getString("displayName", ""));
@@ -597,10 +614,10 @@ index 0000000000000000000000000000000000000000..0eddb94a5f24089091e9dee4690d29a0
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/ItemLibrary.java b/src/main/java/de/erethon/hephaestus/ItemLibrary.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..2a9b9639b2e182e42347b40b31ec56dd1a80de4b
+index 0000000000000000000000000000000000000000..e10084a291bcf9109697166cba93c2f79b329c8b
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/ItemLibrary.java
-@@ -0,0 +1,149 @@
+@@ -0,0 +1,161 @@
 +package de.erethon.hephaestus;
 +
 +import de.erethon.spellbook.api.SpellLibrary;
@@ -620,6 +637,8 @@ index 0000000000000000000000000000000000000000..2a9b9639b2e182e42347b40b31ec56dd
 +import java.io.File;
 +import java.io.IOException;
 +import java.util.HashMap;
++import java.util.HashSet;
++import java.util.Set;
 +import java.util.logging.Level;
 +
 +import static net.minecraft.server.MinecraftServer.LOGGER;
@@ -630,6 +649,7 @@ index 0000000000000000000000000000000000000000..2a9b9639b2e182e42347b40b31ec56dd
 +
 +    private final HashMap<ResourceLocation, HItem> items = new HashMap<>();
 +    private final HashMap<Material, HItem> vanillaMaterials = new HashMap<>();
++    private final Set<HItem> itemsWithBehaviour = new HashSet<>();
 +    private HBukkitHandler bukkitHandler = null;
 +
 +    public ItemLibrary(File folder) {
@@ -734,12 +754,21 @@ index 0000000000000000000000000000000000000000..2a9b9639b2e182e42347b40b31ec56dd
 +            HItem config = new HItem(file);
 +            items.put(config.getId(), config);
 +            vanillaMaterials.put(CraftMagicNumbers.getMaterial(config.getBaseItem()), config);
++            if (config.hasBehaviour()) {
++                itemsWithBehaviour.add(config);
++            }
 +        }
 +        LOGGER.info("[Hephaestus] Loaded " + items.keySet().size() + " items.");
 +    }
 +
 +    public File getFolder() {
 +        return folder;
++    }
++
++    public void readyBehaviours() {
++        for (HItem item : itemsWithBehaviour) {
++            item.loadBehaviour();
++        }
 +    }
 +
 +    public static @Nullable HItemStack getHItemFromBukkit(ItemStack stack) {
