@@ -186,10 +186,10 @@ index 0000000000000000000000000000000000000000..522ebf35e2088bee34bcd51bb18a3f96
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItem.java b/src/main/java/de/erethon/hephaestus/HItem.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..3c6c35f38236d2b6fd7efe1570b5abf98e413e81
+index 0000000000000000000000000000000000000000..9d660a968a9dfa12e808cc527ea70d1878717182
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItem.java
-@@ -0,0 +1,240 @@
+@@ -0,0 +1,248 @@
 +package de.erethon.hephaestus;
 +
 +import io.papermc.paper.adventure.PaperAdventure;
@@ -395,7 +395,11 @@ index 0000000000000000000000000000000000000000..3c6c35f38236d2b6fd7efe1570b5abf9
 +        set("class", classURL);
 +        set("enabled", isEnabled);
 +        set("mojangID", mojangID);
-+        save(file);
++        try {
++            super.save(file);
++        } catch (IOException e) {
++            throw new RuntimeException(e);
++        }
 +    }
 +
 +    public static class Builder {
@@ -423,7 +427,11 @@ index 0000000000000000000000000000000000000000..3c6c35f38236d2b6fd7efe1570b5abf9
 +        public HItem register() {
 +            Main.itemLibrary.registerItem(plugin, item);
 +            File folder = Main.itemLibrary.getFolder();
-+            File saveFile = new File(folder, item.getId().getNamespace() + "/" + item.getId().getPath() + ".yml");
++            File saveFolder = new File(folder, item.getId().getNamespace());
++            if (!saveFolder.exists()) {
++                saveFolder.mkdirs();
++            }
++            File saveFile = new File(saveFolder, item.getId().getPath() + ".yml");
 +            item.save(saveFile);
 +            return item;
 +        }
