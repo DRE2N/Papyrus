@@ -6,7 +6,7 @@ Subject: [PATCH] Hephaestus
 
 diff --git a/src/main/java/de/erethon/hephaestus/HBukkitHandler.java b/src/main/java/de/erethon/hephaestus/HBukkitHandler.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf66a377a7d
+index 0000000000000000000000000000000000000000..522ebf35e2088bee34bcd51bb18a3f9691cfb482
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HBukkitHandler.java
 @@ -0,0 +1,174 @@
@@ -50,7 +50,7 @@ index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf6
 +        if (event.getCurrentItem() == null) {
 +            return;
 +        }
-+        HItem item = ItemLibrary.getHItemFromBukkit(event.getCurrentItem());
++        HItemStack item = ItemLibrary.getHItemFromBukkit(event.getCurrentItem());
 +        if (item != null && item.getBehaviour() != null) {
 +            item.getBehaviour().onInventoryClick(CraftItemStack.unwrap(event.getCurrentItem()), (Player) event.getWhoClicked(), event.getClick(), event.getAction(), event);
 +        }
@@ -60,7 +60,7 @@ index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf6
 +    private void onDamage(EntityDamageByEntityEvent event) {
 +        if (event.getEntity() instanceof LivingEntity living && living.getEquipment() != null) {
 +            ItemStack mainHand = living.getEquipment().getItemInMainHand();
-+            HItem item = ItemLibrary.getHItemFromBukkit(mainHand);
++            HItemStack item = ItemLibrary.getHItemFromBukkit(mainHand);
 +            if (item != null && item.getBehaviour() != null) {
 +                item.getBehaviour().onDamaged(CraftItemStack.unwrap(mainHand), living, event);
 +            }
@@ -83,7 +83,7 @@ index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf6
 +        LivingEntity living = event.getCaster();
 +        if (living.getEquipment() != null) {
 +            ItemStack mainHand = living.getEquipment().getItemInMainHand();
-+            HItem item = ItemLibrary.getHItemFromBukkit(mainHand);
++            HItemStack item = ItemLibrary.getHItemFromBukkit(mainHand);
 +            if (item != null && item.getBehaviour() != null) {
 +                item.getBehaviour().onSpellCast(CraftItemStack.unwrap(mainHand), living, event);
 +            }
@@ -104,7 +104,7 @@ index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf6
 +    @EventHandler
 +    private void onPlayerDrop(PlayerDropItemEvent event) {
 +        ItemStack stack = event.getItemDrop().getItemStack();
-+        HItem item = ItemLibrary.getHItemFromBukkit(stack);
++        HItemStack item = ItemLibrary.getHItemFromBukkit(stack);
 +        if (item != null && item.getBehaviour() != null) {
 +            item.getBehaviour().onPlayerDrop(CraftItemStack.unwrap(stack), event.getPlayer(), event);
 +        }
@@ -113,7 +113,7 @@ index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf6
 +    @EventHandler
 +    private void onEntityDrop(EntityDropItemEvent event) {
 +        ItemStack stack = event.getItemDrop().getItemStack();
-+        HItem item = ItemLibrary.getHItemFromBukkit(stack);
++        HItemStack item = ItemLibrary.getHItemFromBukkit(stack);
 +        if (item != null && item.getBehaviour() != null) {
 +            item.getBehaviour().onEntityDrop(CraftItemStack.unwrap(stack), event.getEntity(), event);
 +        }
@@ -122,7 +122,7 @@ index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf6
 +    @EventHandler
 +    private void onBlockDrop(BlockDropItemEvent event) {
 +        for (Item stack : event.getItems()) {
-+            HItem item = ItemLibrary.getHItemFromBukkit(stack.getItemStack());
++            HItemStack item = ItemLibrary.getHItemFromBukkit(stack.getItemStack());
 +            if (item != null && item.getBehaviour() != null) {
 +                item.getBehaviour().onBlockDrop(CraftItemStack.unwrap(stack.getItemStack()), event.getPlayer(), event);
 +            }
@@ -132,7 +132,7 @@ index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf6
 +    @EventHandler
 +    private void onPickup(PlayerAttemptPickupItemEvent event) {
 +        ItemStack stack = event.getItem().getItemStack();
-+        HItem item = ItemLibrary.getHItemFromBukkit(stack);
++        HItemStack item = ItemLibrary.getHItemFromBukkit(stack);
 +        if (item != null && item.getBehaviour() != null) {
 +            item.getBehaviour().onPickup(CraftItemStack.unwrap(stack), event.getPlayer(), event);
 +        }
@@ -141,7 +141,7 @@ index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf6
 +    @EventHandler
 +    private void onEntityPickup(EntityPickupItemEvent event) {
 +        ItemStack stack = event.getItem().getItemStack();
-+        HItem item = ItemLibrary.getHItemFromBukkit(stack);
++        HItemStack item = ItemLibrary.getHItemFromBukkit(stack);
 +        if (item != null && item.getBehaviour() != null) {
 +            item.getBehaviour().onEntityPickup(CraftItemStack.unwrap(stack), event.getEntity(), event);
 +        }
@@ -152,7 +152,7 @@ index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf6
 +        if (!event.hasItem()) {
 +            return;
 +        }
-+        HItem item = ItemLibrary.getHItemFromBukkit(event.getItem());
++        HItemStack item = ItemLibrary.getHItemFromBukkit(event.getItem());
 +        if (event.getAction().isRightClick()) {
 +            if (item != null && item.getBehaviour() != null) {
 +                item.getBehaviour().onRightClick(CraftItemStack.unwrap(event.getItem()), event.getPlayer(), event);
@@ -171,7 +171,7 @@ index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf6
 +            return;
 +        }
 +        ItemStack stack = event.getNewItem();
-+        HItem item = ItemLibrary.getHItemFromBukkit(stack);
++        HItemStack item = ItemLibrary.getHItemFromBukkit(stack);
 +        if (item != null && item.getBehaviour() != null && stack.getType() != Material.AIR) {
 +            item.getBehaviour().onEquip(CraftItemStack.unwrap(stack), event.getPlayer(), event);
 +            return;
@@ -186,194 +186,16 @@ index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf6
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItem.java b/src/main/java/de/erethon/hephaestus/HItem.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..b2767880f8f4814f35f00c3f826b4d15279f83de
+index 0000000000000000000000000000000000000000..3c6c35f38236d2b6fd7efe1570b5abf98e413e81
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItem.java
-@@ -0,0 +1,76 @@
-+package de.erethon.hephaestus;
-+
-+import net.minecraft.resources.ResourceLocation;
-+import net.minecraft.world.item.ItemStack;
-+
-+public class HItem {
-+
-+    private HItemConfig config;
-+    private HItemBehaviour behaviour;
-+    private ItemStack stack;
-+
-+    public HItem(ItemStack stack, HItemConfig config) {
-+        this.stack = stack;
-+        this.config = config;
-+    }
-+
-+
-+    public ResourceLocation getId() {
-+        return config.getId();
-+    }
-+
-+    public boolean needsUpdating(ItemStack stack) {
-+        return !ItemStack.matches(stack, this.stack);
-+    }
-+
-+    public ItemStack getStack() {
-+        return stack;
-+    }
-+
-+    public org.bukkit.inventory.ItemStack getBukkitStack() {
-+        return stack.getBukkitStack();
-+    }
-+
-+    public void setBehaviour(HItemBehaviour behaviour) {
-+        this.behaviour = behaviour;
-+    }
-+
-+    public HItemBehaviour getBehaviour() {
-+        return behaviour;
-+    }
-+
-+    public HItemConfig config() {
-+        return config;
-+    }
-+
-+    public boolean isEnabled() {
-+        return config.isEnabled();
-+    }
-+
-+    public boolean isVanilla() {
-+        return config.getId().getNamespace().equals("minecraft");
-+    }
-+
-+    public HItem replaceWith() {
-+        return config.getReplaceWith();
-+    }
-+
-+    public void setStack(ItemStack stack) {
-+        this.stack = stack;
-+    }
-+
-+    // TODO: Call this on inventory load
-+    public ItemStack update(ItemStack original) {
-+        if (!needsUpdating(original)) {
-+            return original;
-+        }
-+        int count = original.getCount();
-+        ItemStack updated = stack.copyWithCount(count);
-+        if (config.getReplaceWith() != null) {
-+            updated = config.getReplaceWith().getStack();
-+        }
-+        return updated;
-+    }
-+
-+
-+}
-diff --git a/src/main/java/de/erethon/hephaestus/HItemBehaviour.java b/src/main/java/de/erethon/hephaestus/HItemBehaviour.java
-new file mode 100644
-index 0000000000000000000000000000000000000000..ebfc81a80443ebd89b5d5c60e143ef7e952761a6
---- /dev/null
-+++ b/src/main/java/de/erethon/hephaestus/HItemBehaviour.java
-@@ -0,0 +1,88 @@
-+package de.erethon.hephaestus;
-+
-+import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
-+import de.erethon.spellbook.api.SpellCastEvent;
-+import net.minecraft.core.BlockPos;
-+import net.minecraft.world.InteractionHand;
-+import net.minecraft.world.InteractionResult;
-+import net.minecraft.world.entity.Entity;
-+import net.minecraft.world.entity.LivingEntity;
-+import net.minecraft.world.entity.player.Player;
-+import net.minecraft.world.item.ItemStack;
-+import net.minecraft.world.level.Level;
-+import net.minecraft.world.level.block.state.BlockState;
-+import org.bukkit.event.block.BlockDropItemEvent;
-+import org.bukkit.event.entity.EntityDamageByEntityEvent;
-+import org.bukkit.event.entity.EntityDropItemEvent;
-+import org.bukkit.event.entity.EntityPickupItemEvent;
-+import org.bukkit.event.inventory.ClickType;
-+import org.bukkit.event.inventory.InventoryAction;
-+import org.bukkit.event.inventory.InventoryClickEvent;
-+import org.bukkit.event.player.PlayerAttemptPickupItemEvent;
-+import org.bukkit.event.player.PlayerDropItemEvent;
-+import org.bukkit.event.player.PlayerInteractEvent;
-+
-+public class HItemBehaviour {
-+
-+    public HItem hItem;
-+
-+    public HItemBehaviour(HItem item) {
-+        this.hItem = item;
-+    }
-+
-+    public void onLeftClick(ItemStack stack, org.bukkit.entity.Player player, PlayerInteractEvent event) {
-+    }
-+
-+    public void onRightClick(ItemStack stack, org.bukkit.entity.Player player, PlayerInteractEvent event) {
-+    }
-+
-+    public void onPlayerDrop(ItemStack stack, org.bukkit.entity.Player player, PlayerDropItemEvent event) {
-+    }
-+
-+    public void onEntityDrop(ItemStack stack, org.bukkit.entity.Entity entity, EntityDropItemEvent event) {
-+    }
-+
-+    public void onBlockDrop(ItemStack stack, org.bukkit.entity.Player player, BlockDropItemEvent event) {
-+    }
-+
-+    public void onPickup(ItemStack stack, org.bukkit.entity.Player player, PlayerAttemptPickupItemEvent event) {
-+    }
-+
-+    public void onEntityPickup(ItemStack stack, org.bukkit.entity.Entity entity, EntityPickupItemEvent event) {
-+    }
-+
-+    public void onEquip(ItemStack stack, org.bukkit.entity.Player player, PlayerArmorChangeEvent event) {
-+    }
-+
-+    public void onUnequip(ItemStack stack, org.bukkit.entity.Player player, PlayerArmorChangeEvent event) {
-+    }
-+
-+    public boolean onAttack(ItemStack stack, LivingEntity target, Player attacker) {
-+        return true;
-+    }
-+
-+    public void onDamaged(ItemStack stack, org.bukkit.entity.LivingEntity damaged, EntityDamageByEntityEvent event) {
-+    }
-+
-+    public int onItemHurt(ItemStack stack, int amount) {
-+        return amount;
-+    }
-+
-+    public boolean onMine(ItemStack stack, Level world, BlockState state, BlockPos pos, Player miner) {
-+        return true;
-+    }
-+
-+    public InteractionResult onInteractLiving(ItemStack stack, Player player, LivingEntity living, InteractionHand hand) {
-+        return stack.getItem().interactLivingEntity(stack, player, living, hand);
-+    }
-+
-+    public void onSpellCast(ItemStack stack, org.bukkit.entity.LivingEntity damaged, SpellCastEvent event) {
-+    }
-+
-+    public void onTick(ItemStack stack, Entity entity, int slot, boolean selected) {
-+    }
-+
-+    public void onInventoryClick(ItemStack stack, Player player, ClickType type, InventoryAction action, InventoryClickEvent event) {
-+    }
-+
-+}
-diff --git a/src/main/java/de/erethon/hephaestus/HItemConfig.java b/src/main/java/de/erethon/hephaestus/HItemConfig.java
-new file mode 100644
-index 0000000000000000000000000000000000000000..22702202ce6d66596c398a47e2ed2e496e614180
---- /dev/null
-+++ b/src/main/java/de/erethon/hephaestus/HItemConfig.java
-@@ -0,0 +1,242 @@
+@@ -0,0 +1,240 @@
 +package de.erethon.hephaestus;
 +
 +import io.papermc.paper.adventure.PaperAdventure;
 +import net.kyori.adventure.text.Component;
 +import net.kyori.adventure.text.minimessage.MiniMessage;
 +import net.minecraft.core.registries.BuiltInRegistries;
-+import net.minecraft.nbt.CompoundTag;
-+import net.minecraft.nbt.Tag;
 +import net.minecraft.resources.ResourceLocation;
 +import net.minecraft.server.Main;
 +import net.minecraft.world.entity.EquipmentSlot;
@@ -396,7 +218,7 @@ index 0000000000000000000000000000000000000000..22702202ce6d66596c398a47e2ed2e49
 +import java.util.Map;
 +import java.util.logging.Level;
 +
-+public class HItemConfig extends YamlConfiguration {
++public class HItem extends YamlConfiguration {
 +
 +    private final MiniMessage mm = MiniMessage.miniMessage();
 +
@@ -416,12 +238,12 @@ index 0000000000000000000000000000000000000000..22702202ce6d66596c398a47e2ed2e49
 +    private ClassLoader classLoader;
 +
 +    private boolean isEnabled = true;
-+    private HItem replaceWith = null;
++    private HItemStack replaceWith = null;
 +
-+    public HItemConfig(Plugin plugin) {
++    public HItem(Plugin plugin) {
 +    }
 +
-+    public HItemConfig(File file) {
++    public HItem(File file) {
 +        super();
 +        try {
 +            load(file);
@@ -484,7 +306,7 @@ index 0000000000000000000000000000000000000000..22702202ce6d66596c398a47e2ed2e49
 +        return isEnabled;
 +    }
 +
-+    public HItem getReplaceWith() {
++    public HItemStack getReplaceWith() {
 +        return replaceWith;
 +    }
 +    public @Nullable String getClassURL() {
@@ -495,12 +317,12 @@ index 0000000000000000000000000000000000000000..22702202ce6d66596c398a47e2ed2e49
 +        this.plugin = plugin;
 +    }
 +
-+    public HItem getItem() {
++    public HItemStack getItem() {
 +        return getItem(1);
 +    }
 +
-+    public HItem getItem(int count) {
-+        HItem item = prepareNewStack().hItem;
++    public HItemStack getItem(int count) {
++        HItemStack item = prepareNewStack().hItemStack;
 +        if (behaviour != null) {
 +            item.setBehaviour(behaviour);
 +        }
@@ -513,8 +335,8 @@ index 0000000000000000000000000000000000000000..22702202ce6d66596c398a47e2ed2e49
 +        for (EquipmentSlot slot : EquipmentSlot.values()) {
 +            baseItem.getAttributeModifiers(slot).clear();
 +        }
-+        baseItem.getOrCreateTag().putInt("CustomModelData", getModelData());
-+        baseItem.getOrCreateTag().putString("HephaestusID", id.toString());
++        baseItem.getTag().putInt("CustomModelData", getModelData());
++        baseItem.getTag().putString("HephaestusID", id.toString());
 +        baseItem.setHoverName(PaperAdventure.asVanilla(displayName));
 +        baseItem.getBukkitStack().editMeta(m -> m.lore(lore)); // Annoying but oh well.
 +        return baseItem;
@@ -531,7 +353,7 @@ index 0000000000000000000000000000000000000000..22702202ce6d66596c398a47e2ed2e49
 +            throw new RuntimeException(e);
 +        }
 +        try {
-+            behaviour = behaviourClass.getDeclaredConstructor(HItem.class).newInstance(this);
++            behaviour = behaviourClass.getDeclaredConstructor(HItemStack.class).newInstance(this);
 +        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 +            throw new RuntimeException(e);
 +        }
@@ -577,12 +399,12 @@ index 0000000000000000000000000000000000000000..22702202ce6d66596c398a47e2ed2e49
 +    }
 +
 +    public static class Builder {
-+        private final HItemConfig item;
++        private final HItem item;
 +        private final Plugin plugin;
 +        private HItemBehaviour behaviour;
 +
 +        public Builder(Plugin plugin, ResourceLocation location) {
-+            this.item = new HItemConfig(plugin);
++            this.item = new HItem(plugin);
 +            this.plugin = plugin;
 +            item.setId(location);
 +        }
@@ -598,7 +420,7 @@ index 0000000000000000000000000000000000000000..22702202ce6d66596c398a47e2ed2e49
 +            return this;
 +        }
 +
-+        public HItemConfig register() {
++        public HItem register() {
 +            Main.itemLibrary.registerItem(plugin, item);
 +            File folder = Main.itemLibrary.getFolder();
 +            File saveFile = new File(folder, item.getId().getNamespace() + "/" + item.getId().getPath() + ".yml");
@@ -608,12 +430,169 @@ index 0000000000000000000000000000000000000000..22702202ce6d66596c398a47e2ed2e49
 +    }
 +
 +}
+diff --git a/src/main/java/de/erethon/hephaestus/HItemBehaviour.java b/src/main/java/de/erethon/hephaestus/HItemBehaviour.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..df678ecffd9a70a44107024df0699e38e2111cb9
+--- /dev/null
++++ b/src/main/java/de/erethon/hephaestus/HItemBehaviour.java
+@@ -0,0 +1,82 @@
++package de.erethon.hephaestus;
++
++import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
++import de.erethon.spellbook.api.SpellCastEvent;
++import net.minecraft.core.BlockPos;
++import net.minecraft.world.InteractionHand;
++import net.minecraft.world.InteractionResult;
++import net.minecraft.world.entity.Entity;
++import net.minecraft.world.entity.LivingEntity;
++import net.minecraft.world.entity.player.Player;
++import net.minecraft.world.item.ItemStack;
++import net.minecraft.world.level.Level;
++import net.minecraft.world.level.block.state.BlockState;
++import org.bukkit.event.block.BlockDropItemEvent;
++import org.bukkit.event.entity.EntityDamageByEntityEvent;
++import org.bukkit.event.entity.EntityDropItemEvent;
++import org.bukkit.event.entity.EntityPickupItemEvent;
++import org.bukkit.event.inventory.ClickType;
++import org.bukkit.event.inventory.InventoryAction;
++import org.bukkit.event.inventory.InventoryClickEvent;
++import org.bukkit.event.player.PlayerAttemptPickupItemEvent;
++import org.bukkit.event.player.PlayerDropItemEvent;
++import org.bukkit.event.player.PlayerInteractEvent;
++
++public class HItemBehaviour {
++
++    public void onLeftClick(ItemStack stack, org.bukkit.entity.Player player, PlayerInteractEvent event) {
++    }
++
++    public void onRightClick(ItemStack stack, org.bukkit.entity.Player player, PlayerInteractEvent event) {
++    }
++
++    public void onPlayerDrop(ItemStack stack, org.bukkit.entity.Player player, PlayerDropItemEvent event) {
++    }
++
++    public void onEntityDrop(ItemStack stack, org.bukkit.entity.Entity entity, EntityDropItemEvent event) {
++    }
++
++    public void onBlockDrop(ItemStack stack, org.bukkit.entity.Player player, BlockDropItemEvent event) {
++    }
++
++    public void onPickup(ItemStack stack, org.bukkit.entity.Player player, PlayerAttemptPickupItemEvent event) {
++    }
++
++    public void onEntityPickup(ItemStack stack, org.bukkit.entity.Entity entity, EntityPickupItemEvent event) {
++    }
++
++    public void onEquip(ItemStack stack, org.bukkit.entity.Player player, PlayerArmorChangeEvent event) {
++    }
++
++    public void onUnequip(ItemStack stack, org.bukkit.entity.Player player, PlayerArmorChangeEvent event) {
++    }
++
++    public boolean onAttack(ItemStack stack, LivingEntity target, Player attacker) {
++        return true;
++    }
++
++    public void onDamaged(ItemStack stack, org.bukkit.entity.LivingEntity damaged, EntityDamageByEntityEvent event) {
++    }
++
++    public int onItemHurt(ItemStack stack, int amount) {
++        return amount;
++    }
++
++    public boolean onMine(ItemStack stack, Level world, BlockState state, BlockPos pos, Player miner) {
++        return true;
++    }
++
++    public InteractionResult onInteractLiving(ItemStack stack, Player player, LivingEntity living, InteractionHand hand) {
++        return stack.getItem().interactLivingEntity(stack, player, living, hand);
++    }
++
++    public void onSpellCast(ItemStack stack, org.bukkit.entity.LivingEntity damaged, SpellCastEvent event) {
++    }
++
++    public void onTick(ItemStack stack, Entity entity, int slot, boolean selected) {
++    }
++
++    public void onInventoryClick(ItemStack stack, Player player, ClickType type, InventoryAction action, InventoryClickEvent event) {
++    }
++
++}
+diff --git a/src/main/java/de/erethon/hephaestus/HItemStack.java b/src/main/java/de/erethon/hephaestus/HItemStack.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..0eddb94a5f24089091e9dee4690d29a099e19182
+--- /dev/null
++++ b/src/main/java/de/erethon/hephaestus/HItemStack.java
+@@ -0,0 +1,63 @@
++package de.erethon.hephaestus;
++
++import net.minecraft.resources.ResourceLocation;
++import net.minecraft.world.item.ItemStack;
++
++public class HItemStack {
++
++    private HItem item;
++    private HItemBehaviour behaviour;
++    private ItemStack stack;
++
++    public HItemStack(ItemStack stack, HItem config) {
++        this.stack = stack;
++        this.item = config;
++    }
++
++    public ResourceLocation getId() {
++        return item.getId();
++    }
++
++    public boolean needsUpdating(ItemStack stack) {
++        return !ItemStack.matches(stack, this.stack);
++    }
++
++    public ItemStack getStack() {
++        return stack;
++    }
++
++    public org.bukkit.inventory.ItemStack getBukkitStack() {
++        return stack.getBukkitStack();
++    }
++
++    public void setBehaviour(HItemBehaviour behaviour) {
++        this.behaviour = behaviour;
++    }
++
++    public HItemBehaviour getBehaviour() {
++        return behaviour;
++    }
++
++    public HItem config() {
++        return item;
++    }
++
++    public boolean isEnabled() {
++        return item.isEnabled();
++    }
++
++    public boolean isVanilla() {
++        return item.getId().getNamespace().equals("minecraft");
++    }
++
++    public HItemStack replaceWith() {
++        return item.getReplaceWith();
++    }
++
++    public void setStack(ItemStack stack) {
++        this.stack = stack;
++    }
++
++    public void validate() {
++    }
++}
 diff --git a/src/main/java/de/erethon/hephaestus/ItemLibrary.java b/src/main/java/de/erethon/hephaestus/ItemLibrary.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..3267436f152f0284d2be918a887588ca5c20cdcf
+index 0000000000000000000000000000000000000000..acb455c1e689ff4700fed4062113691e269d8e76
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/ItemLibrary.java
-@@ -0,0 +1,139 @@
+@@ -0,0 +1,145 @@
 +package de.erethon.hephaestus;
 +
 +import de.erethon.spellbook.api.SpellLibrary;
@@ -641,8 +620,8 @@ index 0000000000000000000000000000000000000000..3267436f152f0284d2be918a887588ca
 +
 +    private final File folder;
 +
-+    private final HashMap<ResourceLocation, HItemConfig> items = new HashMap<>();
-+    private final HashMap<Material, HItemConfig> vanillaMaterials = new HashMap<>();
++    private final HashMap<ResourceLocation, HItem> items = new HashMap<>();
++    private final HashMap<Material, HItem> vanillaMaterials = new HashMap<>();
 +    private HBukkitHandler bukkitHandler = null;
 +
 +    public ItemLibrary(File folder) {
@@ -655,30 +634,30 @@ index 0000000000000000000000000000000000000000..3267436f152f0284d2be918a887588ca
 +    }
 +
 +    @Nullable
-+    public HItemConfig get(ResourceLocation key) {
++    public HItem get(ResourceLocation key) {
 +        return items.get(key);
 +    }
 +
 +    @Nullable
-+    public HItemConfig get(Material material) {
++    public HItem get(Material material) {
 +        return vanillaMaterials.get(material);
 +    }
 +
 +    @Nullable
-+    public HItemConfig get(ItemStack bukkitStack) {
++    public HItem get(ItemStack bukkitStack) {
 +        CraftItemStack craftItemStack = (CraftItemStack) bukkitStack;
-+        if (craftItemStack.handle.hItem == null) {
++        if (craftItemStack.handle.hItemStack == null) {
 +            return null;
 +        }
-+        return craftItemStack.handle.hItem.config();
++        return craftItemStack.handle.hItemStack.config();
 +    }
 +
 +    @Nullable
-+    public HItemConfig get(net.minecraft.world.item.ItemStack stack) {
-+        return stack.hItem.config();
++    public HItem get(net.minecraft.world.item.ItemStack stack) {
++        return stack.hItemStack.config();
 +    }
 +
-+    public boolean registerItem(Plugin plugin, HItemConfig item) {
++    public boolean registerItem(Plugin plugin, HItem item) {
 +        if (bukkitHandler == null) { // Use the first plugin we get to register the bukkit handler, because we need a Plugin for listeners.
 +            bukkitHandler = new HBukkitHandler((JavaPlugin) plugin, this);
 +        }
@@ -694,16 +673,22 @@ index 0000000000000000000000000000000000000000..3267436f152f0284d2be918a887588ca
 +        return true;
 +    }
 +
-+    public boolean overrideVanillaBehaviour(Plugin plugin, HItemConfig item) {
++    public boolean overrideVanillaBehaviour(Plugin plugin, HItem item) {
++        if (bukkitHandler == null) {
++            bukkitHandler = new HBukkitHandler((JavaPlugin) plugin, this);
++        }
 +        item.setPlugin(plugin);
 +        return true;
 +    }
 +
 +
-+    public boolean unregisterItem(HItemConfig item) {
++    public boolean unregisterItem(HItem item) {
 +        if (!items.containsKey(item.getId())) {
 +            Bukkit.getLogger().log(Level.WARNING, "[Hephaestus] Item with ID " + item.getId() + " is not registered.");
 +            return false;
++        }
++        if (item.getId().getNamespace().equals("minecraft")) {
++            throw new RuntimeException("Vanilla items can not be unregistered.");
 +        }
 +        items.remove(item.getId());
 +        return true;
@@ -738,7 +723,7 @@ index 0000000000000000000000000000000000000000..3267436f152f0284d2be918a887588ca
 +            if (!file.getName().contains(".yml")) {
 +                continue;
 +            }
-+            HItemConfig config = new HItemConfig(file);
++            HItem config = new HItem(file);
 +            items.put(config.getId(), config);
 +            vanillaMaterials.put(CraftMagicNumbers.getMaterial(config.getBaseItem()), config);
 +        }
@@ -749,8 +734,8 @@ index 0000000000000000000000000000000000000000..3267436f152f0284d2be918a887588ca
 +        return folder;
 +    }
 +
-+    public static HItem getHItemFromBukkit(ItemStack stack) {
-+        return ((CraftItemStack) stack).handle.hItem;
++    public static HItemStack getHItemFromBukkit(ItemStack stack) {
++        return ((CraftItemStack) stack).handle.hItemStack;
 +     }
 +}
 diff --git a/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java b/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java
@@ -857,89 +842,96 @@ index 01063c3bc672eecdf8fe1c5b5a89fbf576c940f3..949207f366aa0659c563fa123047112d
      }
  
 diff --git a/src/main/java/net/minecraft/world/item/ItemStack.java b/src/main/java/net/minecraft/world/item/ItemStack.java
-index 4ab0452af6eeae9316311d473be23de9a74d9e4b..b367d1a7add21d5cecae5bd47b1ecff9a4d59cdf 100644
+index 4ab0452af6eeae9316311d473be23de9a74d9e4b..2eff89662e9fb4ac5f99686be69356ad47b7cdca 100644
 --- a/src/main/java/net/minecraft/world/item/ItemStack.java
 +++ b/src/main/java/net/minecraft/world/item/ItemStack.java
-@@ -23,6 +23,10 @@ import java.util.function.Predicate;
+@@ -23,12 +23,15 @@ import java.util.function.Predicate;
  import java.util.stream.Collectors;
  import java.util.stream.Stream;
  import javax.annotation.Nullable;
 +
-+import de.erethon.hephaestus.HItem;
++import de.erethon.hephaestus.HItemStack;
 +import de.erethon.hephaestus.HItemBehaviour;
-+import de.erethon.hephaestus.HItemConfig;
++import de.erethon.hephaestus.HItem;
  import net.minecraft.ChatFormatting;
  import net.minecraft.Util;
  import net.minecraft.advancements.CriteriaTriggers;
-@@ -47,6 +51,8 @@ import net.minecraft.network.chat.MutableComponent;
+ import net.minecraft.commands.arguments.blocks.BlockStateParser;
+ import net.minecraft.core.BlockPos;
+-import net.minecraft.core.Direction;
+ import net.minecraft.core.Holder;
+ import net.minecraft.core.HolderSet;
+ import net.minecraft.core.Registry;
+@@ -45,8 +48,8 @@ import net.minecraft.network.chat.ComponentUtils;
+ import net.minecraft.network.chat.HoverEvent;
+ import net.minecraft.network.chat.MutableComponent;
  import net.minecraft.network.chat.Style;
- import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+-import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
  import net.minecraft.resources.ResourceLocation;
-+import net.minecraft.server.Bootstrap;
 +import net.minecraft.server.Main;
  import net.minecraft.tags.TagKey;
  import net.minecraft.util.ExtraCodecs;
  import net.minecraft.util.RandomSource;
-@@ -79,6 +85,8 @@ import net.minecraft.world.level.Level;
- import net.minecraft.world.level.block.BaseEntityBlock;
- import net.minecraft.world.level.block.BedBlock;
- import net.minecraft.world.level.block.Block;
-+import org.bukkit.Bukkit;
-+import org.bukkit.craftbukkit.CraftServer;
- import org.slf4j.Logger;
- 
+@@ -84,7 +87,7 @@ import org.slf4j.Logger;
  // CraftBukkit start
-@@ -234,6 +242,9 @@ public final class ItemStack {
+ import com.mojang.serialization.Dynamic;
+ import java.util.Map;
+-import java.util.Objects;
++
+ import net.minecraft.server.MinecraftServer;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.server.level.ServerPlayer;
+@@ -234,6 +237,9 @@ public final class ItemStack {
          return net.minecraft.nbt.StringTag.valueOf(org.bukkit.craftbukkit.util.CraftChatMessage.toJSON(component));
      }
      // Paper end
 +    // Papyrus start
-+    public HItem hItem;
++    public HItemStack hItemStack;
 +    public HItemBehaviour behaviour;
  
      public ItemStack(ItemLike item) {
          this(item, 1);
-@@ -258,6 +269,16 @@ public final class ItemStack {
+@@ -258,6 +264,16 @@ public final class ItemStack {
          if (this.item.canBeDepleted()) {
              this.setDamageValue(this.getDamageValue());
          }
-+        HItemConfig hConfig = Main.itemLibrary.get(BuiltInRegistries.ITEM.getKey(item.asItem()));
++        HItem hConfig = Main.itemLibrary.get(BuiltInRegistries.ITEM.getKey(item.asItem()));
 +        if (hConfig != null) {
-+            hItem = new HItem(this, hConfig);
-+            hItem.setStack(this);
-+            if (hItem.getBehaviour() != null) {
-+                behaviour = hItem.getBehaviour();
++            hItemStack = new HItemStack(this, hConfig);
++            hItemStack.setStack(this);
++            if (hItemStack.getBehaviour() != null) {
++                behaviour = hItemStack.getBehaviour();
 +            }
 +        } else {
-+            LOGGER.info("[Hephaestus] Unable to find vanilla hItem for " + item.asItem().toString());
++            LOGGER.info("[Hephaestus] Unable to find vanilla hItem for " + item.asItem());
 +        }
  
      }
  
-@@ -289,7 +310,30 @@ public final class ItemStack {
+@@ -289,7 +305,30 @@ public final class ItemStack {
          if (this.getItem().canBeDepleted()) {
              this.setDamageValue(this.getDamageValue());
          }
 -
-+        if (nbttagcompound.contains("HephaestusID")) { // Papyrus - Hephaestus
-+            String id = nbttagcompound.getString("HephaestusID");
-+            HItemConfig hConfig = Main.itemLibrary.get(BuiltInRegistries.ITEM.getKey(item.asItem()));
++        if (tag != null && tag.contains("HephaestusID")) { // Papyrus - Hephaestus
++            String id = tag.getString("HephaestusID");
++            HItem hConfig = Main.itemLibrary.get(new ResourceLocation(id));
 +            if (hConfig != null) {
-+                hItem = new HItem(this, hConfig);
-+                hItem.setStack(this);
-+                if (hItem.getBehaviour() != null) {
-+                    behaviour = hItem.getBehaviour();
++                hItemStack = new HItemStack(this, hConfig);
++                hItemStack.setStack(this);
++                if (hItemStack.getBehaviour() != null) {
++                    behaviour = hItemStack.getBehaviour();
 +                }
 +            } else {
 +                LOGGER.info("[Hephaestus] Unable to find hItem for " + id);
 +            }
 +        } else {
-+            HItemConfig hConfig = Main.itemLibrary.get(BuiltInRegistries.ITEM.getKey(item.asItem()));
++            HItem hConfig = Main.itemLibrary.get(BuiltInRegistries.ITEM.getKey(item.asItem()));
 +            if (hConfig != null) {
-+                hItem = new HItem(this, hConfig);
-+                hItem.setStack(this);
-+                if (hItem.getBehaviour() != null) {
-+                    behaviour = hItem.getBehaviour();
++                hItemStack = new HItemStack(this, hConfig);
++                hItemStack.setStack(this);
++                if (hItemStack.getBehaviour() != null) {
++                    behaviour = hItemStack.getBehaviour();
 +                }
 +            } else {
 +                LOGGER.info("[Hephaestus] Unable to find vanilla hItem for " + item.asItem().toString());
@@ -948,40 +940,50 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..b367d1a7add21d5cecae5bd47b1ecff9
      }
  
      private ItemStack(CompoundTag nbt) {
-@@ -311,7 +355,7 @@ public final class ItemStack {
+@@ -311,7 +350,7 @@ public final class ItemStack {
      }
  
      public boolean isItemEnabled(FeatureFlagSet enabledFeatures) {
 -        return this.isEmpty() || this.getItem().isEnabled(enabledFeatures);
-+        return this.isEmpty() || (this.getItem().isEnabled(enabledFeatures) && hItem.isEnabled()); // Papyrus
++        return this.isEmpty() || (this.getItem().isEnabled(enabledFeatures) && hItemStack.isEnabled()); // Papyrus
      }
  
      public ItemStack split(int amount) {
-@@ -591,7 +635,10 @@ public final class ItemStack {
+@@ -584,14 +623,19 @@ public final class ItemStack {
+         nbt.putString("id", minecraftkey == null ? "minecraft:air" : minecraftkey.toString());
+         nbt.putByte("Count", (byte) this.count);
+         if (this.tag != null) {
++            if (hItemStack != null) { // Papyrus
++                tag.putString("HephaestusID", hItemStack.getId().toString());
++            }
+             nbt.put("tag", this.tag.copy());
+         }
+-
+         return nbt;
      }
  
      public int getMaxStackSize() {
 -        return this.getItem().getMaxStackSize();
-+        if (hItem == null) {
++        if (hItemStack == null) {
 +            getItem().getMaxStackSize();
 +        }
-+        return hItem.config().getMaxStackSize(); // Papyrus
++        return hItemStack.config().getMaxStackSize(); // Papyrus
      }
  
      public boolean isStackable() {
-@@ -621,7 +668,10 @@ public final class ItemStack {
+@@ -621,7 +665,10 @@ public final class ItemStack {
      }
  
      public int getMaxDamage() {
 -        return this.getItem().getMaxDamage();
-+        if (hItem == null) {
++        if (hItemStack == null) {
 +            return getItem().getMaxDamage();
 +        }
-+        return hItem.config().getMaxDurability();
++        return hItemStack.config().getMaxDurability();
      }
  
      public boolean hurt(int amount, RandomSource random, @Nullable LivingEntity player) { // Paper - allow any living entity instead of only ServerPlayers
-@@ -675,6 +725,9 @@ public final class ItemStack {
+@@ -675,6 +722,9 @@ public final class ItemStack {
              }
  
              j = this.getDamageValue() + amount;
@@ -991,7 +993,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..b367d1a7add21d5cecae5bd47b1ecff9
              this.setDamageValue(j);
              return j >= this.getMaxDamage();
          }
-@@ -727,7 +780,7 @@ public final class ItemStack {
+@@ -727,7 +777,7 @@ public final class ItemStack {
      public void hurtEnemy(LivingEntity target, net.minecraft.world.entity.player.Player attacker) {
          Item item = this.getItem();
  
@@ -1000,7 +1002,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..b367d1a7add21d5cecae5bd47b1ecff9
              attacker.awardStat(Stats.ITEM_USED.get(item));
          }
  
-@@ -736,7 +789,7 @@ public final class ItemStack {
+@@ -736,7 +786,7 @@ public final class ItemStack {
      public void mineBlock(Level world, net.minecraft.world.level.block.state.BlockState state, BlockPos pos, net.minecraft.world.entity.player.Player miner) {
          Item item = this.getItem();
  
@@ -1009,7 +1011,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..b367d1a7add21d5cecae5bd47b1ecff9
              miner.awardStat(Stats.ITEM_USED.get(item));
          }
  
-@@ -747,6 +800,9 @@ public final class ItemStack {
+@@ -747,6 +797,9 @@ public final class ItemStack {
      }
  
      public InteractionResult interactLivingEntity(net.minecraft.world.entity.player.Player user, LivingEntity entity, InteractionHand hand) {
@@ -1019,7 +1021,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..b367d1a7add21d5cecae5bd47b1ecff9
          return this.getItem().interactLivingEntity(this, user, entity, hand);
      }
  
-@@ -811,6 +867,9 @@ public final class ItemStack {
+@@ -811,6 +864,9 @@ public final class ItemStack {
  
          if (this.getItem() != null) {
              this.getItem().inventoryTick(this, world, entity, slot, selected);
