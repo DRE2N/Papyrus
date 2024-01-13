@@ -6,7 +6,7 @@ Subject: [PATCH] Hephaestus
 
 diff --git a/src/main/java/de/erethon/hephaestus/HBukkitHandler.java b/src/main/java/de/erethon/hephaestus/HBukkitHandler.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd538fe874f
+index 0000000000000000000000000000000000000000..9c9e3b2aa74f4f057279603874529bf66a377a7d
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HBukkitHandler.java
 @@ -0,0 +1,174 @@
@@ -50,7 +50,7 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +        if (event.getCurrentItem() == null) {
 +            return;
 +        }
-+        HItem item = lib.get(event.getCurrentItem());
++        HItem item = ItemLibrary.getHItemFromBukkit(event.getCurrentItem());
 +        if (item != null && item.getBehaviour() != null) {
 +            item.getBehaviour().onInventoryClick(CraftItemStack.unwrap(event.getCurrentItem()), (Player) event.getWhoClicked(), event.getClick(), event.getAction(), event);
 +        }
@@ -60,17 +60,17 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +    private void onDamage(EntityDamageByEntityEvent event) {
 +        if (event.getEntity() instanceof LivingEntity living && living.getEquipment() != null) {
 +            ItemStack mainHand = living.getEquipment().getItemInMainHand();
-+            HItem item = lib.get(mainHand);
++            HItem item = ItemLibrary.getHItemFromBukkit(mainHand);
 +            if (item != null && item.getBehaviour() != null) {
 +                item.getBehaviour().onDamaged(CraftItemStack.unwrap(mainHand), living, event);
 +            }
 +            ItemStack offHand = living.getEquipment().getItemInOffHand();
-+            item = lib.get(mainHand);
++            item = ItemLibrary.getHItemFromBukkit(mainHand);
 +            if (item != null && item.getBehaviour() != null) {
 +                item.getBehaviour().onDamaged(CraftItemStack.unwrap(offHand), living, event);
 +            }
 +            for (ItemStack armor : living.getEquipment().getArmorContents()) {
-+                item = lib.get(armor);
++                item = ItemLibrary.getHItemFromBukkit(armor);
 +                if (item != null && item.getBehaviour() != null) {
 +                    item.getBehaviour().onDamaged(CraftItemStack.unwrap(armor), living, event);
 +                }
@@ -83,17 +83,17 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +        LivingEntity living = event.getCaster();
 +        if (living.getEquipment() != null) {
 +            ItemStack mainHand = living.getEquipment().getItemInMainHand();
-+            HItem item = lib.get(mainHand);
++            HItem item = ItemLibrary.getHItemFromBukkit(mainHand);
 +            if (item != null && item.getBehaviour() != null) {
 +                item.getBehaviour().onSpellCast(CraftItemStack.unwrap(mainHand), living, event);
 +            }
 +            ItemStack offHand = living.getEquipment().getItemInOffHand();
-+            item = lib.get(mainHand);
++            item = ItemLibrary.getHItemFromBukkit(mainHand);
 +            if (item != null && item.getBehaviour() != null) {
 +                item.getBehaviour().onSpellCast(CraftItemStack.unwrap(offHand), living, event);
 +            }
 +            for (ItemStack armor : living.getEquipment().getArmorContents()) {
-+                item = lib.get(armor);
++                item = ItemLibrary.getHItemFromBukkit(armor);
 +                if (item != null && item.getBehaviour() != null) {
 +                    item.getBehaviour().onSpellCast(CraftItemStack.unwrap(armor), living, event);
 +                }
@@ -104,7 +104,7 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +    @EventHandler
 +    private void onPlayerDrop(PlayerDropItemEvent event) {
 +        ItemStack stack = event.getItemDrop().getItemStack();
-+        HItem item = lib.get(stack);
++        HItem item = ItemLibrary.getHItemFromBukkit(stack);
 +        if (item != null && item.getBehaviour() != null) {
 +            item.getBehaviour().onPlayerDrop(CraftItemStack.unwrap(stack), event.getPlayer(), event);
 +        }
@@ -113,7 +113,7 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +    @EventHandler
 +    private void onEntityDrop(EntityDropItemEvent event) {
 +        ItemStack stack = event.getItemDrop().getItemStack();
-+        HItem item = lib.get(stack);
++        HItem item = ItemLibrary.getHItemFromBukkit(stack);
 +        if (item != null && item.getBehaviour() != null) {
 +            item.getBehaviour().onEntityDrop(CraftItemStack.unwrap(stack), event.getEntity(), event);
 +        }
@@ -122,7 +122,7 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +    @EventHandler
 +    private void onBlockDrop(BlockDropItemEvent event) {
 +        for (Item stack : event.getItems()) {
-+            HItem item = lib.get(stack.getItemStack());
++            HItem item = ItemLibrary.getHItemFromBukkit(stack.getItemStack());
 +            if (item != null && item.getBehaviour() != null) {
 +                item.getBehaviour().onBlockDrop(CraftItemStack.unwrap(stack.getItemStack()), event.getPlayer(), event);
 +            }
@@ -132,7 +132,7 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +    @EventHandler
 +    private void onPickup(PlayerAttemptPickupItemEvent event) {
 +        ItemStack stack = event.getItem().getItemStack();
-+        HItem item = lib.get(stack);
++        HItem item = ItemLibrary.getHItemFromBukkit(stack);
 +        if (item != null && item.getBehaviour() != null) {
 +            item.getBehaviour().onPickup(CraftItemStack.unwrap(stack), event.getPlayer(), event);
 +        }
@@ -141,7 +141,7 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +    @EventHandler
 +    private void onEntityPickup(EntityPickupItemEvent event) {
 +        ItemStack stack = event.getItem().getItemStack();
-+        HItem item = lib.get(stack);
++        HItem item = ItemLibrary.getHItemFromBukkit(stack);
 +        if (item != null && item.getBehaviour() != null) {
 +            item.getBehaviour().onEntityPickup(CraftItemStack.unwrap(stack), event.getEntity(), event);
 +        }
@@ -152,7 +152,7 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +        if (!event.hasItem()) {
 +            return;
 +        }
-+        HItem item = lib.get(event.getItem());
++        HItem item = ItemLibrary.getHItemFromBukkit(event.getItem());
 +        if (event.getAction().isRightClick()) {
 +            if (item != null && item.getBehaviour() != null) {
 +                item.getBehaviour().onRightClick(CraftItemStack.unwrap(event.getItem()), event.getPlayer(), event);
@@ -171,13 +171,13 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +            return;
 +        }
 +        ItemStack stack = event.getNewItem();
-+        HItem item = lib.get(stack);
++        HItem item = ItemLibrary.getHItemFromBukkit(stack);
 +        if (item != null && item.getBehaviour() != null && stack.getType() != Material.AIR) {
 +            item.getBehaviour().onEquip(CraftItemStack.unwrap(stack), event.getPlayer(), event);
 +            return;
 +        }
 +        stack = event.getOldItem();
-+        item = lib.get(stack);
++        item = ItemLibrary.getHItemFromBukkit(stack);
 +        if (item != null && item.getBehaviour() != null) {
 +            item.getBehaviour().onUnequip(CraftItemStack.unwrap(stack), event.getPlayer(), event);
 +        }
@@ -186,56 +186,29 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItem.java b/src/main/java/de/erethon/hephaestus/HItem.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..fbff308e5fff3f5de286513587aa38d4781473e9
+index 0000000000000000000000000000000000000000..b2767880f8f4814f35f00c3f826b4d15279f83de
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItem.java
-@@ -0,0 +1,162 @@
+@@ -0,0 +1,76 @@
 +package de.erethon.hephaestus;
 +
-+import de.erethon.spellbook.api.SpellData;
-+import de.erethon.spellbook.api.SpellbookSpell;
-+import net.minecraft.core.registries.BuiltInRegistries;
 +import net.minecraft.resources.ResourceLocation;
-+import net.minecraft.server.Bootstrap;
-+import net.minecraft.server.Main;
-+import net.minecraft.world.entity.EquipmentSlot;
-+import net.minecraft.world.item.Item;
 +import net.minecraft.world.item.ItemStack;
-+import org.bukkit.Material;
-+import org.bukkit.craftbukkit.util.CraftMagicNumbers;
-+import org.bukkit.entity.LivingEntity;
-+import org.bukkit.plugin.Plugin;
-+
-+import java.io.File;
-+import java.lang.reflect.InvocationTargetException;
 +
 +public class HItem {
 +
-+    private final ResourceLocation id;
 +    private HItemConfig config;
 +    private HItemBehaviour behaviour;
-+    private Plugin plugin;
-+    private Class<? extends HItemBehaviour> behaviourClass;
-+    private ClassLoader classLoader;
-+
-+    private Item baseItem;
 +    private ItemStack stack;
 +
-+
-+    public HItem(ResourceLocation resourceLocation) {
-+        this.id = resourceLocation;
-+    }
-+
-+    public HItem(HItemConfig config) {
++    public HItem(ItemStack stack, HItemConfig config) {
++        this.stack = stack;
 +        this.config = config;
-+        this.id = config.getId();
-+        if (config.contains("class")) {
-+            loadBehaviour();
-+        }
 +    }
++
 +
 +    public ResourceLocation getId() {
-+        return id;
++        return config.getId();
 +    }
 +
 +    public boolean needsUpdating(ItemStack stack) {
@@ -267,15 +240,15 @@ index 0000000000000000000000000000000000000000..fbff308e5fff3f5de286513587aa38d4
 +    }
 +
 +    public boolean isVanilla() {
-+        return id.getNamespace().equals("minecraft");
++        return config.getId().getNamespace().equals("minecraft");
 +    }
 +
 +    public HItem replaceWith() {
 +        return config.getReplaceWith();
 +    }
 +
-+    public void setPlugin(Plugin plugin) {
-+        this.plugin = plugin;
++    public void setStack(ItemStack stack) {
++        this.stack = stack;
 +    }
 +
 +    // TODO: Call this on inventory load
@@ -290,65 +263,6 @@ index 0000000000000000000000000000000000000000..fbff308e5fff3f5de286513587aa38d4
 +        }
 +        return updated;
 +    }
-+
-+    public void prepare() {
-+        baseItem = BuiltInRegistries.ITEM.get(new ResourceLocation(config.getMojangID()));
-+        stack = new ItemStack(baseItem);
-+        for (EquipmentSlot slot : EquipmentSlot.values()) {
-+            stack.getAttributeModifiers(slot).clear();
-+        }
-+        stack.getOrCreateTag().putInt("CustomModelData", config.getModelData());
-+        stack.getOrCreateTag().putString("HephaestusID", id.toString());
-+    }
-+
-+    private void loadBehaviour() {
-+        if (plugin == null) {
-+            throw new RuntimeException("Tried loading behaviours for item without plugin: " + config.getId().toString());
-+        }
-+        classLoader = plugin.getClass().getClassLoader();
-+        try {
-+            behaviourClass = ((Class<? extends HItemBehaviour>) Class.forName(config.getClassURL(), true, classLoader));
-+        } catch (ClassNotFoundException e) {
-+            throw new RuntimeException(e);
-+        }
-+        try {
-+            behaviour = behaviourClass.getDeclaredConstructor(HItem.class).newInstance(this);
-+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-+            throw new RuntimeException(e);
-+        }
-+    }
-+
-+    public static class Builder {
-+        HItemConfig config = new HItemConfig();
-+        private HItem item;
-+        private Plugin plugin;
-+        private HItemBehaviour behaviour;
-+
-+        public Builder(Plugin plugin, ResourceLocation location) {
-+            this.item = new HItem(location);
-+            this.plugin = plugin;
-+        }
-+
-+        public Builder behaviour(HItemBehaviour behaviour) {
-+            this.behaviour = behaviour;
-+            config.setClassURL(behaviour.getClass().getName());
-+            return this;
-+        }
-+        public Builder baseItem(Material material) {
-+            Item item1 = CraftMagicNumbers.getItem(material);
-+            item.config.setMojangID(BuiltInRegistries.ITEM.getKey(item1).toString());
-+            return this;
-+        }
-+
-+        public HItem register() {
-+            Main.itemLibrary.registerItem(plugin, item);
-+            File folder = Main.itemLibrary.getFolder();
-+            File saveFile = new File(folder, item.getId().getNamespace() + "/" + item.getId().getPath() + ".yml");
-+            config.save(saveFile);
-+            return item;
-+        }
-+    }
-+
 +
 +
 +}
@@ -448,29 +362,36 @@ index 0000000000000000000000000000000000000000..ebfc81a80443ebd89b5d5c60e143ef7e
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItemConfig.java b/src/main/java/de/erethon/hephaestus/HItemConfig.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..420100d411c6f7a225b2faea697430e44cf2d1ab
+index 0000000000000000000000000000000000000000..22702202ce6d66596c398a47e2ed2e496e614180
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItemConfig.java
-@@ -0,0 +1,154 @@
+@@ -0,0 +1,242 @@
 +package de.erethon.hephaestus;
 +
-+import de.erethon.hephaestus.HItemBehaviour;
-+import de.erethon.spellbook.api.SpellbookSpell;
++import io.papermc.paper.adventure.PaperAdventure;
 +import net.kyori.adventure.text.Component;
 +import net.kyori.adventure.text.minimessage.MiniMessage;
++import net.minecraft.core.registries.BuiltInRegistries;
++import net.minecraft.nbt.CompoundTag;
++import net.minecraft.nbt.Tag;
 +import net.minecraft.resources.ResourceLocation;
-+import net.minecraft.server.MinecraftServer;
++import net.minecraft.server.Main;
 +import net.minecraft.world.entity.EquipmentSlot;
 +import net.minecraft.world.entity.ai.attributes.AttributeModifier;
++import net.minecraft.world.item.Item;
++import net.minecraft.world.item.ItemStack;
 +import org.bukkit.Bukkit;
++import org.bukkit.Material;
 +import org.bukkit.configuration.InvalidConfigurationException;
 +import org.bukkit.configuration.file.YamlConfiguration;
++import org.bukkit.craftbukkit.util.CraftMagicNumbers;
 +import org.bukkit.plugin.Plugin;
 +import org.checkerframework.checker.nullness.qual.Nullable;
 +import org.jetbrains.annotations.NotNull;
 +
 +import java.io.File;
 +import java.io.IOException;
++import java.lang.reflect.InvocationTargetException;
 +import java.util.List;
 +import java.util.Map;
 +import java.util.logging.Level;
@@ -480,6 +401,7 @@ index 0000000000000000000000000000000000000000..420100d411c6f7a225b2faea697430e4
 +    private final MiniMessage mm = MiniMessage.miniMessage();
 +
 +    private ResourceLocation id;
++    private Item baseItem;
 +    private HItemBehaviour behaviour;
 +    private Component displayName;
 +    private List<Component> lore;
@@ -489,11 +411,14 @@ index 0000000000000000000000000000000000000000..420100d411c6f7a225b2faea697430e4
 +    private int maxStackSize;
 +    private int maxDurability;
 +    private String classURL;
++    private Plugin plugin;
++    private Class<? extends HItemBehaviour> behaviourClass;
++    private ClassLoader classLoader;
 +
 +    private boolean isEnabled = true;
 +    private HItem replaceWith = null;
 +
-+    public HItemConfig() {
++    public HItemConfig(Plugin plugin) {
 +    }
 +
 +    public HItemConfig(File file) {
@@ -511,6 +436,10 @@ index 0000000000000000000000000000000000000000..420100d411c6f7a225b2faea697430e4
 +        return id;
 +    }
 +
++    public void setId(ResourceLocation location) {
++        this.id = location;
++    }
++
 +    public Component getDisplayName() {
 +        return displayName;
 +    }
@@ -525,6 +454,10 @@ index 0000000000000000000000000000000000000000..420100d411c6f7a225b2faea697430e4
 +
 +    public void setMojangID(String mojangID) {
 +        this.mojangID = mojangID;
++    }
++
++    public Item getBaseItem() {
++        return baseItem;
 +    }
 +
 +    public void setClassURL(String url) {
@@ -558,29 +491,67 @@ index 0000000000000000000000000000000000000000..420100d411c6f7a225b2faea697430e4
 +        return classURL;
 +    }
 +
++    public void setPlugin(Plugin plugin) {
++        this.plugin = plugin;
++    }
++
 +    public HItem getItem() {
 +        return getItem(1);
 +    }
 +
 +    public HItem getItem(int count) {
-+        HItem item = new HItem(id);
-+        item.setBehaviour(behaviour);
-+        item.prepare();
++        HItem item = prepareNewStack().hItem;
++        if (behaviour != null) {
++            item.setBehaviour(behaviour);
++        }
 +        item.getStack().setCount(count);
 +        return item;
++    }
++
++    private ItemStack prepareNewStack() {
++        ItemStack baseItem = new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(getMojangID())));
++        for (EquipmentSlot slot : EquipmentSlot.values()) {
++            baseItem.getAttributeModifiers(slot).clear();
++        }
++        baseItem.getOrCreateTag().putInt("CustomModelData", getModelData());
++        baseItem.getOrCreateTag().putString("HephaestusID", id.toString());
++        baseItem.setHoverName(PaperAdventure.asVanilla(displayName));
++        baseItem.getBukkitStack().editMeta(m -> m.lore(lore)); // Annoying but oh well.
++        return baseItem;
++    }
++
++    private void loadBehaviour() {
++        if (plugin == null) {
++            throw new RuntimeException("Tried loading behaviours for item without plugin: " + getId().toString());
++        }
++        classLoader = plugin.getClass().getClassLoader();
++        try {
++            behaviourClass = ((Class<? extends HItemBehaviour>) Class.forName(getClassURL(), true, classLoader));
++        } catch (ClassNotFoundException e) {
++            throw new RuntimeException(e);
++        }
++        try {
++            behaviour = behaviourClass.getDeclaredConstructor(HItem.class).newInstance(this);
++        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
++            throw new RuntimeException(e);
++        }
 +    }
 +
 +    @Override
 +    public void load(@NotNull File file) throws IOException, InvalidConfigurationException {
 +        super.load(file);
 +        id = ResourceLocation.tryParse(getString("id", "minecraft:stone"));
-+        classURL = getString("class");
++        if (contains("class")) {
++            classURL = getString("class");
++            loadBehaviour();
++        }
 +        isEnabled = getBoolean("enabled", true);
 +        displayName = mm.deserialize(getString("displayName", ""));
 +        for (String string : getStringList("lore")) {
 +            lore.add(mm.deserialize(string));
 +        }
 +        mojangID = getString("mojangID", "minecraft:stone");
++        baseItem = BuiltInRegistries.ITEM.get(new ResourceLocation(mojangID));
 +        modelData = getInt("modelData", 0);
 +        maxStackSize = getInt("maxStackSize", 1);
 +        maxDurability = getInt("maxDurability", 0);
@@ -605,13 +576,44 @@ index 0000000000000000000000000000000000000000..420100d411c6f7a225b2faea697430e4
 +        save(file);
 +    }
 +
++    public static class Builder {
++        private final HItemConfig item;
++        private final Plugin plugin;
++        private HItemBehaviour behaviour;
++
++        public Builder(Plugin plugin, ResourceLocation location) {
++            this.item = new HItemConfig(plugin);
++            this.plugin = plugin;
++            item.setId(location);
++        }
++
++        public Builder behaviour(HItemBehaviour behaviour) {
++            this.behaviour = behaviour;
++            item.setClassURL(behaviour.getClass().getName());
++            return this;
++        }
++        public Builder baseItem(Material material) {
++            Item item1 = CraftMagicNumbers.getItem(material);
++            item.setMojangID(BuiltInRegistries.ITEM.getKey(item1).toString());
++            return this;
++        }
++
++        public HItemConfig register() {
++            Main.itemLibrary.registerItem(plugin, item);
++            File folder = Main.itemLibrary.getFolder();
++            File saveFile = new File(folder, item.getId().getNamespace() + "/" + item.getId().getPath() + ".yml");
++            item.save(saveFile);
++            return item;
++        }
++    }
++
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/ItemLibrary.java b/src/main/java/de/erethon/hephaestus/ItemLibrary.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..8e52295c74388097b841755ca3f565cb43e896e3
+index 0000000000000000000000000000000000000000..3267436f152f0284d2be918a887588ca5c20cdcf
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/ItemLibrary.java
-@@ -0,0 +1,121 @@
+@@ -0,0 +1,139 @@
 +package de.erethon.hephaestus;
 +
 +import de.erethon.spellbook.api.SpellLibrary;
@@ -619,7 +621,10 @@ index 0000000000000000000000000000000000000000..8e52295c74388097b841755ca3f565cb
 +import net.minecraft.resources.ResourceLocation;
 +import net.minecraft.world.item.Item;
 +import org.bukkit.Bukkit;
++import org.bukkit.Material;
 +import org.bukkit.configuration.file.YamlConfiguration;
++import org.bukkit.craftbukkit.inventory.CraftItemStack;
++import org.bukkit.craftbukkit.util.CraftMagicNumbers;
 +import org.bukkit.inventory.ItemStack;
 +import org.bukkit.plugin.Plugin;
 +import org.bukkit.plugin.java.JavaPlugin;
@@ -636,7 +641,8 @@ index 0000000000000000000000000000000000000000..8e52295c74388097b841755ca3f565cb
 +
 +    private final File folder;
 +
-+    private final HashMap<ResourceLocation, HItem> items = new HashMap<>();
++    private final HashMap<ResourceLocation, HItemConfig> items = new HashMap<>();
++    private final HashMap<Material, HItemConfig> vanillaMaterials = new HashMap<>();
 +    private HBukkitHandler bukkitHandler = null;
 +
 +    public ItemLibrary(File folder) {
@@ -649,25 +655,35 @@ index 0000000000000000000000000000000000000000..8e52295c74388097b841755ca3f565cb
 +    }
 +
 +    @Nullable
-+    public HItem get(ResourceLocation key) {
++    public HItemConfig get(ResourceLocation key) {
 +        return items.get(key);
 +    }
 +
-+
 +    @Nullable
-+    public HItem get(ItemStack bukkitStack) {
-+        return get(net.minecraft.world.item.ItemStack.fromBukkitCopy(bukkitStack).hItem.getBukkitStack());
++    public HItemConfig get(Material material) {
++        return vanillaMaterials.get(material);
 +    }
 +
-+    public boolean registerItem(Plugin plugin, HItem item) {
++    @Nullable
++    public HItemConfig get(ItemStack bukkitStack) {
++        CraftItemStack craftItemStack = (CraftItemStack) bukkitStack;
++        if (craftItemStack.handle.hItem == null) {
++            return null;
++        }
++        return craftItemStack.handle.hItem.config();
++    }
++
++    @Nullable
++    public HItemConfig get(net.minecraft.world.item.ItemStack stack) {
++        return stack.hItem.config();
++    }
++
++    public boolean registerItem(Plugin plugin, HItemConfig item) {
 +        if (bukkitHandler == null) { // Use the first plugin we get to register the bukkit handler, because we need a Plugin for listeners.
 +            bukkitHandler = new HBukkitHandler((JavaPlugin) plugin, this);
 +        }
 +        if (item.getId().getNamespace().equals("minecraft")) {
 +            throw new RuntimeException(plugin.getName() + " tried registering a custom item in the vanilla namespace: " + item.getId().toString());
-+        }
-+        if (item.config() == null) {
-+            throw new RuntimeException(item.getId().toString() + " is missing a HItemConfig.");
 +        }
 +        item.setPlugin(plugin);
 +        if (items.containsKey(item.getId())) {
@@ -678,13 +694,13 @@ index 0000000000000000000000000000000000000000..8e52295c74388097b841755ca3f565cb
 +        return true;
 +    }
 +
-+    public boolean overrideVanillaBehaviour(Plugin plugin, HItem item) {
++    public boolean overrideVanillaBehaviour(Plugin plugin, HItemConfig item) {
 +        item.setPlugin(plugin);
 +        return true;
 +    }
 +
 +
-+    public boolean unregisterItem(HItem item) {
++    public boolean unregisterItem(HItemConfig item) {
 +        if (!items.containsKey(item.getId())) {
 +            Bukkit.getLogger().log(Level.WARNING, "[Hephaestus] Item with ID " + item.getId() + " is not registered.");
 +            return false;
@@ -723,8 +739,8 @@ index 0000000000000000000000000000000000000000..8e52295c74388097b841755ca3f565cb
 +                continue;
 +            }
 +            HItemConfig config = new HItemConfig(file);
-+            HItem hItem = new HItem(config);
-+            items.put(hItem.getId(), hItem);
++            items.put(config.getId(), config);
++            vanillaMaterials.put(CraftMagicNumbers.getMaterial(config.getBaseItem()), config);
 +        }
 +        LOGGER.info("[Hephaestus] Loaded " + items.keySet().size() + " items.");
 +    }
@@ -732,6 +748,10 @@ index 0000000000000000000000000000000000000000..8e52295c74388097b841755ca3f565cb
 +    public File getFolder() {
 +        return folder;
 +    }
++
++    public static HItem getHItemFromBukkit(ItemStack stack) {
++        return ((CraftItemStack) stack).handle.hItem;
++     }
 +}
 diff --git a/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java b/src/main/java/de/erethon/papyrus/ContainerLoadEvent.java
 index e672340310a8863a627c083cbea2c08a8d6049b9..b6e1158585a4a8971a2fcc5fcea55e9d467b03e6 100644
@@ -837,20 +857,21 @@ index 01063c3bc672eecdf8fe1c5b5a89fbf576c940f3..949207f366aa0659c563fa123047112d
      }
  
 diff --git a/src/main/java/net/minecraft/world/item/ItemStack.java b/src/main/java/net/minecraft/world/item/ItemStack.java
-index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b31cc033b 100644
+index 4ab0452af6eeae9316311d473be23de9a74d9e4b..b367d1a7add21d5cecae5bd47b1ecff9a4d59cdf 100644
 --- a/src/main/java/net/minecraft/world/item/ItemStack.java
 +++ b/src/main/java/net/minecraft/world/item/ItemStack.java
-@@ -23,6 +23,9 @@ import java.util.function.Predicate;
+@@ -23,6 +23,10 @@ import java.util.function.Predicate;
  import java.util.stream.Collectors;
  import java.util.stream.Stream;
  import javax.annotation.Nullable;
 +
 +import de.erethon.hephaestus.HItem;
 +import de.erethon.hephaestus.HItemBehaviour;
++import de.erethon.hephaestus.HItemConfig;
  import net.minecraft.ChatFormatting;
  import net.minecraft.Util;
  import net.minecraft.advancements.CriteriaTriggers;
-@@ -47,6 +50,8 @@ import net.minecraft.network.chat.MutableComponent;
+@@ -47,6 +51,8 @@ import net.minecraft.network.chat.MutableComponent;
  import net.minecraft.network.chat.Style;
  import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
  import net.minecraft.resources.ResourceLocation;
@@ -859,7 +880,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
  import net.minecraft.tags.TagKey;
  import net.minecraft.util.ExtraCodecs;
  import net.minecraft.util.RandomSource;
-@@ -79,6 +84,8 @@ import net.minecraft.world.level.Level;
+@@ -79,6 +85,8 @@ import net.minecraft.world.level.Level;
  import net.minecraft.world.level.block.BaseEntityBlock;
  import net.minecraft.world.level.block.BedBlock;
  import net.minecraft.world.level.block.Block;
@@ -868,7 +889,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
  import org.slf4j.Logger;
  
  // CraftBukkit start
-@@ -234,6 +241,9 @@ public final class ItemStack {
+@@ -234,6 +242,9 @@ public final class ItemStack {
          return net.minecraft.nbt.StringTag.valueOf(org.bukkit.craftbukkit.util.CraftChatMessage.toJSON(component));
      }
      // Paper end
@@ -878,13 +899,14 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
  
      public ItemStack(ItemLike item) {
          this(item, 1);
-@@ -258,6 +268,15 @@ public final class ItemStack {
+@@ -258,6 +269,16 @@ public final class ItemStack {
          if (this.item.canBeDepleted()) {
              this.setDamageValue(this.getDamageValue());
          }
-+        HItem hItem1 = Main.itemLibrary.get(BuiltInRegistries.ITEM.getKey(item.asItem()));
-+        if (hItem1 != null) {
-+            hItem = hItem1;
++        HItemConfig hConfig = Main.itemLibrary.get(BuiltInRegistries.ITEM.getKey(item.asItem()));
++        if (hConfig != null) {
++            hItem = new HItem(this, hConfig);
++            hItem.setStack(this);
 +            if (hItem.getBehaviour() != null) {
 +                behaviour = hItem.getBehaviour();
 +            }
@@ -894,16 +916,17 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
  
      }
  
-@@ -289,7 +308,28 @@ public final class ItemStack {
+@@ -289,7 +310,30 @@ public final class ItemStack {
          if (this.getItem().canBeDepleted()) {
              this.setDamageValue(this.getDamageValue());
          }
 -
 +        if (nbttagcompound.contains("HephaestusID")) { // Papyrus - Hephaestus
 +            String id = nbttagcompound.getString("HephaestusID");
-+            HItem hItem1 = Main.itemLibrary.get(new ResourceLocation(id));
-+            if (hItem1!= null) {
-+                hItem = hItem1;
++            HItemConfig hConfig = Main.itemLibrary.get(BuiltInRegistries.ITEM.getKey(item.asItem()));
++            if (hConfig != null) {
++                hItem = new HItem(this, hConfig);
++                hItem.setStack(this);
 +                if (hItem.getBehaviour() != null) {
 +                    behaviour = hItem.getBehaviour();
 +                }
@@ -911,9 +934,10 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
 +                LOGGER.info("[Hephaestus] Unable to find hItem for " + id);
 +            }
 +        } else {
-+            HItem hItem1 = Main.itemLibrary.get(BuiltInRegistries.ITEM.getKey(item.asItem()));
-+            if (hItem1 != null) {
-+                hItem = hItem1;
++            HItemConfig hConfig = Main.itemLibrary.get(BuiltInRegistries.ITEM.getKey(item.asItem()));
++            if (hConfig != null) {
++                hItem = new HItem(this, hConfig);
++                hItem.setStack(this);
 +                if (hItem.getBehaviour() != null) {
 +                    behaviour = hItem.getBehaviour();
 +                }
@@ -924,7 +948,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
      }
  
      private ItemStack(CompoundTag nbt) {
-@@ -311,7 +351,7 @@ public final class ItemStack {
+@@ -311,7 +355,7 @@ public final class ItemStack {
      }
  
      public boolean isItemEnabled(FeatureFlagSet enabledFeatures) {
@@ -933,7 +957,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
      }
  
      public ItemStack split(int amount) {
-@@ -591,7 +631,10 @@ public final class ItemStack {
+@@ -591,7 +635,10 @@ public final class ItemStack {
      }
  
      public int getMaxStackSize() {
@@ -945,7 +969,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
      }
  
      public boolean isStackable() {
-@@ -621,7 +664,10 @@ public final class ItemStack {
+@@ -621,7 +668,10 @@ public final class ItemStack {
      }
  
      public int getMaxDamage() {
@@ -957,7 +981,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
      }
  
      public boolean hurt(int amount, RandomSource random, @Nullable LivingEntity player) { // Paper - allow any living entity instead of only ServerPlayers
-@@ -675,6 +721,9 @@ public final class ItemStack {
+@@ -675,6 +725,9 @@ public final class ItemStack {
              }
  
              j = this.getDamageValue() + amount;
@@ -967,7 +991,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
              this.setDamageValue(j);
              return j >= this.getMaxDamage();
          }
-@@ -727,7 +776,7 @@ public final class ItemStack {
+@@ -727,7 +780,7 @@ public final class ItemStack {
      public void hurtEnemy(LivingEntity target, net.minecraft.world.entity.player.Player attacker) {
          Item item = this.getItem();
  
@@ -976,7 +1000,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
              attacker.awardStat(Stats.ITEM_USED.get(item));
          }
  
-@@ -736,7 +785,7 @@ public final class ItemStack {
+@@ -736,7 +789,7 @@ public final class ItemStack {
      public void mineBlock(Level world, net.minecraft.world.level.block.state.BlockState state, BlockPos pos, net.minecraft.world.entity.player.Player miner) {
          Item item = this.getItem();
  
@@ -985,7 +1009,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
              miner.awardStat(Stats.ITEM_USED.get(item));
          }
  
-@@ -747,6 +796,9 @@ public final class ItemStack {
+@@ -747,6 +800,9 @@ public final class ItemStack {
      }
  
      public InteractionResult interactLivingEntity(net.minecraft.world.entity.player.Player user, LivingEntity entity, InteractionHand hand) {
@@ -995,7 +1019,7 @@ index 4ab0452af6eeae9316311d473be23de9a74d9e4b..0ead62a7b9c3f4adfbdc08ae3b496c5b
          return this.getItem().interactLivingEntity(this, user, entity, hand);
      }
  
-@@ -811,6 +863,9 @@ public final class ItemStack {
+@@ -811,6 +867,9 @@ public final class ItemStack {
  
          if (this.getItem() != null) {
              this.getItem().inventoryTick(this, world, entity, slot, selected);
