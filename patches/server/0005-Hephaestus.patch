@@ -186,7 +186,7 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItem.java b/src/main/java/de/erethon/hephaestus/HItem.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..b37b10dbeb86445023607b71357b3c05aae13d7d
+index 0000000000000000000000000000000000000000..a70c0c6ca668fbe150d1027da3b8783b6f77dafc
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItem.java
 @@ -0,0 +1,161 @@
@@ -318,7 +318,7 @@ index 0000000000000000000000000000000000000000..b37b10dbeb86445023607b71357b3c05
 +        }
 +    }
 +
-+    class Builder {
++    public static class Builder {
 +        HItemConfig config = new HItemConfig();
 +        private HItem item;
 +        private Plugin plugin;
