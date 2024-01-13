@@ -186,10 +186,10 @@ index 0000000000000000000000000000000000000000..8a5c5558736d420d9c9ab28562619cd5
 +}
 diff --git a/src/main/java/de/erethon/hephaestus/HItem.java b/src/main/java/de/erethon/hephaestus/HItem.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..9b839d894791141c56edbd7e57a8d9662b9fc7a3
+index 0000000000000000000000000000000000000000..b37b10dbeb86445023607b71357b3c05aae13d7d
 --- /dev/null
 +++ b/src/main/java/de/erethon/hephaestus/HItem.java
-@@ -0,0 +1,158 @@
+@@ -0,0 +1,161 @@
 +package de.erethon.hephaestus;
 +
 +import de.erethon.spellbook.api.SpellData;
@@ -342,6 +342,9 @@ index 0000000000000000000000000000000000000000..9b839d894791141c56edbd7e57a8d966
 +
 +        public void register() {
 +            Main.itemLibrary.registerItem(plugin, item);
++            File folder = Main.itemLibrary.getFolder();
++            File saveFile = new File(folder, item.getId().getNamespace() + "/" + item.getId().getPath() + ".yml");
++            config.save(saveFile);
 +        }
 +    }
 +
