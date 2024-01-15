@@ -951,6 +951,20 @@ index e672340310a8863a627c083cbea2c08a8d6049b9..b6e1158585a4a8971a2fcc5fcea55e9d
          this.itemStacks = items;
      }
  
+diff --git a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java b/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
+index c43bf052b4a3e6cf693fad9b08526dc396d4dfef..041537c626b73aefb7bc0937c0f43e3d375cc0e2 100644
+--- a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
++++ b/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
+@@ -58,7 +58,8 @@ public class ClientboundAddEntityPacket implements Packet<ClientGamePacketListen
+         this.xa = (int)(Mth.clamp(velocity.x, -3.9D, 3.9D) * 8000.0D);
+         this.ya = (int)(Mth.clamp(velocity.y, -3.9D, 3.9D) * 8000.0D);
+         this.za = (int)(Mth.clamp(velocity.z, -3.9D, 3.9D) * 8000.0D);
+-        if (this.entity != null && entity.displayEntityType != null) { // ModelEngine uses null entities because stupid
++        this.entity = entity;
++        if (entity.displayEntityType != null) { // ModelEngine uses null entities because stupid
+             this.type = entity.displayEntityType;
+         }
+     }
 diff --git a/src/main/java/net/minecraft/server/Bootstrap.java b/src/main/java/net/minecraft/server/Bootstrap.java
 index 5816998cde8504d58732e63eb2179a5d828f35bb..96ac8c11b80abeaee1a218fc4ab53571f8eec995 100644
 --- a/src/main/java/net/minecraft/server/Bootstrap.java
