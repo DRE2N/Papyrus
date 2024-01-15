@@ -1,18 +1,25 @@
 package de.erethon;
 
 import de.erethon.hephaestus.HItem;
+import de.erethon.hephaestus.events.MobSpawnEntityCreateEvent;
+import de.erethon.hephaestus.events.MobSpawnSettingsEvent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.Main;
-import org.bukkit.Bukkit;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.biome.MobSpawnSettings;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
-public class PapyrusTestPlugin extends JavaPlugin implements CommandExecutor {
+public class PapyrusTestPlugin extends JavaPlugin implements CommandExecutor, Listener {
     ResourceLocation loc = new ResourceLocation("test", "test");
     HItem registered;
 
@@ -28,6 +35,7 @@ public class PapyrusTestPlugin extends JavaPlugin implements CommandExecutor {
         Main.itemLibrary.readyBehaviours();
         getCommand("test").setExecutor(this);
         Main.itemLibrary.enableHandler(this);
+        getServer().getPluginManager().registerEvents(this, this);
     }
 
     @Override
@@ -35,5 +43,15 @@ public class PapyrusTestPlugin extends JavaPlugin implements CommandExecutor {
         Player player = (Player) sender;
         player.getWorld().dropItem(player.getLocation(), registered.getItem().getBukkitStack());
         return true;
+    }
+
+    @EventHandler
+    public void onTest(MobSpawnEntityCreateEvent event) {
+        //event.mob = EntityType.PIG.create(event.world);
+    }
+
+    @EventHandler
+    public void onTest2(MobSpawnSettingsEvent event) {
+        event.spawnerData = java.util.Optional.of(new MobSpawnSettings.SpawnerData(EntityType.PIG, 1, 20, 25));
     }
 }
