@@ -1423,6 +1423,36 @@ index e21867d3956078bb0db4ceed45e5811e9acd7377..9e1ae79ad84045933e435cc5cb08e713
      }
  
      public static void dropResources(BlockState state, Level world, BlockPos pos) {
+diff --git a/src/main/java/net/minecraft/world/level/block/Blocks.java b/src/main/java/net/minecraft/world/level/block/Blocks.java
+index 9a2de546dc2af2ad4bf5d32ca6583f0e1f3f70d8..d2fba745ec0ac3a7a1fa5bc157fa561c2fd53183 100644
+--- a/src/main/java/net/minecraft/world/level/block/Blocks.java
++++ b/src/main/java/net/minecraft/world/level/block/Blocks.java
+@@ -1184,13 +1184,13 @@ public class Blocks {
+     public static final Block POTTED_AZALEA = register("potted_azalea_bush", flowerPot(AZALEA));
+     public static final Block POTTED_FLOWERING_AZALEA = register("potted_flowering_azalea_bush", flowerPot(FLOWERING_AZALEA));
+     public static final Block OCHRE_FROGLIGHT = register("ochre_froglight", new RotatedPillarBlock(BlockBehaviour.Properties.of().mapColor(MapColor.SAND).strength(0.3F).lightLevel((state) -> {
+-        return 15;
++        return 9;
+     }).sound(SoundType.FROGLIGHT)));
+     public static final Block VERDANT_FROGLIGHT = register("verdant_froglight", new RotatedPillarBlock(BlockBehaviour.Properties.of().mapColor(MapColor.GLOW_LICHEN).strength(0.3F).lightLevel((state) -> {
+-        return 15;
++        return 9;
+     }).sound(SoundType.FROGLIGHT)));
+     public static final Block PEARLESCENT_FROGLIGHT = register("pearlescent_froglight", new RotatedPillarBlock(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PINK).strength(0.3F).lightLevel((state) -> {
+-        return 15;
++        return 9;
+     }).sound(SoundType.FROGLIGHT)));
+     public static final Block FROGSPAWN = register("frogspawn", new FrogspawnBlock(BlockBehaviour.Properties.of().mapColor(MapColor.WATER).instabreak().noOcclusion().noCollission().sound(SoundType.FROGSPAWN).pushReaction(PushReaction.DESTROY)));
+     public static final Block REINFORCED_DEEPSLATE = register("reinforced_deepslate", new Block(BlockBehaviour.Properties.of().mapColor(MapColor.DEEPSLATE).instrument(NoteBlockInstrument.BASEDRUM).sound(SoundType.DEEPSLATE).strength(55.0F, 1200.0F)));
+@@ -1215,7 +1215,7 @@ public class Blocks {
+     }
+ 
+     private static Boolean ocelotOrParrot(BlockState state, BlockGetter world, BlockPos pos, EntityType<?> type) {
+-        return (boolean)type == EntityType.OCELOT || type == EntityType.PARROT;
++        return type == EntityType.OCELOT || type == EntityType.PARROT;
+     }
+ 
+     private static Block bed(DyeColor color) {
 diff --git a/src/main/java/net/minecraft/world/level/chunk/ChunkStatus.java b/src/main/java/net/minecraft/world/level/chunk/ChunkStatus.java
 index a907b79fd8291a0e92db138f37239d17424188a1..aeaf6a32a06d375c3e5fd0f88c23d9503d78758a 100644
 --- a/src/main/java/net/minecraft/world/level/chunk/ChunkStatus.java
