@@ -4,6 +4,155 @@ Date: Sat, 11 Jun 2022 16:28:47 +0200
 Subject: [PATCH] misc qol
 
 
+diff --git a/src/main/java/de/erethon/PacketReceiveEvent.java b/src/main/java/de/erethon/PacketReceiveEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..8cd15002fbe357811b26ba3fd37b7bcac943f51a
+--- /dev/null
++++ b/src/main/java/de/erethon/PacketReceiveEvent.java
+@@ -0,0 +1,49 @@
++package de.erethon;
++
++import net.minecraft.network.Connection;
++import net.minecraft.network.PacketListener;
++import net.minecraft.network.protocol.Packet;
++import org.bukkit.event.Event;
++import org.bukkit.event.HandlerList;
++import org.jetbrains.annotations.NotNull;
++
++public class PacketReceiveEvent extends Event {
++
++    private static final HandlerList handlers = new HandlerList();
++
++    private Packet<?> packet;
++    private final Connection connection;
++    private final PacketListener listener;
++
++    public PacketReceiveEvent(Packet<?> packet, Connection connection, PacketListener listener) {
++        this.packet = packet;
++        this.connection = connection;
++        this.listener = listener;
++    }
++
++    public Packet<?> getPacket() {
++        return packet;
++    }
++
++    public void setPacket(Packet<?> packet) {
++        this.packet = packet;
++    }
++
++    public Connection getConnection() {
++        return connection;
++    }
++
++    public PacketListener getListener() {
++        return listener;
++    }
++
++    @Override
++    public @NotNull HandlerList getHandlers() {
++        return handlers;
++    }
++
++    @NotNull
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}
+diff --git a/src/main/java/de/erethon/PacketSendEvent.java b/src/main/java/de/erethon/PacketSendEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..2974f6cbb6a876a004c1c39eb7a7dfce73f3f924
+--- /dev/null
++++ b/src/main/java/de/erethon/PacketSendEvent.java
+@@ -0,0 +1,49 @@
++package de.erethon;
++
++import net.minecraft.network.Connection;
++import net.minecraft.network.PacketSendListener;
++import net.minecraft.network.protocol.Packet;
++import org.bukkit.event.Event;
++import org.bukkit.event.HandlerList;
++import org.jetbrains.annotations.NotNull;
++import javax.annotation.Nullable;
++
++public class PacketSendEvent extends Event {
++    private static final HandlerList handlers = new HandlerList();
++
++    private Packet<?> packet;
++    private final Connection connection;
++    private final PacketSendListener listener;
++
++    public PacketSendEvent(Packet<?> packet, Connection connection, PacketSendListener listener) {
++        this.packet = packet;
++        this.connection = connection;
++        this.listener = listener;
++    }
++
++    public Packet<?> getPacket() {
++        return packet;
++    }
++
++    public void setPacket(Packet<?> packet) {
++        this.packet = packet;
++    }
++
++    public Connection getConnection() {
++        return connection;
++    }
++
++    public @Nullable PacketSendListener getListener() {
++        return listener;
++    }
++
++    @Override
++    public @NotNull HandlerList getHandlers() {
++        return handlers;
++    }
++
++    @NotNull
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}
+diff --git a/src/main/java/net/minecraft/network/Connection.java b/src/main/java/net/minecraft/network/Connection.java
+index 2ae08b21c63490bbf8cd870f9585d82ed131f815..b765c23fc3e7eebd895c978668044688cf0bb696 100644
+--- a/src/main/java/net/minecraft/network/Connection.java
++++ b/src/main/java/net/minecraft/network/Connection.java
+@@ -4,6 +4,8 @@ import com.google.common.base.Suppliers;
+ import com.google.common.collect.Queues;
+ import com.google.common.util.concurrent.ThreadFactoryBuilder;
+ import com.mojang.logging.LogUtils;
++import de.erethon.PacketReceiveEvent;
++import de.erethon.PacketSendEvent;
+ import io.netty.bootstrap.Bootstrap;
+ import io.netty.channel.Channel;
+ import io.netty.channel.ChannelException;
+@@ -291,7 +293,11 @@ public class Connection extends SimpleChannelInboundHandler<Packet<?>> {
+                 // Paper end - packet limiter
+                 if (packetlistener.shouldHandleMessage(packet)) {
+                     try {
+-                        Connection.genericsFtw(packet, packetlistener);
++                        // Papyrus start - Packet API
++                        PacketReceiveEvent event = new PacketReceiveEvent(packet, this, packetListener);
++                        event.callEvent();
++                        // Papyrus end
++                        Connection.genericsFtw(event.getPacket(), packetlistener);
+                     } catch (RunningOnDifferentThreadException cancelledpackethandleexception) {
+                         ;
+                     } catch (RejectedExecutionException rejectedexecutionexception) {
+@@ -384,7 +390,11 @@ public class Connection extends SimpleChannelInboundHandler<Packet<?>> {
+         if (!connected && !this.preparing) {
+             return;
+         }
+-
++        // Papyrus start - Packet API
++        PacketSendEvent event = new PacketSendEvent(packet, this, callbacks);
++        event.callEvent();
++        packet = event.getPacket();
++        // Papyrus end
+         packet.onPacketDispatch(this.getPlayer());
+         if (connected && (InnerUtil.canSendImmediate(this, packet)
+             || (io.papermc.paper.util.MCUtil.isMainThread() && packet.isReady() && this.pendingActions.isEmpty()
 diff --git a/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java b/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java
 index e9c3d0ad0147353bbe22d7beabe72749c3fbbc95..faf6e44710cd5e823d7806f77fc384e8ad4d2113 100644
 --- a/src/main/java/net/minecraft/network/protocol/game/ClientboundServerDataPacket.java
