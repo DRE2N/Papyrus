@@ -13,4 +13,3 @@ for (name in listOf("papyrus-api", "papyrus-server")) {
     include(projName)
     findProject(":$projName")!!.projectDir = file(name)
 }
-include("test-plugin")

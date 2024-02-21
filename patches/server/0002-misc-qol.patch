@@ -6,15 +6,17 @@ Subject: [PATCH] misc qol
 
 diff --git a/src/main/java/de/erethon/PacketReceiveEvent.java b/src/main/java/de/erethon/PacketReceiveEvent.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..8cd15002fbe357811b26ba3fd37b7bcac943f51a
+index 0000000000000000000000000000000000000000..328c4c0caf2454caa4a62a379042670ed5adb774
 --- /dev/null
 +++ b/src/main/java/de/erethon/PacketReceiveEvent.java
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,52 @@
 +package de.erethon;
 +
++import io.papermc.paper.util.MCUtil;
 +import net.minecraft.network.Connection;
 +import net.minecraft.network.PacketListener;
 +import net.minecraft.network.protocol.Packet;
++import net.minecraft.server.MinecraftServer;
 +import org.bukkit.event.Event;
 +import org.bukkit.event.HandlerList;
 +import org.jetbrains.annotations.NotNull;
@@ -28,6 +30,7 @@ index 0000000000000000000000000000000000000000..8cd15002fbe357811b26ba3fd37b7bca
 +    private final PacketListener listener;
 +
 +    public PacketReceiveEvent(Packet<?> packet, Connection connection, PacketListener listener) {
++        super(!MCUtil.isMainThread());
 +        this.packet = packet;
 +        this.connection = connection;
 +        this.listener = listener;
@@ -61,12 +64,13 @@ index 0000000000000000000000000000000000000000..8cd15002fbe357811b26ba3fd37b7bca
 +}
 diff --git a/src/main/java/de/erethon/PacketSendEvent.java b/src/main/java/de/erethon/PacketSendEvent.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..2974f6cbb6a876a004c1c39eb7a7dfce73f3f924
+index 0000000000000000000000000000000000000000..a634b5743928b9eb7866dc87024160961b538d7b
 --- /dev/null
 +++ b/src/main/java/de/erethon/PacketSendEvent.java
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,51 @@
 +package de.erethon;
 +
++import io.papermc.paper.util.MCUtil;
 +import net.minecraft.network.Connection;
 +import net.minecraft.network.PacketSendListener;
 +import net.minecraft.network.protocol.Packet;
@@ -83,6 +87,7 @@ index 0000000000000000000000000000000000000000..2974f6cbb6a876a004c1c39eb7a7dfce
 +    private final PacketSendListener listener;
 +
 +    public PacketSendEvent(Packet<?> packet, Connection connection, PacketSendListener listener) {
++        super(!MCUtil.isMainThread());
 +        this.packet = packet;
 +        this.connection = connection;
 +        this.listener = listener;
