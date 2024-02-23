@@ -1010,6 +1010,18 @@ index e672340310a8863a627c083cbea2c08a8d6049b9..b6e1158585a4a8971a2fcc5fcea55e9d
          this.itemStacks = items;
      }
  
+diff --git a/src/main/java/io/papermc/paper/chunk/system/scheduling/NewChunkHolder.java b/src/main/java/io/papermc/paper/chunk/system/scheduling/NewChunkHolder.java
+index b66a7d4aab887309579154815a0d4abf9de506b0..daa036030b93fbb388f55c265cac22defae6b917 100644
+--- a/src/main/java/io/papermc/paper/chunk/system/scheduling/NewChunkHolder.java
++++ b/src/main/java/io/papermc/paper/chunk/system/scheduling/NewChunkHolder.java
+@@ -1943,6 +1943,7 @@ public final class NewChunkHolder {
+             throw death;
+         } catch (final Throwable thr) {
+             LOGGER.error("Failed to save entity data (" + this.chunkX + "," + this.chunkZ + ") in world '" + this.world.getWorld().getName() + "'");
++            thr.printStackTrace(); // Papyrus - actual useful error
+         }
+ 
+         return true;
 diff --git a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java b/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
 index c43bf052b4a3e6cf693fad9b08526dc396d4dfef..041537c626b73aefb7bc0937c0f43e3d375cc0e2 100644
 --- a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
