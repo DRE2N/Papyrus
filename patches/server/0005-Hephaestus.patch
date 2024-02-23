@@ -1101,6 +1101,32 @@ index c535eb33ef8e820d11d75702059613043982deee..3dac663daf000e443b141d11c1432ec2
  import it.unimi.dsi.fastutil.longs.LongIterator;
  import it.unimi.dsi.fastutil.objects.ObjectArrayList;
  import java.awt.image.BufferedImage;
+diff --git a/src/main/java/net/minecraft/server/level/ServerEntity.java b/src/main/java/net/minecraft/server/level/ServerEntity.java
+index d46e61640b241d32df05240dedd2c23f138725e6..89923aaaf0d8eecb279b47a0d24b8fd6d48ab591 100644
+--- a/src/main/java/net/minecraft/server/level/ServerEntity.java
++++ b/src/main/java/net/minecraft/server/level/ServerEntity.java
+@@ -314,7 +314,9 @@ public class ServerEntity {
+             // CraftBukkit end
+ 
+             if (!collection.isEmpty()) {
+-                sender.accept(new ClientboundUpdateAttributesPacket(this.entity.getId(), collection));
++               if (((LivingEntity) this.entity).syncAttributes) { // Papyrus - custom entities
++                   sender.accept(new ClientboundUpdateAttributesPacket(this.entity.getId(), collection));
++               }
+             }
+ 
+             if (((LivingEntity) this.entity).isFallFlying()) {
+@@ -388,7 +390,9 @@ public class ServerEntity {
+                     ((ServerPlayer) this.entity).getBukkitEntity().injectScaledMaxHealth(set, false);
+                 }
+                 // CraftBukkit end
+-                this.broadcastAndSend(new ClientboundUpdateAttributesPacket(this.entity.getId(), set));
++                if (((LivingEntity) this.entity).syncAttributes) { // Papyrus - custom entities
++                    this.broadcastAndSend(new ClientboundUpdateAttributesPacket(this.entity.getId(), set));
++                }
+             }
+ 
+             set.clear();
 diff --git a/src/main/java/net/minecraft/world/ContainerHelper.java b/src/main/java/net/minecraft/world/ContainerHelper.java
 index 01063c3bc672eecdf8fe1c5b5a89fbf576c940f3..949207f366aa0659c563fa123047112d30b6a4ec 100644
 --- a/src/main/java/net/minecraft/world/ContainerHelper.java
@@ -1194,6 +1220,18 @@ index cf90ecefea3586d0ce236288ab515bfa67239814..03f7f0b2b262196bf625cd793201b223
      public AABB getAABB(double feetX, double feetY, double feetZ) {
          float f = this.getWidth() / 2.0F;
  
+diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+index 006017d58f031a863e124a2e400d870faba23800..1b7bef85f4ebaa67aa23de1de161d93df4f4f3a4 100644
+--- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
++++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
+@@ -214,6 +214,7 @@ public abstract class LivingEntity extends Entity implements Attackable {
+     public org.bukkit.craftbukkit.entity.CraftLivingEntity getBukkitLivingEntity() { return (org.bukkit.craftbukkit.entity.CraftLivingEntity) super.getBukkitEntity(); } // Paper
+     public boolean silentDeath = false; // Paper - mark entity as dying silently for cancellable death event
+     public net.kyori.adventure.util.TriState frictionState = net.kyori.adventure.util.TriState.NOT_SET; // Paper
++    public boolean syncAttributes = true; // Papyrus - for custom entities
+ 
+     @Override
+     public float getBukkitYaw() {
 diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
 index 7999b85b7df949e4dfcad2ca23489324ebd8a2c7..117809c39c7bf76581e122d92dce965af48e4358 100644
 --- a/src/main/java/net/minecraft/world/entity/Mob.java
