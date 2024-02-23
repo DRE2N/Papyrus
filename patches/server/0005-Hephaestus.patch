@@ -1109,6 +1109,79 @@ index 01063c3bc672eecdf8fe1c5b5a89fbf576c940f3..949207f366aa0659c563fa123047112d
  
      }
  
+diff --git a/src/main/java/net/minecraft/world/entity/EntityType.java b/src/main/java/net/minecraft/world/entity/EntityType.java
+index cf90ecefea3586d0ce236288ab515bfa67239814..03f7f0b2b262196bf625cd793201b22331d0d6d6 100644
+--- a/src/main/java/net/minecraft/world/entity/EntityType.java
++++ b/src/main/java/net/minecraft/world/entity/EntityType.java
+@@ -2,10 +2,8 @@ package net.minecraft.world.entity;
+ 
+ import com.google.common.collect.ImmutableSet;
+ import com.mojang.logging.LogUtils;
+-import java.util.List;
+-import java.util.Optional;
+-import java.util.Spliterator;
+-import java.util.UUID;
++
++import java.util.*;
+ import java.util.function.Consumer;
+ import java.util.function.Function;
+ import java.util.stream.Stream;
+@@ -161,6 +159,7 @@ import net.minecraft.world.phys.AABB;
+ import net.minecraft.world.phys.shapes.Shapes;
+ import net.minecraft.world.phys.shapes.VoxelShape;
+ import org.bukkit.event.entity.CreatureSpawnEvent;
++import org.bukkit.plugin.Plugin;
+ import org.slf4j.Logger;
+ 
+ public class EntityType<T extends Entity> implements FeatureElement, EntityTypeTest<Entity, T> {
+@@ -316,6 +315,8 @@ public class EntityType<T extends Entity> implements FeatureElement, EntityTypeT
+     private final EntityDimensions dimensions;
+     private final FeatureFlagSet requiredFeatures;
+ 
++    public static final Map<String, Map.Entry<Plugin, Class<? extends Entity>>> customEntities = new HashMap<>(); // Papyrus - Custom Entities
++
+     private static <T extends Entity> EntityType<T> register(String id, EntityType.Builder type) { // CraftBukkit - decompile error
+         return (EntityType) Registry.register(BuiltInRegistries.ENTITY_TYPE, id, (EntityType<T>) type.build(id)); // CraftBukkit - decompile error
+     }
+@@ -596,6 +597,19 @@ public class EntityType<T extends Entity> implements FeatureElement, EntityTypeT
+     public static Optional<Entity> create(CompoundTag nbt, Level world, boolean generation) {
+         // Paper end - add generation bool param
+         return Util.ifElse(EntityType.by(nbt).map((entitytypes) -> {
++            // Papyrus start - Custom entities
++            if (nbt.contains("papyrus-entity-id")) {
++                String customEntityId = nbt.getString("papyrus-entity-id");
++                if (customEntities.containsKey(customEntityId)) {
++                    Map.Entry<Plugin, Class<? extends Entity>> entityEntry = customEntities.get(customEntityId);
++                    if (entitytypes.getBaseClass().isAssignableFrom(entityEntry.getValue())) {
++                        return EntityType.createCustomEntity(entityEntry.getValue(), entitytypes, entityEntry.getKey(), world);
++                    } else {
++                        LOGGER.warn("Entity type {} is not assignable from custom entity class {}", entitytypes, entityEntry.getValue());
++                    }
++                }
++            }
++            // Papyrus end
+             return entitytypes.create(world);
+         }), (entity) -> {
+             if (generation) entity.generation = true; // Paper - add generation bool param
+@@ -605,6 +619,18 @@ public class EntityType<T extends Entity> implements FeatureElement, EntityTypeT
+         });
+     }
+ 
++    // Papyrus start - Custom entities
++    public static Entity createCustomEntity(Class<? extends Entity> customEntityClass, EntityType<?> type, Plugin plugin, Level world) {
++        try {
++            return customEntityClass.getConstructor(EntityType.class, Level.class).newInstance(type, world);
++        } catch (Exception e) {
++            LOGGER.warn("Failed to create custom entity", e);
++            e.printStackTrace();
++            return type.create(world);
++        }
++    }
++    // Papyrus end
++
+     public AABB getAABB(double feetX, double feetY, double feetZ) {
+         float f = this.getWidth() / 2.0F;
+ 
 diff --git a/src/main/java/net/minecraft/world/entity/Mob.java b/src/main/java/net/minecraft/world/entity/Mob.java
 index 7999b85b7df949e4dfcad2ca23489324ebd8a2c7..117809c39c7bf76581e122d92dce965af48e4358 100644
 --- a/src/main/java/net/minecraft/world/entity/Mob.java
