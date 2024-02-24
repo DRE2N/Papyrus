@@ -6,10 +6,10 @@ Subject: [PATCH] misc qol
 
 diff --git a/src/main/java/de/erethon/PacketReceiveEvent.java b/src/main/java/de/erethon/PacketReceiveEvent.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..328c4c0caf2454caa4a62a379042670ed5adb774
+index 0000000000000000000000000000000000000000..36ec418efb38f8d910e687c633813aebc2595dc7
 --- /dev/null
 +++ b/src/main/java/de/erethon/PacketReceiveEvent.java
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,64 @@
 +package de.erethon;
 +
 +import io.papermc.paper.util.MCUtil;
@@ -17,17 +17,19 @@ index 0000000000000000000000000000000000000000..328c4c0caf2454caa4a62a379042670e
 +import net.minecraft.network.PacketListener;
 +import net.minecraft.network.protocol.Packet;
 +import net.minecraft.server.MinecraftServer;
++import org.bukkit.event.Cancellable;
 +import org.bukkit.event.Event;
 +import org.bukkit.event.HandlerList;
 +import org.jetbrains.annotations.NotNull;
 +
-+public class PacketReceiveEvent extends Event {
++public class PacketReceiveEvent extends Event implements Cancellable {
 +
 +    private static final HandlerList handlers = new HandlerList();
 +
 +    private Packet<?> packet;
 +    private final Connection connection;
 +    private final PacketListener listener;
++    private boolean cancelled;
 +
 +    public PacketReceiveEvent(Packet<?> packet, Connection connection, PacketListener listener) {
 +        super(!MCUtil.isMainThread());
@@ -61,30 +63,42 @@ index 0000000000000000000000000000000000000000..328c4c0caf2454caa4a62a379042670e
 +    public static HandlerList getHandlerList() {
 +        return handlers;
 +    }
++
++    @Override
++    public boolean isCancelled() {
++        return cancelled;
++    }
++
++    @Override
++    public void setCancelled(boolean cancel) {
++        cancelled = cancel;
++    }
 +}
 diff --git a/src/main/java/de/erethon/PacketSendEvent.java b/src/main/java/de/erethon/PacketSendEvent.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..a634b5743928b9eb7866dc87024160961b538d7b
+index 0000000000000000000000000000000000000000..a62ac149e0133f232128e6965d28f8c779ad5751
 --- /dev/null
 +++ b/src/main/java/de/erethon/PacketSendEvent.java
-@@ -0,0 +1,51 @@
+@@ -0,0 +1,63 @@
 +package de.erethon;
 +
 +import io.papermc.paper.util.MCUtil;
 +import net.minecraft.network.Connection;
 +import net.minecraft.network.PacketSendListener;
 +import net.minecraft.network.protocol.Packet;
++import org.bukkit.event.Cancellable;
 +import org.bukkit.event.Event;
 +import org.bukkit.event.HandlerList;
 +import org.jetbrains.annotations.NotNull;
 +import javax.annotation.Nullable;
 +
-+public class PacketSendEvent extends Event {
++public class PacketSendEvent extends Event implements Cancellable {
 +    private static final HandlerList handlers = new HandlerList();
 +
 +    private Packet<?> packet;
 +    private final Connection connection;
 +    private final PacketSendListener listener;
++    private boolean cancelled;
 +
 +    public PacketSendEvent(Packet<?> packet, Connection connection, PacketSendListener listener) {
 +        super(!MCUtil.isMainThread());
@@ -118,9 +132,19 @@ index 0000000000000000000000000000000000000000..a634b5743928b9eb7866dc8702416096
 +    public static HandlerList getHandlerList() {
 +        return handlers;
 +    }
++
++    @Override
++    public boolean isCancelled() {
++        return cancelled;
++    }
++
++    @Override
++    public void setCancelled(boolean cancel) {
++        cancelled = cancel;
++    }
 +}
 diff --git a/src/main/java/net/minecraft/network/Connection.java b/src/main/java/net/minecraft/network/Connection.java
-index 2ae08b21c63490bbf8cd870f9585d82ed131f815..b765c23fc3e7eebd895c978668044688cf0bb696 100644
+index 2ae08b21c63490bbf8cd870f9585d82ed131f815..c9808178e8b5a075ffdf14c8d45253a255f8d163 100644
 --- a/src/main/java/net/minecraft/network/Connection.java
 +++ b/src/main/java/net/minecraft/network/Connection.java
 @@ -4,6 +4,8 @@ import com.google.common.base.Suppliers;
@@ -132,7 +156,7 @@ index 2ae08b21c63490bbf8cd870f9585d82ed131f815..b765c23fc3e7eebd895c978668044688
  import io.netty.bootstrap.Bootstrap;
  import io.netty.channel.Channel;
  import io.netty.channel.ChannelException;
-@@ -291,7 +293,11 @@ public class Connection extends SimpleChannelInboundHandler<Packet<?>> {
+@@ -291,7 +293,14 @@ public class Connection extends SimpleChannelInboundHandler<Packet<?>> {
                  // Paper end - packet limiter
                  if (packetlistener.shouldHandleMessage(packet)) {
                      try {
@@ -140,12 +164,15 @@ index 2ae08b21c63490bbf8cd870f9585d82ed131f815..b765c23fc3e7eebd895c978668044688
 +                        // Papyrus start - Packet API
 +                        PacketReceiveEvent event = new PacketReceiveEvent(packet, this, packetListener);
 +                        event.callEvent();
++                        if (event.isCancelled()) {
++                            return;
++                        }
 +                        // Papyrus end
 +                        Connection.genericsFtw(event.getPacket(), packetlistener);
                      } catch (RunningOnDifferentThreadException cancelledpackethandleexception) {
                          ;
                      } catch (RejectedExecutionException rejectedexecutionexception) {
-@@ -384,7 +390,11 @@ public class Connection extends SimpleChannelInboundHandler<Packet<?>> {
+@@ -384,7 +393,14 @@ public class Connection extends SimpleChannelInboundHandler<Packet<?>> {
          if (!connected && !this.preparing) {
              return;
          }
@@ -153,6 +180,9 @@ index 2ae08b21c63490bbf8cd870f9585d82ed131f815..b765c23fc3e7eebd895c978668044688
 +        // Papyrus start - Packet API
 +        PacketSendEvent event = new PacketSendEvent(packet, this, callbacks);
 +        event.callEvent();
++        if (event.isCancelled()) {
++            return;
++        }
 +        packet = event.getPacket();
 +        // Papyrus end
          packet.onPacketDispatch(this.getPlayer());
