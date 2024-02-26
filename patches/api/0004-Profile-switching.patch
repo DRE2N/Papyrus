@@ -4,6 +4,31 @@ Date: Wed, 26 Apr 2023 21:15:24 +0200
 Subject: [PATCH] Profile switching
 
 
+diff --git a/src/main/java/de/erethon/papyrus/DamageType.java b/src/main/java/de/erethon/papyrus/PDamageType.java
+similarity index 89%
+rename from src/main/java/de/erethon/papyrus/DamageType.java
+rename to src/main/java/de/erethon/papyrus/PDamageType.java
+index 379e96edce4520a733064044eb357f3041c4ddf0..efa090fd79875852b30e8af27b9bcbc64487b9b1 100644
+--- a/src/main/java/de/erethon/papyrus/DamageType.java
++++ b/src/main/java/de/erethon/papyrus/PDamageType.java
+@@ -3,7 +3,7 @@ package de.erethon.papyrus;
+ 
+ import org.bukkit.attribute.Attribute;
+ 
+-public enum DamageType {
++public enum PDamageType {
+ 
+     AIR(Attribute.ADV_AIR, Attribute.RES_AIR),
+     EARTH(Attribute.ADV_EARTH, Attribute.RES_EARTH),
+@@ -16,7 +16,7 @@ public enum DamageType {
+     private final Attribute advAttr;
+     private final Attribute resAttr;
+ 
+-    DamageType(Attribute advAttr, Attribute resAttr) {
++    PDamageType(Attribute advAttr, Attribute resAttr) {
+         this.advAttr = advAttr;
+         this.resAttr = resAttr;
+     }
 diff --git a/src/main/java/de/erethon/papyrus/PlayerSwitchProfileEvent.java b/src/main/java/de/erethon/papyrus/PlayerSwitchProfileEvent.java
 new file mode 100644
 index 0000000000000000000000000000000000000000..1f20fd2c6128cd58ec160e95ca59d276168497a2
@@ -50,9 +75,17 @@ index 0000000000000000000000000000000000000000..1f20fd2c6128cd58ec160e95ca59d276
 +
 +}
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellCaster.java b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
-index 7260506a0830a69278e6276174857f588c1c6125..a38037f73ff1b150c9bfd51b0f56c9d8d72db351 100644
+index 7260506a0830a69278e6276174857f588c1c6125..3650f4e7206a0de6cf5da42b6d66fd7ceb9cb5ee 100644
 --- a/src/main/java/de/erethon/spellbook/api/SpellCaster.java
 +++ b/src/main/java/de/erethon/spellbook/api/SpellCaster.java
+@@ -1,6 +1,6 @@
+ package de.erethon.spellbook.api;
+ 
+-import de.erethon.papyrus.DamageType;
++import de.erethon.papyrus.PDamageType;
+ import org.bukkit.Bukkit;
+ import org.bukkit.Location;
+ import org.bukkit.entity.LivingEntity;
 @@ -58,6 +58,10 @@ public interface SpellCaster {
       */
      Set<SpellTrait> getActiveTraits();
@@ -64,6 +97,24 @@ index 7260506a0830a69278e6276174857f588c1c6125..a38037f73ff1b150c9bfd51b0f56c9d8
      default void tick() {
          Iterator<SpellEffect> effectIterator = getEffects().iterator();
          while(effectIterator.hasNext()) {
+@@ -82,7 +86,7 @@ public interface SpellCaster {
+         }
+     }
+ 
+-    default double onDamage(LivingEntity damager, double damage, DamageType type) {
++    default double onDamage(LivingEntity damager, double damage, PDamageType type) {
+         for (SpellbookSpell spell : getActiveSpells()) {
+             damage = spell.onDamage(damager, damage, type);
+         }
+@@ -95,7 +99,7 @@ public interface SpellCaster {
+         return Math.max(damage, 0);
+     }
+ 
+-    default double onAttack(LivingEntity target, double damage, DamageType type) {
++    default double onAttack(LivingEntity target, double damage, PDamageType type) {
+         for (SpellbookSpell spell : getActiveSpells()) {
+             damage = spell.onAttack(target, damage, type);
+         }
 @@ -318,5 +322,26 @@ public interface SpellCaster {
          }
      }
@@ -178,14 +229,71 @@ index 0000000000000000000000000000000000000000..ff0571c54408568ef66cc149e10a9daa
 +        return handlers;
 +    }
 +}
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellEffect.java b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
+index 00e3dc889b0c4978fa20a76f233ede7bea34f878..2b28cf882250df1836b5b5b9c8a0a9f9864e1430 100644
+--- a/src/main/java/de/erethon/spellbook/api/SpellEffect.java
++++ b/src/main/java/de/erethon/spellbook/api/SpellEffect.java
+@@ -1,6 +1,6 @@
+ package de.erethon.spellbook.api;
+ 
+-import de.erethon.papyrus.DamageType;
++import de.erethon.papyrus.PDamageType;
+ import org.bukkit.entity.LivingEntity;
+ 
+ public class SpellEffect {
+@@ -47,11 +47,11 @@ public class SpellEffect {
+     public void onRemove() { // Mostly useful for stat buffs/debuffs
+     }
+ 
+-    public double onDamage(LivingEntity damager, double damage, DamageType type) { // For effects that block 1 attack and get removed after that
++    public double onDamage(LivingEntity damager, double damage, PDamageType type) { // For effects that block 1 attack and get removed after that
+         return damage;
+     }
+ 
+-    public double onAttack(LivingEntity target, double damage, DamageType type) { // For effects that add something to the attack
++    public double onAttack(LivingEntity target, double damage, PDamageType type) { // For effects that add something to the attack
+         return damage;
+     }
+ 
+diff --git a/src/main/java/de/erethon/spellbook/api/SpellTrait.java b/src/main/java/de/erethon/spellbook/api/SpellTrait.java
+index 96ec2b714f8e9f8c69f26811ee2878d20dfee5b6..828b24e26444f98b423d79a4f2775ea02348f609 100644
+--- a/src/main/java/de/erethon/spellbook/api/SpellTrait.java
++++ b/src/main/java/de/erethon/spellbook/api/SpellTrait.java
+@@ -1,6 +1,6 @@
+ package de.erethon.spellbook.api;
+ 
+-import de.erethon.papyrus.DamageType;
++import de.erethon.papyrus.PDamageType;
+ import org.bukkit.entity.LivingEntity;
+ 
+ import java.util.Set;
+@@ -81,7 +81,7 @@ public class SpellTrait {
+      * This method is called when the caster takes damage.
+      * @param attacker the attacker
+      */
+-    public double onDamage(LivingEntity attacker, double damage, DamageType type) {
++    public double onDamage(LivingEntity attacker, double damage, PDamageType type) {
+         return damage;
+     }
+ 
+@@ -89,7 +89,7 @@ public class SpellTrait {
+      * This method is called when the caster deals damage.
+      * @param target the target the caster is attacking
+      */
+-    public double onAttack(LivingEntity target, double damage, DamageType type) {
++    public double onAttack(LivingEntity target, double damage, PDamageType type) {
+         return damage;
+     }
+ 
 diff --git a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
-index 126043ae25550e2694c84ba34474b322dbfd1eb4..242c0bb13f9b54fb627a6c792b19a651fe7d2300 100644
+index c4a07139e108bbd54e33d499bb883b6ec6eb8baa..a4ed5621278d74f04a543c8f0405b33347a16704 100644
 --- a/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 +++ b/src/main/java/de/erethon/spellbook/api/SpellbookSpell.java
 @@ -1,6 +1,7 @@
  package de.erethon.spellbook.api;
  
- import de.erethon.papyrus.DamageType;
+-import de.erethon.papyrus.DamageType;
++import de.erethon.papyrus.PDamageType;
 +import org.bukkit.Bukkit;
  import org.bukkit.entity.LivingEntity;
  
@@ -227,6 +335,24 @@ index 126043ae25550e2694c84ba34474b322dbfd1eb4..242c0bb13f9b54fb627a6c792b19a651
      /**
       * This method should be used for cleaning up after a Spell cast. For example spawned entities should be
       * removed here.
+@@ -78,7 +96,7 @@ public abstract class SpellbookSpell {
+      * This method is called when the caster takes damage.
+      * @param attacker the attacker
+      */
+-    public double onDamage(LivingEntity attacker, double damage, DamageType type) {
++    public double onDamage(LivingEntity attacker, double damage, PDamageType type) {
+         return damage;
+     }
+ 
+@@ -86,7 +104,7 @@ public abstract class SpellbookSpell {
+      * This method is called when the caster deals damage.
+      * @param target the target the caster is attacking
+      */
+-    public double onAttack(LivingEntity target, double damage, DamageType type) {
++    public double onAttack(LivingEntity target, double damage, PDamageType type) {
+         return damage;
+     }
+ 
 @@ -197,9 +215,15 @@ public abstract class SpellbookSpell {
  
      /**
@@ -267,35 +393,130 @@ index 126043ae25550e2694c84ba34474b322dbfd1eb4..242c0bb13f9b54fb627a6c792b19a651
          currentTicks++;
          if (currentTickInterval >= tickInterval) {
              currentTickInterval = 0;
-diff --git a/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java b/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
-index 7ce8f1a26c1b33dd0eb6e6435952fd73abf49879..5f94cb25a5137b4e6a93c1b2850f55d4f9290a78 100644
---- a/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
-+++ b/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
+diff --git a/src/main/java/org/bukkit/entity/Damageable.java b/src/main/java/org/bukkit/entity/Damageable.java
+index 01b179822b7b405b07695d60269bd315f6117e56..70e50f1ee559a9eabf4fa96199f2e86a0eba143e 100644
+--- a/src/main/java/org/bukkit/entity/Damageable.java
++++ b/src/main/java/org/bukkit/entity/Damageable.java
+@@ -1,6 +1,6 @@
+ package org.bukkit.entity;
+ 
+-import de.erethon.papyrus.DamageType;
++import de.erethon.papyrus.PDamageType;
+ import org.bukkit.attribute.Attribute;
+ import org.bukkit.damage.DamageSource;
+ import org.jetbrains.annotations.ApiStatus;
+@@ -17,7 +17,7 @@ public interface Damageable extends Entity {
+      * @param amount Amount of damage to deal
+      */
+     void damage(double amount);
+-    void damage(double amount, DamageType type);
++    void damage(double amount, PDamageType type);
+ 
+ 
+     /**
+@@ -29,7 +29,7 @@ public interface Damageable extends Entity {
+      */
+     void damage(double amount, @Nullable Entity source);
+ 
+-    void damage(double amount, Entity source, DamageType type);
++    void damage(double amount, Entity source, PDamageType type);
+ 
+     /**
+      * Deals the given amount of damage to this entity from a specified
+diff --git a/src/main/java/org/bukkit/entity/Projectile.java b/src/main/java/org/bukkit/entity/Projectile.java
+index 9fe73c563e015c37d2056218599ba21f283ae980..8816c19764150ed1dd406c4f98394b4383672d24 100644
+--- a/src/main/java/org/bukkit/entity/Projectile.java
++++ b/src/main/java/org/bukkit/entity/Projectile.java
+@@ -1,6 +1,6 @@
+ package org.bukkit.entity;
+ 
+-import de.erethon.papyrus.DamageType;
++import de.erethon.papyrus.PDamageType;
+ import org.bukkit.projectiles.ProjectileSource;
+ import org.jetbrains.annotations.Nullable;
+ 
+@@ -128,5 +128,5 @@ public interface Projectile extends Entity {
+     @Nullable
+     java.util.UUID getOwnerUniqueId();
+     // Paper end
+-    void setDamageType(DamageType type);
++    void setDamageType(PDamageType type);
+ }
+diff --git a/src/main/java/org/bukkit/event/entity/EntityDamageByBlockEvent.java b/src/main/java/org/bukkit/event/entity/EntityDamageByBlockEvent.java
+index 1fb15e2ade8ff3c4d662eca87b078b4577f786e1..01045c40b7d1ed3c80c50abb4537cc0c083727e6 100644
+--- a/src/main/java/org/bukkit/event/entity/EntityDamageByBlockEvent.java
++++ b/src/main/java/org/bukkit/event/entity/EntityDamageByBlockEvent.java
 @@ -2,6 +2,8 @@ package org.bukkit.event.entity;
  
  import com.google.common.base.Function;
  import java.util.Map;
 +
-+import de.erethon.papyrus.DamageType;
- import org.bukkit.entity.Entity;
- import org.jetbrains.annotations.NotNull;
++import de.erethon.papyrus.PDamageType;
+ import org.bukkit.block.Block;
+ import org.bukkit.damage.DamageSource;
+ import org.bukkit.damage.DamageType;
+@@ -37,7 +39,7 @@ public class EntityDamageByBlockEvent extends EntityDamageEvent {
+     }
  
-@@ -18,6 +20,13 @@ public class EntityDamageByEntityEvent extends EntityDamageEvent {
+     public EntityDamageByBlockEvent(@Nullable final Block damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final DamageSource damageSource, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions, final @Nullable org.bukkit.block.BlockState damagerBlockState) { // Paper
+-        super(damagee, cause, damageSource, modifiers, modifierFunctions);
++        super(damagee, cause, damageSource, modifiers, modifierFunctions, PDamageType.PURE);
+         this.damager = damager;
+         this.damagerBlockState = damagerBlockState; // Paper
+     }
+diff --git a/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java b/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
+index 6b24d1281cb8f0253430c9c1a1323e2670bb9c93..ba0c7115553e15be10531b711f4faaea5aea9689 100644
+--- a/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
++++ b/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
+@@ -2,8 +2,11 @@ package org.bukkit.event.entity;
+ 
+ import com.google.common.base.Function;
+ import java.util.Map;
++
++import de.erethon.papyrus.PDamageType;
+ import org.bukkit.damage.DamageSource;
+ import org.bukkit.damage.DamageType;
++
+ import org.bukkit.entity.Entity;
+ import org.jetbrains.annotations.ApiStatus;
+ import org.jetbrains.annotations.NotNull;
+@@ -27,24 +30,30 @@ public class EntityDamageByEntityEvent extends EntityDamageEvent {
          this.critical = false; // Paper - add critical damage API
      }
  
+-    @Deprecated(forRemoval = true)
 +    public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, final double damage, DamageType type) {
 +        super(damagee, cause, damage);
 +        this.damager = damager;
 +        this.critical = false; // Paper - add critical damage API
-+        this.damageType = type;
 +    }
 +
-     @Deprecated // Paper - add critical damage API
      public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions) {
-         // Paper start - add critical damage API
+         this(damager, damagee, cause, DamageSource.builder(DamageType.GENERIC).withCausingEntity(damager).withDirectEntity(damager).build(), modifiers, modifierFunctions);
+     }
+ 
+     @Deprecated
+     public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final DamageSource damageSource, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions) {
+-        super(damagee, cause, damageSource, modifiers, modifierFunctions);
++        super(damagee, cause, damageSource, modifiers, modifierFunctions, PDamageType.PURE);
+         this.damager = damager;
+         // Paper start
+         this.critical = false;
+     }
+ 
+     @ApiStatus.Internal
+-    public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final DamageSource damageSource, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions, boolean critical) {
+-        super(damagee, cause, damageSource, modifiers, modifierFunctions);
++    public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final DamageSource damageSource, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions, boolean critical, PDamageType pType) {
++        super(damagee, cause, damageSource, modifiers, modifierFunctions, pType);
+         this.damager = damager;
+         this.critical = critical;
++        this.pDamageType = pType;
+     }
+ 
+     /**
 diff --git a/src/main/java/org/bukkit/event/entity/EntityDamageEvent.java b/src/main/java/org/bukkit/event/entity/EntityDamageEvent.java
-index 4773f537dec20d6ebd82e4b145a1cdea0077fe90..589b2781d14e84aaba11ee5bf8a2de0a7cc7fdaf 100644
+index 446b3ffd5caca5344be1c250475679834cd0d4a2..86e66829a073e6bc1c8c38005e6ff78732f83da2 100644
 --- a/src/main/java/org/bukkit/event/entity/EntityDamageEvent.java
 +++ b/src/main/java/org/bukkit/event/entity/EntityDamageEvent.java
 @@ -7,6 +7,8 @@ import com.google.common.collect.ImmutableMap;
@@ -303,48 +524,58 @@ index 4773f537dec20d6ebd82e4b145a1cdea0077fe90..589b2781d14e84aaba11ee5bf8a2de0a
  import java.util.Map;
  import java.util.Objects;
 +
-+import de.erethon.papyrus.DamageType;
++import de.erethon.papyrus.PDamageType;
  import org.bukkit.Material;
  import org.bukkit.WorldBorder;
- import org.bukkit.entity.Entity;
-@@ -28,11 +30,19 @@ public class EntityDamageEvent extends EntityEvent implements Cancellable {
-     private boolean cancelled;
+ import org.bukkit.damage.DamageSource;
+@@ -31,21 +33,22 @@ public class EntityDamageEvent extends EntityEvent implements Cancellable {
      private final DamageCause cause;
+     private final DamageSource damageSource;
  
-+    protected DamageType damageType; // Papyrus
+-    @Deprecated(forRemoval = true)
++    protected PDamageType pDamageType; // Papyrus
 +
      public EntityDamageEvent(@NotNull final Entity damagee, @NotNull final DamageCause cause, final double damage) {
-         this(damagee, cause, new EnumMap<DamageModifier, Double>(ImmutableMap.of(DamageModifier.BASE, damage)), new EnumMap<DamageModifier, Function<? super Double, Double>>(ImmutableMap.of(DamageModifier.BASE, ZERO)));
+         this(damagee, cause, DamageSource.builder(DamageType.GENERIC).build(), damage);
      }
  
-+    // Papyrus start - Damage types
+     public EntityDamageEvent(@NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final DamageSource damageSource, final double damage) {
+-        this(damagee, cause, damageSource, new EnumMap<DamageModifier, Double>(ImmutableMap.of(DamageModifier.BASE, damage)), new EnumMap<DamageModifier, Function<? super Double, Double>>(ImmutableMap.of(DamageModifier.BASE, ZERO)));
++        this(damagee, cause, damageSource, new EnumMap<DamageModifier, Double>(ImmutableMap.of(DamageModifier.BASE, damage)), new EnumMap<DamageModifier, Function<? super Double, Double>>(ImmutableMap.of(DamageModifier.BASE, ZERO)), PDamageType.PURE);
+     }
+ 
+-    @Deprecated(forRemoval = true)
      public EntityDamageEvent(@NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions) {
-+        this(damagee, cause, modifiers, modifierFunctions, DamageType.PURE);
-+    }
-+    // Papyrus end
+-        this(damagee, cause, DamageSource.builder(DamageType.GENERIC).build(), modifiers, modifierFunctions);
++        this(damagee, cause, DamageSource.builder(DamageType.GENERIC).build(), modifiers, modifierFunctions, PDamageType.PURE);
+     }
+ 
+-    public EntityDamageEvent(@NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final DamageSource damageSource, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions) {
 +
-+    public EntityDamageEvent(@NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions, DamageType type) {
++    public EntityDamageEvent(@NotNull final Entity damagee, @NotNull final DamageCause cause, DamageSource source, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions, PDamageType pType) {
          super(damagee);
          Preconditions.checkArgument(modifiers.containsKey(DamageModifier.BASE), "BASE DamageModifier missing");
          Preconditions.checkArgument(!modifiers.containsKey(null), "Cannot have null DamageModifier");
-@@ -43,6 +53,7 @@ public class EntityDamageEvent extends EntityEvent implements Cancellable {
+@@ -56,7 +59,8 @@ public class EntityDamageEvent extends EntityEvent implements Cancellable {
          this.cause = cause;
          this.modifiers = modifiers;
          this.modifierFunctions = modifierFunctions;
-+        this.damageType = type; // Papyrus
+-        this.damageSource = damageSource;
++        this.damageSource = source;
++        this.pDamageType = pType; // Papyrus
      }
  
      @Override
-@@ -204,6 +215,14 @@ public class EntityDamageEvent extends EntityEvent implements Cancellable {
+@@ -232,6 +236,14 @@ public class EntityDamageEvent extends EntityEvent implements Cancellable {
          return handlers;
      }
  
-+    public DamageType getDamageType() {
-+        return damageType;
++    public PDamageType getDamageType() {
++        return pDamageType;
 +    }
 +
-+    public void setDamageType(DamageType type) {
-+        damageType = type;
++    public void setDamageType(PDamageType type) {
++        pDamageType = type;
 +    }
 +
      /**
