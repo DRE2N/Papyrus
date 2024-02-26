@@ -1023,10 +1023,10 @@ index b66a7d4aab887309579154815a0d4abf9de506b0..daa036030b93fbb388f55c265cac22de
  
          return true;
 diff --git a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java b/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
-index c43bf052b4a3e6cf693fad9b08526dc396d4dfef..041537c626b73aefb7bc0937c0f43e3d375cc0e2 100644
+index c43bf052b4a3e6cf693fad9b08526dc396d4dfef..97758e18ce3c10e8bf9c955ed2c8ccf06bf5dcfa 100644
 --- a/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
 +++ b/src/main/java/net/minecraft/network/protocol/game/ClientboundAddEntityPacket.java
-@@ -58,7 +58,8 @@ public class ClientboundAddEntityPacket implements Packet<ClientGamePacketListen
+@@ -58,11 +58,29 @@ public class ClientboundAddEntityPacket implements Packet<ClientGamePacketListen
          this.xa = (int)(Mth.clamp(velocity.x, -3.9D, 3.9D) * 8000.0D);
          this.ya = (int)(Mth.clamp(velocity.y, -3.9D, 3.9D) * 8000.0D);
          this.za = (int)(Mth.clamp(velocity.z, -3.9D, 3.9D) * 8000.0D);
@@ -1036,6 +1036,27 @@ index c43bf052b4a3e6cf693fad9b08526dc396d4dfef..041537c626b73aefb7bc0937c0f43e3d
              this.type = entity.displayEntityType;
          }
      }
+ 
++    // Papyrus - add missing constructor
++    public ClientboundAddEntityPacket(int id, UUID uuid, double x, double y, double z, float pitch, float yaw, EntityType<?> entityType, int entityData, Vec3 velocity, double headYaw) {
++        this.id = id;
++        this.uuid = uuid;
++        this.x = x;
++        this.y = y;
++        this.z = z;
++        this.xRot = (byte)Mth.floor(pitch * 256.0F / 360.0F);
++        this.yRot = (byte)Mth.floor(yaw * 256.0F / 360.0F);
++        this.yHeadRot = (byte)Mth.floor(headYaw * 256.0 / 360.0);
++        this.type = entityType;
++        this.data = entityData;
++        this.xa = (int)(Mth.clamp(velocity.x, -3.9, 3.9) * 8000.0);
++        this.ya = (int)(Mth.clamp(velocity.y, -3.9, 3.9) * 8000.0);
++        this.za = (int)(Mth.clamp(velocity.z, -3.9, 3.9) * 8000.0);
++    }
++
+     public ClientboundAddEntityPacket(FriendlyByteBuf buf) {
+         this.id = buf.readVarInt();
+         this.uuid = buf.readUUID();
 diff --git a/src/main/java/net/minecraft/server/Bootstrap.java b/src/main/java/net/minecraft/server/Bootstrap.java
 index 438ae006a8e7da0e5124415b8350ebfd45ac6a10..c718e726c449d26e2aca3c193ac680c95e4f24fb 100644
 --- a/src/main/java/net/minecraft/server/Bootstrap.java
