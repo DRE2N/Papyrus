@@ -1,0 +1,8 @@
+--- a/src/main/java/test/FakeCraftServer.java
++++ b/src/main/java/test/FakeCraftServer.java
+@@ -1,4 +_,5 @@
+ package test;
+ 
+ public class FakeCraftServer {
++	// Forked
+ }

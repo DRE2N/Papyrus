@@ -1,0 +1,93 @@
+--- a/paper-server/build.gradle.kts
++++ b/paper-server/build.gradle.kts
+@@ -21,25 +_,38 @@
+     // macheOldPath = file("F:\\Projects\\PaperTooling\\mache\\versions\\1.21.4\\src\\main\\java")
+     // gitFilePatches = true
+ 
++    val fork = forks.register("fork") {
++        upstream.patchDir {
++            name = "paperServer"
++            upstreamPath = "paper-server"
++            excludes = setOf("src/vanilla", "patches", "build.gradle.kts")
++            patchesDir = rootDirectory.dir("fork-server/paper-patches")
++            outputDir = rootDirectory.dir("paper-server")
++        }
++    }
++
++    activeFork = fork
++
+     paper {
+-        reobfMappingsPatch = layout.projectDirectory.file("../build-data/reobf-mappings-patch.tiny")
+-        reobfPackagesToFix.addAll(
+-            "co.aikar.timings",
+-            "com.destroystokyo.paper",
+-            "com.mojang",
+-            "io.papermc.paper",
+-            "ca.spottedleaf",
+-            "net.kyori.adventure.bossbar",
+-            "net.minecraft",
+-            "org.bukkit.craftbukkit",
+-            "org.spigotmc",
+-        )
++        paperServerDir = upstreamsDirectory().map { it.dir("paper/paper-server") }
+     }
+ 
+     spigot {
+         buildDataRef = "3edaf46ec1eed4115ce1b18d2846cded42577e42"
+         packageVersion = "v1_21_R3" // also needs to be updated in MappingEnvironment
+     }
++
++    reobfPackagesToFix.addAll(
++        "co.aikar.timings",
++        "com.destroystokyo.paper",
++        "com.mojang",
++        "io.papermc.paper",
++        "ca.spottedleaf",
++        "net.kyori.adventure.bossbar",
++        "net.minecraft",
++        "org.bukkit.craftbukkit",
++        "org.spigotmc",
++    )
+ }
+ 
+ tasks.generateDevelopmentBundle {
+@@ -104,7 +_,20 @@
+     }
+ }
+ 
+-val log4jPlugins = sourceSets.create("log4jPlugins")
++sourceSets {
++    main {
++        java { srcDir("../paper-server/src/main/java") }
++        resources { srcDir("../paper-server/src/main/resources") }
++    }
++    test {
++        java { srcDir("../paper-server/src/test/java") }
++        resources { srcDir("../paper-server/src/test/resources") }
++    }
++}
++
++val log4jPlugins = sourceSets.create("log4jPlugins") {
++    java { srcDir("../paper-server/src/log4jPlugins/java") }
++}
+ configurations.named(log4jPlugins.compileClasspathConfigurationName) {
+     extendsFrom(configurations.compileClasspath.get())
+ }
+@@ -123,7 +_,7 @@
+ // Paper end - configure mockito agent that is needed in newer java versions
+ 
+ dependencies {
+-    implementation(project(":paper-api"))
++    implementation(project(":fork-api"))
+     implementation("ca.spottedleaf:concurrentutil:0.0.2") // Paper - Add ConcurrentUtil dependency
+     // Paper start
+     implementation("org.jline:jline-terminal-ffm:3.27.1") // use ffm on java 22+
+@@ -261,7 +_,7 @@
+     name: String,
+     block: JavaExec.() -> Unit
+ ): TaskProvider<JavaExec> = register<JavaExec>(name) {
+-    group = "paper"
++    group = "runs"
+     mainClass.set("org.bukkit.craftbukkit.Main")
+     standardInput = System.`in`
+     workingDir = rootProject.layout.projectDirectory
