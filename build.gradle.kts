@@ -20,15 +20,13 @@ paperweight {
             outputFile = file("fork-api/build.gradle.kts")
             patchFile = file("fork-api/build.gradle.kts.patch")
         }
-        patchDir {
-            name = "paperApi"
+        patchDir("paperApi") {
             upstreamPath = "paper-api"
             excludes = setOf("build.gradle.kts")
             patchesDir = file("fork-api/paper-patches")
             outputDir = file("paper-api")
         }
-        patchDir {
-            name = "paperApiGenerator"
+        patchDir("paperApiGenerator") {
             upstreamPath = "paper-api-generator"
             patchesDir = file("fork-api-generator/paper-patches")
             outputDir = file("paper-api-generator")
