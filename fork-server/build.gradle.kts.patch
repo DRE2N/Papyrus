@@ -1,6 +1,13 @@
 --- a/paper-server/build.gradle.kts
 +++ b/paper-server/build.gradle.kts
-@@ -21,25 +_,38 @@
+@@ -1,5 +_,5 @@
+ import io.papermc.paperweight.attribute.DevBundleOutput
+-import io.papermc.paperweight.core.ext
++import io.papermc.paperweight.core.coreExt
+ import io.papermc.paperweight.util.*
+ import java.time.Instant
+ 
+@@ -22,25 +_,38 @@
      // macheOldPath = file("F:\\Projects\\PaperTooling\\mache\\versions\\1.21.4\\src\\main\\java")
      // gitFilePatches = true
  
@@ -51,7 +58,18 @@
  }
  
  tasks.generateDevelopmentBundle {
-@@ -104,7 +_,20 @@
+@@ -52,8 +_,8 @@
+ 
+ // TODO remove me again, this is just to not run setupMacheSource when patches change
+ tasks.setupMacheSources {
+-    paperPatches.setFrom(project.ext.paper.sourcePatchDir.dir("com"), project.ext.paper.featurePatchDir)
+-    // paperPatches.from(project.ext.paper.sourcePatchDir, project.ext.paper.featurePatchDir)
++    // paperPatches.setFrom(project.coreExt.paper.sourcePatchDir.dir("com"), project.coreExt.paper.featurePatchDir)
++    // paperPatches.from(project.coreExt.paper.sourcePatchDir, project.ext.paper.featurePatchDir)
+ }
+ 
+ abstract class Services {
+@@ -111,7 +_,20 @@
      }
  }
  
@@ -73,7 +91,7 @@
  configurations.named(log4jPlugins.compileClasspathConfigurationName) {
      extendsFrom(configurations.compileClasspath.get())
  }
-@@ -123,7 +_,7 @@
+@@ -130,7 +_,7 @@
  // Paper end - configure mockito agent that is needed in newer java versions
  
  dependencies {
@@ -82,7 +100,7 @@
      implementation("ca.spottedleaf:concurrentutil:0.0.2") // Paper - Add ConcurrentUtil dependency
      // Paper start
      implementation("org.jline:jline-terminal-ffm:3.27.1") // use ffm on java 22+
-@@ -261,7 +_,7 @@
+@@ -263,7 +_,7 @@
      name: String,
      block: JavaExec.() -> Unit
  ): TaskProvider<JavaExec> = register<JavaExec>(name) {
@@ -91,3 +109,20 @@
      mainClass.set("org.bukkit.craftbukkit.Main")
      standardInput = System.`in`
      workingDir = rootProject.layout.projectDirectory
+@@ -324,7 +_,7 @@
+ }
+ tasks.registerRunTask("runReobfBundler") {
+     description = "Spin up a test server from the reobf bundler jar"
+-    classpath(rootProject.tasks.named<io.papermc.paperweight.tasks.CreateBundlerJar>("createReobfBundlerJar").flatMap { it.outputZip })
++    classpath(tasks.named<io.papermc.paperweight.tasks.CreateBundlerJar>("createReobfBundlerJar").flatMap { it.outputZip })
+     mainClass.set(null as String?)
+ }
+ tasks.registerRunTask("runPaperclip") {
+@@ -334,6 +_,6 @@
+ }
+ tasks.registerRunTask("runReobfPaperclip") {
+     description = "Spin up a test server from the reobf Paperclip jar"
+-    classpath(rootProject.tasks.named<io.papermc.paperweight.tasks.CreatePaperclipJar>("createReobfPaperclipJar").flatMap { it.outputZip })
++    classpath(tasks.named<io.papermc.paperweight.tasks.CreatePaperclipJar>("createReobfPaperclipJar").flatMap { it.outputZip })
+     mainClass.set(null as String?)
+ }

@@ -8,8 +8,8 @@ plugins {
 
 paperweight {
     upstreams.register("paper") {
-        repo.set("/Users/jason/IdeaProjects/PaperMC/Softspoon/HistoryTest")
-        ref.set("775ed1dab47a91c407c40b8b45391df40e357d32")
+        repo.set("https://github.com/PaperMC/Paper.git")
+        ref.set("aaf151c03d48f51b10f278e26143dd8ea9db6acb")
         paper = true
 
         patchFile {
