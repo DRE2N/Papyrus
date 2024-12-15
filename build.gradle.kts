@@ -7,10 +7,8 @@ plugins {
 }
 
 paperweight {
-    upstreams.register("paper") {
-        repo.set("https://github.com/PaperMC/Paper.git")
-        ref.set("aaf151c03d48f51b10f278e26143dd8ea9db6acb")
-        paper = true
+    upstreams.paper {
+        ref = "aaf151c03d48f51b10f278e26143dd8ea9db6acb"
 
         patchFile {
             path = "paper-server/build.gradle.kts"
