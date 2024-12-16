@@ -99,29 +99,3 @@
      implementation("ca.spottedleaf:concurrentutil:0.0.2") // Paper - Add ConcurrentUtil dependency
      // Paper start
      implementation("org.jline:jline-terminal-ffm:3.27.1") // use ffm on java 22+
-@@ -263,7 +_,7 @@
-     name: String,
-     block: JavaExec.() -> Unit
- ): TaskProvider<JavaExec> = register<JavaExec>(name) {
--    group = "paper"
-+    group = "runs"
-     mainClass.set("org.bukkit.craftbukkit.Main")
-     standardInput = System.`in`
-     workingDir = rootProject.layout.projectDirectory
-@@ -324,7 +_,7 @@
- }
- tasks.registerRunTask("runReobfBundler") {
-     description = "Spin up a test server from the reobf bundler jar"
--    classpath(rootProject.tasks.named<io.papermc.paperweight.tasks.CreateBundlerJar>("createReobfBundlerJar").flatMap { it.outputZip })
-+    classpath(tasks.named<io.papermc.paperweight.tasks.CreateBundlerJar>("createReobfBundlerJar").flatMap { it.outputZip })
-     mainClass.set(null as String?)
- }
- tasks.registerRunTask("runPaperclip") {
-@@ -334,6 +_,6 @@
- }
- tasks.registerRunTask("runReobfPaperclip") {
-     description = "Spin up a test server from the reobf Paperclip jar"
--    classpath(rootProject.tasks.named<io.papermc.paperweight.tasks.CreatePaperclipJar>("createReobfPaperclipJar").flatMap { it.outputZip })
-+    classpath(tasks.named<io.papermc.paperweight.tasks.CreatePaperclipJar>("createReobfPaperclipJar").flatMap { it.outputZip })
-     mainClass.set(null as String?)
- }
