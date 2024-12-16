@@ -1,13 +1,6 @@
 --- a/paper-server/build.gradle.kts
 +++ b/paper-server/build.gradle.kts
-@@ -1,5 +_,5 @@
- import io.papermc.paperweight.attribute.DevBundleOutput
--import io.papermc.paperweight.core.ext
-+import io.papermc.paperweight.core.coreExt
- import io.papermc.paperweight.util.*
- import java.time.Instant
- 
-@@ -22,25 +_,37 @@
+@@ -21,25 +_,37 @@
      // macheOldPath = file("F:\\Projects\\PaperTooling\\mache\\versions\\1.21.4\\src\\main\\java")
      // gitFilePatches = true
  
@@ -57,18 +50,7 @@
  }
  
  tasks.generateDevelopmentBundle {
-@@ -52,8 +_,8 @@
- 
- // TODO remove me again, this is just to not run setupMacheSource when patches change
- tasks.setupMacheSources {
--    paperPatches.setFrom(project.ext.paper.sourcePatchDir.dir("com"), project.ext.paper.featurePatchDir)
--    // paperPatches.from(project.ext.paper.sourcePatchDir, project.ext.paper.featurePatchDir)
-+    // paperPatches.setFrom(project.coreExt.paper.sourcePatchDir.dir("com"), project.coreExt.paper.featurePatchDir)
-+    // paperPatches.from(project.coreExt.paper.sourcePatchDir, project.ext.paper.featurePatchDir)
- }
- 
- abstract class Services {
-@@ -111,7 +_,20 @@
+@@ -104,7 +_,20 @@
      }
  }
  
@@ -90,7 +72,7 @@
  configurations.named(log4jPlugins.compileClasspathConfigurationName) {
      extendsFrom(configurations.compileClasspath.get())
  }
-@@ -130,7 +_,7 @@
+@@ -123,7 +_,7 @@
  // Paper end - configure mockito agent that is needed in newer java versions
  
  dependencies {
