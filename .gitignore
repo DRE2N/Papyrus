@@ -7,7 +7,7 @@ build
 /run
 
 /fork-server/build.gradle.kts
-/fork-server/src/vanilla
+/fork-server/src/minecraft
 /paper-server
 /fork-api/build.gradle.kts
 /paper-api
