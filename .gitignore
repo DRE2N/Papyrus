@@ -14,3 +14,7 @@ build
 /paper-api-generator
 
 .idea/
+
+# WSL
+Zone.Identifier
+*:Zone.Identifier
