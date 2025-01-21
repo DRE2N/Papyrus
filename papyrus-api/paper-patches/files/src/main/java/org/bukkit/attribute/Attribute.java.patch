@@ -1,0 +1,37 @@
+--- a/src/main/java/org/bukkit/attribute/Attribute.java
++++ b/src/main/java/org/bukkit/attribute/Attribute.java
+@@ -146,6 +_,34 @@
+      */
+     Attribute SPAWN_REINFORCEMENTS = getAttribute("spawn_reinforcements");
+ 
++    // Papyrus start - Attributes
++    Attribute ADVANTAGE_AIR = getAttribute("advantage_air");
++    Attribute ADVANTAGE_EARTH = getAttribute("advantage_earth");
++    Attribute ADVANTAGE_FIRE = getAttribute("advantage_fire");
++    Attribute ADVANTAGE_WATER = getAttribute("advantage_water");
++    Attribute ADVANTAGE_MAGICAL = getAttribute("advantage_magical");
++    Attribute ADVANTAGE_PHYSICAL = getAttribute("advantage_physical");
++    Attribute ADVANTAGE_PURE = getAttribute("advantage_pure");
++
++    Attribute RESISTANCE_AIR = getAttribute("resistance_air");
++    Attribute RESISTANCE_EARTH = getAttribute("resistance_earth");
++    Attribute RESISTANCE_FIRE = getAttribute("resistance_fire");
++    Attribute RESISTANCE_WATER = getAttribute("resistance_water");
++    Attribute RESISTANCE_MAGICAL = getAttribute("resistance_magical");
++    Attribute RESISTANCE_PHYSICAL = getAttribute("resistance_physical");
++    Attribute RESISTANCE_PURE = getAttribute("resistance_pure");
++
++    Attribute STAT_CRIT_CHANCE = getAttribute("stat_crit_chance");
++    Attribute STAT_CRIT_DAMAGE = getAttribute("stat_crit_damage");
++    Attribute STAT_CRIT_CDR = getAttribute("stat_cdr");
++    Attribute STAT_HEALTH_REGEN = getAttribute("stat_health_regen");
++    Attribute STAT_ENERGY_REGEN = getAttribute("stat_energy_regen");
++    Attribute STAT_ENERGY = getAttribute("stat_energy");
++    Attribute STAT_HEALINGPOWER = getAttribute("stat_healingpower");
++    Attribute STAT_TENACITY = getAttribute("stat_tenacity");
++
++    Attribute COMBAT_HURTINVULNERABILITY = getAttribute("combat_hurtinvulnerability");
++
+     @NotNull
+     private static Attribute getAttribute(@NotNull String key) {
+         return Registry.ATTRIBUTE.getOrThrow(NamespacedKey.minecraft(key));

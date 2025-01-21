@@ -5,13 +5,13 @@ import org.bukkit.attribute.Attribute;
 
 public enum PDamageType {
 
-    AIR(Attribute.ADV_AIR, Attribute.RES_AIR),
-    EARTH(Attribute.ADV_EARTH, Attribute.RES_EARTH),
-    FIRE(Attribute.ADV_FIRE, Attribute.RES_FIRE),
-    MAGIC(Attribute.ADV_MAGIC, Attribute.RES_MAGIC),
-    PHYSICAL(Attribute.ADV_PHYSICAL, Attribute.RES_PHYSICAL),
-    WATER(Attribute.ADV_WATER, Attribute.RES_WATER),
-    PURE(Attribute.ADV_PURE, Attribute.RES_PURE);
+    AIR(Attribute.ADVANTAGE_AIR, Attribute.RESISTANCE_AIR),
+    EARTH(Attribute.ADVANTAGE_EARTH, Attribute.RESISTANCE_EARTH),
+    FIRE(Attribute.ADVANTAGE_FIRE, Attribute.RESISTANCE_FIRE),
+    MAGIC(Attribute.ADVANTAGE_MAGICAL, Attribute.RESISTANCE_MAGICAL),
+    PHYSICAL(Attribute.ADVANTAGE_PHYSICAL, Attribute.RESISTANCE_PHYSICAL),
+    WATER(Attribute.ADVANTAGE_WATER, Attribute.RESISTANCE_WATER),
+    PURE(Attribute.ADVANTAGE_PURE, Attribute.RESISTANCE_PURE);
 
     private final Attribute advAttr;
     private final Attribute resAttr;
