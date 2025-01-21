@@ -1,0 +1,52 @@
+--- a/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
++++ b/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
+@@ -2,6 +_,8 @@
+ 
+ import com.google.common.base.Function;
+ import java.util.Map;
++
++import de.erethon.papyrus.PDamageType;
+ import org.bukkit.damage.DamageSource;
+ import org.bukkit.damage.DamageType;
+ import org.bukkit.entity.Entity;
+@@ -14,6 +_,7 @@
+ public class EntityDamageByEntityEvent extends EntityDamageEvent {
+     private final Entity damager;
+     private final boolean critical; // Paper
++    private PDamageType damageType;
+ 
+     @Deprecated(since = "1.20.4", forRemoval = true)
+     public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, final double damage) {
+@@ -27,6 +_,17 @@
+         this.critical = false; // Paper - add critical damage API
+     }
+ 
++    // Papyrus start - add damage type
++    @Deprecated
++    public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final DamageSource damageSource, final double damage, PDamageType type) {
++        super(damagee, cause, damageSource, damage);
++        this.damager = damager;
++        this.critical = false; // Paper - add critical damage API
++        this.damageType = type;
++    }
++    // Papyrus end
++
++
+     @Deprecated(since = "1.20.4", forRemoval = true)
+     public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions) {
+         this(damager, damagee, cause, DamageSource.builder(DamageType.GENERIC).withCausingEntity(damager).withDirectEntity(damager).build(), modifiers, modifierFunctions);
+@@ -83,4 +_,14 @@
+     public Entity getDamager() {
+         return damager;
+     }
++
++    // Papyrus start - add damage type
++    public PDamageType getDamageType() {
++        return damageType;
++    }
++
++    public void setDamageType(PDamageType type) {
++        damageType = type;
++    }
++    // Papyrus end
+ }

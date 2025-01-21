@@ -1,0 +1,29 @@
+--- a/net/minecraft/world/entity/Mob.java
++++ b/net/minecraft/world/entity/Mob.java
+@@ -1595,12 +_,25 @@
+ 
+     @Override
+     public boolean doHurtTarget(ServerLevel level, Entity source) {
++        /* Papyrus start - Add attack damage type, remove enchantment handling
+         float f = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
+         ItemStack weaponItem = this.getWeaponItem();
+         DamageSource damageSource = Optional.ofNullable(weaponItem.getItem().getDamageSource(this)).orElse(this.damageSources().mobAttack(this));
+         f = EnchantmentHelper.modifyDamage(level, weaponItem, source, damageSource, f);
+         f += weaponItem.getItem().getAttackDamageBonus(source, f, damageSource);
+-        boolean flag = source.hurtServer(level, damageSource, f);
++        */
++        float f = 0;
++        ItemStack weaponItem = this.getWeaponItem();
++        DamageSource damageSource = Optional.ofNullable(weaponItem.getItem().getDamageSource(this)).orElse(this.damageSources().mobAttack(this));
++        boolean flag;
++        if (source instanceof LivingEntity livingEntity) {
++            f = (float) this.getAttributeValue(livingEntity.attackDamageType.advantage);
++            flag = livingEntity.hurtServer(level, damageSource, f, attackDamageType);
++        } else {
++            f = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
++            flag = source.hurtServer(level, damageSource, f);
++        }
++        // Papyrus end
+         if (flag) {
+             float knockback = this.getKnockback(source, damageSource);
+             if (knockback > 0.0F && source instanceof LivingEntity livingEntity) {

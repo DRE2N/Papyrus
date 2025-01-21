@@ -1,0 +1,194 @@
+--- a/net/minecraft/world/entity/LivingEntity.java
++++ b/net/minecraft/world/entity/LivingEntity.java
+@@ -11,6 +_,8 @@
+ import com.mojang.logging.LogUtils;
+ import com.mojang.serialization.DataResult;
+ import com.mojang.serialization.Dynamic;
++import de.erethon.papyrus.CraftPDamageType;
++import io.papermc.paper.event.entity.EntityKnockbackEvent;
+ import it.unimi.dsi.fastutil.doubles.DoubleDoubleImmutablePair;
+ import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
+ import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
+@@ -136,6 +_,9 @@
+ import net.minecraft.world.phys.shapes.VoxelShape;
+ import net.minecraft.world.scores.PlayerTeam;
+ import net.minecraft.world.scores.Scoreboard;
++import org.bukkit.Bukkit;
++import org.bukkit.craftbukkit.damage.CraftDamageSource;
++import org.bukkit.event.entity.*;
+ import org.slf4j.Logger;
+ 
+ // CraftBukkit start
+@@ -149,15 +_,7 @@
+ import org.bukkit.craftbukkit.attribute.CraftAttributeMap;
+ import org.bukkit.craftbukkit.event.CraftEventFactory;
+ import org.bukkit.craftbukkit.inventory.CraftItemStack;
+-import org.bukkit.event.entity.ArrowBodyCountChangeEvent;
+-import org.bukkit.event.entity.EntityDamageEvent;
+ import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
+-import org.bukkit.event.entity.EntityKnockbackEvent;
+-import org.bukkit.event.entity.EntityPotionEffectEvent;
+-import org.bukkit.event.entity.EntityRegainHealthEvent;
+-import org.bukkit.event.entity.EntityRemoveEvent;
+-import org.bukkit.event.entity.EntityResurrectEvent;
+-import org.bukkit.event.entity.EntityTeleportEvent;
+ import org.bukkit.event.player.PlayerItemConsumeEvent;
+ // CraftBukkit end
+ 
+@@ -301,6 +_,10 @@
+     public org.bukkit.craftbukkit.entity.CraftLivingEntity getBukkitLivingEntity() { return (org.bukkit.craftbukkit.entity.CraftLivingEntity) super.getBukkitEntity(); } // Paper
+     public boolean silentDeath = false; // Paper - mark entity as dying silently for cancellable death event
+     public net.kyori.adventure.util.TriState frictionState = net.kyori.adventure.util.TriState.NOT_SET; // Paper - Friction API
++    // Papyrus start - Spellbook
++    public double energy = 0;
++    public CraftPDamageType attackDamageType = CraftPDamageType.PHYSICAL;
++    // Papyrus end
+ 
+     @Override
+     public float getBukkitYaw() {
+@@ -375,7 +_,39 @@
+             .add(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE)
+             .add(Attributes.WATER_MOVEMENT_EFFICIENCY)
+             .add(Attributes.MOVEMENT_EFFICIENCY)
+-            .add(Attributes.ATTACK_KNOCKBACK);
++            .add(Attributes.ATTACK_KNOCKBACK)
++            // Papyrus start - Add attributes
++            .add(Attributes.FOLLOW_RANGE) // Papyrus - For custom mobs
++            .add(Attributes.ADVANTAGE_AIR)
++            .add(Attributes.ADVANTAGE_EARTH)
++            .add(Attributes.ADVANTAGE_FIRE)
++            .add(Attributes.ADVANTAGE_WATER)
++            .add(Attributes.ADVANTAGE_MAGICAL)
++            .add(Attributes.ADVANTAGE_PURE)
++            .add(Attributes.ADVANTAGE_PHYSICAL)
++            .add(Attributes.RESISTANCE_AIR)
++            .add(Attributes.RESISTANCE_EARTH)
++            .add(Attributes.RESISTANCE_FIRE)
++            .add(Attributes.RESISTANCE_WATER)
++            .add(Attributes.RESISTANCE_MAGICAL)
++            .add(Attributes.RESISTANCE_PURE)
++            .add(Attributes.RESISTANCE_PHYSICAL)
++            .add(Attributes.PENETRATION_PHYSICAL)
++            .add(Attributes.PENETRATION_MAGICAL)
++            .add(Attributes.PENETRATION_AIR)
++            .add(Attributes.PENETRATION_EARTH)
++            .add(Attributes.PENETRATION_FIRE)
++            .add(Attributes.PENETRATION_WATER)
++            .add(Attributes.STAT_CDR)
++            .add(Attributes.STAT_CRIT_DAMAGE)
++            .add(Attributes.STAT_CRIT_CHANCE)
++            .add(Attributes.STAT_TENACITY)
++            .add(Attributes.STAT_ENERGY_REGEN)
++            .add(Attributes.STAT_ENERGY)
++            .add(Attributes.STAT_HEALINGPOWER)
++            .add(Attributes.STAT_HEALTH_REGEN)
++            .add(Attributes.COMBAT_HURTINVULNERABILITY);
++            // Papyrus end
+     }
+ 
+     @Override
+@@ -1359,8 +_,95 @@
+         return this.getHealth() <= 0.0F;
+     }
+ 
++    public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount, CraftPDamageType damageType) {
++        if (isInvulnerable() || isRemoved() || dead || getHealth() <= 0F || isInvulnerableTo((ServerLevel) level, damageSource) || level().isClientSide) {
++            return false;
++        }
++        markHurt();
++        if (invulnerableTime > 0) {
++            return false;
++        }
++        Entity attacker = damageSource.getEntity();
++        double finalDmg = amount;
++        double resistance = getAttributeValue(damageType.resistance);
++        if (attacker != null) {
++            if (attacker instanceof LivingEntity living) {
++                // Remove the value of the attackers penetration attribute from the victims resistance
++                // This can result in negative resistance values, which is intended
++                resistance = resistance - living.getAttributeValue(damageType.penetration);
++            }
++            finalDmg = amount - resistance;
++            // Call the bukkit event
++            EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(attacker.getBukkitEntity(), getBukkitEntity(),EntityDamageEvent.DamageCause.ENTITY_ATTACK, new CraftDamageSource(damageSource), finalDmg, damageType.apiType);
++            Bukkit.getServer().getPluginManager().callEvent(event);
++            if (event.isCancelled()) {
++                return false;
++            }
++            if (event.getDamageType() != damageType.apiType) {
++                damageType = CraftPDamageType.ofAPI(event.getDamageType());
++            }
++            finalDmg = event.getDamage();
++            if (damageSource.getEntity() instanceof ServerPlayer player && player.isRealPlayer) {
++                setLastHurtByPlayer(player);
++            } else if (damageSource.getEntity() instanceof LivingEntity livingEntity){
++                setLastHurtByMob(livingEntity);
++            }
++
++            if (isDamageSourceBlocked(damageSource)) { // TODO: Maybe change isDamageSourceBlocked logic
++                hurtCurrentlyUsedShield(amount);
++
++                if (!damageSource.isDirect()) {
++                    Entity entity = damageSource.getEntity();
++                    if (entity instanceof LivingEntity && entity.distanceToSqr(this) <= (200.0D * 200.0D)) {
++                        blockUsingShield((LivingEntity) entity);
++                    }
++                }
++                finalDmg = finalDmg - getAttributeValue(damageType.resistance);
++                if (useItem.is(Items.SHIELD)) {
++                    // Use the HEAD slot modifier from shields for the damage
++                    finalDmg -= useItem.get(DataComponents.ATTRIBUTE_MODIFIERS).compute(1, EquipmentSlot.HEAD);
++                }
++            }
++
++            // Knockback
++            final boolean isFarAway = attacker.distanceToSqr(this) > (200.0 * 200.0); // Vanilla value
++            double x = isFarAway ? (Math.random() - Math.random()) : attacker.getX() - this.getX();
++            double z;
++            for (z = isFarAway ? Math.random() - Math.random() : attacker.getZ() - this.getZ(); x * x + z * z < 1.0E-4D; z = (Math.random() - Math.random()) * 0.01D) { // Paper
++                x = (Math.random() - Math.random()) * 0.01D;
++            }
++
++            this.knockback(0.4000000059604645D, x, z, attacker, EntityKnockbackEvent.Cause.DAMAGE);
++            if (this instanceof ServerPlayer player && player.isRealPlayer) {
++                indicateDamage(x, z);
++            }
++            markHurt();
++
++            if (attacker instanceof LivingEntity living) {
++                org.bukkit.entity.LivingEntity attackerBukkit = living.getBukkitLivingEntity();
++                finalDmg = getBukkitLivingEntity().onDamage(attackerBukkit, finalDmg, damageType.apiType);
++            }
++
++            if (finalDmg <= 0) {
++                return false;
++            }
++        }
++        invulnerableTime = (int) getAttribute(Attributes.COMBAT_HURTINVULNERABILITY).getValue();
++        playHurtSound(damageSource);
++        level().broadcastDamageEvent(this, damageSource); // hurt animation
++        float dmg = (float) Math.max(finalDmg, 0);
++        combatTracker.recordDamage(damageSource, getHealth());
++        setHealth(getHealth() - dmg);
++        if (getHealth() <= 0.0f) {
++            die(damageSource);
++        }
++        return true;
++    }
++
+     @Override
+     public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount) {
++        return this.hurtServer(level, damageSource, amount, CraftPDamageType.PURE);
++    } /* Papyrus - Remove this method
+         if (this.isInvulnerableTo(level, damageSource)) {
+             return false;
+         } else if (this.isRemoved() || this.dead || this.getHealth() <= 0.0F) { // CraftBukkit - Don't allow entities that got set to dead/killed elsewhere to get damaged and die
+@@ -1522,7 +_,7 @@
+ 
+             return flag2;
+         }
+-    }
++    } Papyrus - Remove this method */
+ 
+     protected void resolveMobResponsibleForDamage(DamageSource damageSource) {
+         if (damageSource.getEntity() instanceof LivingEntity livingEntity

@@ -16,15 +16,15 @@ public enum CraftPDamageType {
     PURE(Attributes.ADVANTAGE_PURE, Attributes.RESISTANCE_PURE, Attributes.PENETRATION_PURE, PDamageType.PURE);
 
     public final Holder<Attribute> advantage;
-    public final Holder<Attribute> res;
-    public final Holder<Attribute> pen;
+    public final Holder<Attribute> resistance;
+    public final Holder<Attribute> penetration;
     public final PDamageType apiType;
 
 
     CraftPDamageType(Holder<Attribute> advantage, Holder<Attribute> res, Holder<Attribute> pen, PDamageType apiType) {
         this.advantage = advantage;
-        this.res = res;
-        this.pen = pen;
+        this.resistance = res;
+        this.penetration = pen;
         this.apiType = apiType;
     }
 

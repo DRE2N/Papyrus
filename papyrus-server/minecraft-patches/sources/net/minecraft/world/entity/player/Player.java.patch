@@ -1,0 +1,69 @@
+--- a/net/minecraft/world/entity/player/Player.java
++++ b/net/minecraft/world/entity/player/Player.java
+@@ -15,6 +_,8 @@
+ import java.util.function.Predicate;
+ import javax.annotation.Nonnull;
+ import javax.annotation.Nullable;
++
++import de.erethon.papyrus.CraftPDamageType;
+ import net.minecraft.Util;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.Direction;
+@@ -907,7 +_,7 @@
+     }
+ 
+     @Override
+-    public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount) {
++    public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount, CraftPDamageType damageType) { // Papyrus - Add damage type
+         if (this.isInvulnerableTo(level, damageSource)) {
+             return false;
+         } else if (this.abilities.invulnerable && !damageSource.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+@@ -934,7 +_,7 @@
+ 
+                 // return amount != 0.0F && super.hurtServer(level, damageSource, amount);
+                 // CraftBukkit start - Don't filter out 0 damage
+-                boolean damaged = super.hurtServer(level, damageSource, amount);
++                boolean damaged = super.hurtServer(level, damageSource, amount, damageType); // Papyrus - Add damage type
+                 if (damaged) {
+                     this.removeEntitiesOnShoulder();
+                 }
+@@ -1225,14 +_,17 @@
+         if (playerAttackEntityEvent.callEvent() && willAttack) { // Logic moved to willAttack local variable.
+             {
+         // Paper end - PlayerAttackEntityEvent
+-                float f = this.isAutoSpinAttack() ? this.autoSpinAttackDmg : (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
++                float f = this.isAutoSpinAttack() ? this.autoSpinAttackDmg : (float)this.getAttributeValue(attackDamageType.advantage); // Papyrus - Add damage type
+                 ItemStack weaponItem = this.getWeaponItem();
+                 DamageSource damageSource = Optional.ofNullable(weaponItem.getItem().getDamageSource(this)).orElse(this.damageSources().playerAttack(this));
+                 float f1 = this.getEnchantedDamage(target, f, damageSource) - f;
++                /* Papyrus - Remove attack cooldown
+                 float attackStrengthScale = this.getAttackStrengthScale(0.5F);
+                 f *= 0.2F + attackStrengthScale * attackStrengthScale * 0.8F;
+                 f1 *= attackStrengthScale;
+                 // this.resetAttackStrengthTicker(); // CraftBukkit - Moved to EntityLiving to reset the cooldown after the damage is dealt
++
++                 */
+                 if (target.getType().is(EntityTypeTags.REDIRECTABLE_PROJECTILE)
+                     && target instanceof Projectile projectile) {
+                         // CraftBukkit start
+@@ -1247,7 +_,7 @@
+                 {
+                     // CraftBukkit end
+                     if (f > 0.0F || f1 > 0.0F) {
+-                        boolean flag = attackStrengthScale > 0.9F;
++                        boolean flag = true; //attackStrengthScale > 0.9F; - Papyrus - Remove attack cooldown
+                         boolean flag1;
+                         if (this.isSprinting() && flag) {
+                             this.sendSoundEffect(this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, this.getSoundSource(), 1.0F, 1.0F); // Paper - send while respecting visibility
+@@ -1324,9 +_,9 @@
+                                         && !this.isAlliedTo(livingEntity2)
+                                         && (!(livingEntity2 instanceof ArmorStand) || !((ArmorStand)livingEntity2).isMarker())
+                                         && this.distanceToSqr(livingEntity2) < 9.0) {
+-                                        float f6 = this.getEnchantedDamage(livingEntity2, f5, damageSource) * attackStrengthScale;
++                                        float f6 = this.getEnchantedDamage(livingEntity2, f5, damageSource);// * attackStrengthScale; Papyrus - Remove attack cooldown
+                                         // CraftBukkit start - Only apply knockback if the damage hits
+-                                        if (!livingEntity2.hurtServer((ServerLevel) this.level(), this.damageSources().playerAttack(this).sweep().critical(flag2), f6)) { // Paper - add critical damage API
++                                        if (!livingEntity2.hurtServer((ServerLevel) this.level(), this.damageSources().playerAttack(this).sweep().critical(flag2), f6, attackDamageType)) { // Papyrus - Add damage type
+                                             continue;
+                                         }
+                                         // CraftBukkit end
