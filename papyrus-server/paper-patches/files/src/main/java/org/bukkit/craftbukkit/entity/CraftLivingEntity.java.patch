@@ -1,0 +1,142 @@
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
+@@ -2,12 +_,13 @@
+ 
+ import com.google.common.base.Preconditions;
+ import com.google.common.collect.Sets;
+-import java.util.ArrayList;
+-import java.util.Collection;
+-import java.util.Iterator;
+-import java.util.List;
+-import java.util.Set;
+-import java.util.UUID;
++
++import java.util.*;
++
++import de.erethon.spellbook.api.SpellData;
++import de.erethon.spellbook.api.SpellEffect;
++import de.erethon.spellbook.api.SpellTrait;
++import de.erethon.spellbook.api.SpellbookSpell;
+ import net.minecraft.core.component.DataComponents;
+ import net.minecraft.network.protocol.game.ClientboundHurtAnimationPacket;
+ import net.minecraft.server.level.ServerLevel;
+@@ -92,6 +_,21 @@
+ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
+     private CraftEntityEquipment equipment;
+ 
++    // Papyrus start
++    private Set<SpellData> unlockedSpellData = new HashSet<>();
++    private Set<SpellData> passiveSpells = new HashSet<>();
++    private Set<SpellbookSpell> activeSpells = new HashSet<>();
++    private Set<SpellTrait> activeTraits = new HashSet<>();
++    private final SpellData[] assignedSlots = new SpellData[8];
++
++    Map<SpellData, Long> usedSpells = new LinkedHashMap<>();
++    Set<SpellEffect> effects = new HashSet<>();
++    Set<SpellbookSpell> runningPassiveSpells = new HashSet<>();
++    private int maxEnergy = 0;
++    private int energy = 0;
++    private boolean channeling = false;
++    // Papyrus end
++
+     public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
+         super(server, entity);
+ 
+@@ -1211,4 +_,97 @@
+         return this.getHandle().canUseSlot(org.bukkit.craftbukkit.CraftEquipmentSlot.getNMS(slot));
+     }
+     // Paper end - Expose canUseSlot
++
++    // Papyrus start - Spellbook
++    @Override
++    public void sendParsedActionBar(String text) {
++        if (this instanceof Player player) {
++            player.sendActionBar(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(text));
++        }
++    }
++
++    @Override
++    public void sendParsedMessage(String text) {
++        if (this instanceof Player player) {
++            player.sendMessage(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(text));
++        }
++    }
++
++    @Override
++    public Map<SpellData, Long> getUsedSpells() {
++        return usedSpells;
++    }
++
++    @Override
++    public Set<SpellEffect> getEffects() {
++        return effects;
++    }
++
++    @Override
++    public Set<SpellbookSpell> getPassiveSpells() {
++        return runningPassiveSpells;
++    }
++
++    @Override
++    public Set<SpellbookSpell> getActiveSpells() {
++        return activeSpells;
++    }
++
++    @Override
++    public Set<SpellData> getUnlockedSpells() {
++        return unlockedSpellData;
++    }
++
++    @Override
++    public Set<SpellData> getUnlockedPassives() {
++        return passiveSpells;
++    }
++
++    @Override
++    public Set<SpellTrait> getActiveTraits() {
++        return activeTraits;
++    }
++
++    @Override
++    public int getEnergy() {
++        return energy;
++    }
++
++    @Override
++    public int setEnergy(int e) {
++        return energy = Math.min(e, maxEnergy);
++    }
++
++    @Override
++    public int getMaxEnergy() {
++        return maxEnergy;
++    }
++
++    @Override
++    public int setMaxEnergy(int e) {
++        return maxEnergy = e;
++    }
++
++    @Override
++    public int addEnergy(int e) {
++        energy = Math.min(energy + e, maxEnergy);
++        return energy;
++    }
++
++    @Override
++    public int removeEnergy(int e) {
++        energy = Math.max(energy - e, 0);
++        return energy;
++    }
++
++    @Override
++    public boolean isChanneling() {
++        return channeling;
++    }
++
++    @Override
++    public void setChanneling(boolean channeling) {
++        this.channeling = channeling;
++    }
++    // Papyrus end
+ }

@@ -18,3 +18,14 @@
  
      /**
       * Gets the height of the living entity's eyes above its Location.
+@@ -1468,4 +_,10 @@
+      */
+     boolean canUseEquipmentSlot(org.bukkit.inventory.@NotNull EquipmentSlot slot);
+     // Paper end - Expose canUseSlot
++
++    // Papyrus start - Actionbar utils
++    void sendParsedActionBar(String text);
++    void sendParsedMessage(String text);
++    // Papyrus end
++
+ }
