@@ -63,6 +63,7 @@ public class SpellLibrary {
             return;
         }
         ClassLoader classLoader = plugin.getClass().getClassLoader();
+        String currentPath = new File("").getAbsolutePath();
         try {
             for (File f : getFilesForFolder(new File(spellFolder, "spells"))) {
                 if (!f.getName().endsWith(".yml")) {
@@ -111,7 +112,7 @@ public class SpellLibrary {
             spellbookAPI.getServer().getLogger().info("Loaded " + loadedTraits.size() + " traits.");
 
         } catch (Exception e) {
-            spellbookAPI.getServer().getLogger().log(Level.SEVERE, "An error occurred while loading spells/effects/traits: " + e.getMessage());
+            spellbookAPI.getServer().getLogger().log(Level.SEVERE, "An error occurred while loading spells/effects/traits: " + currentPath + " Error: " + e.getMessage());
             e.printStackTrace();
         }
     }
