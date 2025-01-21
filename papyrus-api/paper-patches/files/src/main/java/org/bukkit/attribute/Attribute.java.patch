@@ -1,6 +1,6 @@
 --- a/src/main/java/org/bukkit/attribute/Attribute.java
 +++ b/src/main/java/org/bukkit/attribute/Attribute.java
-@@ -146,6 +_,34 @@
+@@ -146,6 +_,42 @@
       */
      Attribute SPAWN_REINFORCEMENTS = getAttribute("spawn_reinforcements");
  
@@ -21,9 +21,17 @@
 +    Attribute RESISTANCE_PHYSICAL = getAttribute("resistance_physical");
 +    Attribute RESISTANCE_PURE = getAttribute("resistance_pure");
 +
++    Attribute PENETRATION_AIR = getAttribute("penetration_air");
++    Attribute PENETRATION_EARTH = getAttribute("penetration_earth");
++    Attribute PENETRATION_FIRE = getAttribute("penetration_fire");
++    Attribute PENETRATION_WATER = getAttribute("penetration_water");
++    Attribute PENETRATION_MAGICAL = getAttribute("penetration_magical");
++    Attribute PENETRATION_PHYSICAL = getAttribute("penetration_physical");
++    Attribute PENETRATION_PURE = getAttribute("penetration_pure");
++
 +    Attribute STAT_CRIT_CHANCE = getAttribute("stat_crit_chance");
 +    Attribute STAT_CRIT_DAMAGE = getAttribute("stat_crit_damage");
-+    Attribute STAT_CRIT_CDR = getAttribute("stat_cdr");
++    Attribute STAT_CDR = getAttribute("stat_cdr");
 +    Attribute STAT_HEALTH_REGEN = getAttribute("stat_health_regen");
 +    Attribute STAT_ENERGY_REGEN = getAttribute("stat_energy_regen");
 +    Attribute STAT_ENERGY = getAttribute("stat_energy");

@@ -1,0 +1,105 @@
+--- a/net/minecraft/world/entity/ai/attributes/Attributes.java
++++ b/net/minecraft/world/entity/ai/attributes/Attributes.java
+@@ -92,6 +_,102 @@
+         "water_movement_efficiency", new RangedAttribute("attribute.name.water_movement_efficiency", 0.0, 0.0, 1.0).setSyncable(true)
+     );
+ 
++    // Papyrus start - Spellbook attributes
++    public static final Holder<Attribute> ADVANTAGE_AIR = register(
++        "advantage_air", new RangedAttribute("attribute.name.advantage_air", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> ADVANTAGE_EARTH = register(
++        "advantage_earth", new RangedAttribute("attribute.name.advantage_earth", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> ADVANTAGE_FIRE = register(
++        "advantage_fire", new RangedAttribute("attribute.name.advantage_fire", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> ADVANTAGE_WATER = register(
++        "advantage_water", new RangedAttribute("attribute.name.advantage_water", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> ADVANTAGE_PHYSICAL = register(
++        "advantage_physical", new RangedAttribute("attribute.name.advantage_physical", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> ADVANTAGE_MAGICAL = register(
++        "advantage_magical", new RangedAttribute("attribute.name.advantage_magical", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> ADVANTAGE_PURE = register(
++            "advantage_pure", new RangedAttribute("attribute.name.advantage_pure", 0.0, 0.0, 4096).setSyncable(false)
++    );
++
++    public static final Holder<Attribute> RESISTANCE_AIR = register(
++            "resistance_air", new RangedAttribute("attribute.name.resistance_air", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> RESISTANCE_EARTH = register(
++            "resistance_earth", new RangedAttribute("attribute.name.resistance_earth", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> RESISTANCE_FIRE = register(
++            "resistance_fire", new RangedAttribute("attribute.name.resistance_fire", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> RESISTANCE_WATER = register(
++            "resistance_water", new RangedAttribute("attribute.name.resistance_water", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> RESISTANCE_PHYSICAL = register(
++            "resistance_physical", new RangedAttribute("attribute.name.resistance_physical", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> RESISTANCE_MAGICAL = register(
++            "resistance_magical", new RangedAttribute("attribute.name.resistance_magical", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> RESISTANCE_PURE = register(
++            "resistance_pure", new RangedAttribute("attribute.name.resistance_pure", 0.0, 0.0, 4096).setSyncable(false)
++    );
++
++    public static final Holder<Attribute> PENETRATION_AIR = register(
++            "penetration_air", new RangedAttribute("attribute.name.penetration_air", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> PENETRATION_EARTH = register(
++            "penetration_earth", new RangedAttribute("attribute.name.penetration_earth", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> PENETRATION_FIRE = register(
++            "penetration_fire", new RangedAttribute("attribute.name.penetration_fire", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> PENETRATION_WATER = register(
++            "penetration_water", new RangedAttribute("attribute.name.penetration_water", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> PENETRATION_PHYSICAL = register(
++            "penetration_physical", new RangedAttribute("attribute.name.penetration_physical", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> PENETRATION_MAGICAL = register(
++            "penetration_magical", new RangedAttribute("attribute.name.penetration_magical", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> PENETRATION_PURE = register(
++            "penetration_pure", new RangedAttribute("attribute.name.penetration_pure", 0.0, 0.0, 4096).setSyncable(false)
++    );
++
++    public static final Holder<Attribute> STAT_CRIT_CHANCE = register(
++            "stat_crit_chance", new RangedAttribute("attribute.name.stat_crit_chance", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> STAT_CRIT_DAMAGE = register(
++            "stat_crit_damage", new RangedAttribute("attribute.name.stat_crit_damage", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> STAT_CDR = register(
++            "stat_cdr", new RangedAttribute("attribute.name.stat_cdr", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> STAT_HEALTH_REGEN = register(
++            "stat_health_regen", new RangedAttribute("attribute.name.stat_health_regen", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> STAT_ENERGY_REGEN = register(
++            "stat_energy_regen", new RangedAttribute("attribute.name.stat_energy_regen", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> STAT_ENERGY = register(
++            "stat_energy", new RangedAttribute("attribute.name.stat_energy", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> STAT_HEALINGPOWER = register(
++            "stat_healingpower", new RangedAttribute("attribute.name.stat_healingpower", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> STAT_TENACITY = register(
++            "stat_tenacity", new RangedAttribute("attribute.name.stat_tenacity", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    public static final Holder<Attribute> COMBAT_HURTINVULNERABILITY = register(
++            "combat_hurtinvulnerability", new RangedAttribute("attribute.name.combat_hurtinvulnerability", 0.0, 0.0, 4096).setSyncable(false)
++    );
++    // Papyrus end
++
+     private static Holder<Attribute> register(String name, Attribute attribute) {
+         return Registry.registerForHolder(BuiltInRegistries.ATTRIBUTE, ResourceLocation.withDefaultNamespace(name), attribute);
+     }
