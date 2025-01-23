@@ -55,6 +55,22 @@
                          boolean flag1;
                          if (this.isSprinting() && flag) {
                              this.sendSoundEffect(this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, this.getSoundSource(), 1.0F, 1.0F); // Paper - send while respecting visibility
+@@ -1288,7 +_,14 @@
+                         }
+ 
+                         Vec3 deltaMovement = target.getDeltaMovement();
+-                        boolean flag4 = target.hurtOrSimulate(damageSource, f2);
++                        // Papyrus start - Add damage type
++                        boolean flag4;
++                        if (target instanceof LivingEntity livingEntity) {
++                            flag4 = livingEntity.hurtServer((ServerLevel) level(), damageSource, f2, attackDamageType);
++                        } else {
++                            flag4 = target.hurtOrSimulate(damageSource, f2);
++                        }
++                        // Papyrus end
+                         if (flag4) {
+                             float f4 = this.getKnockback(target, damageSource) + (flag1 ? 1.0F : 0.0F);
+                             if (f4 > 0.0F) {
 @@ -1324,9 +_,9 @@
                                          && !this.isAlliedTo(livingEntity2)
                                          && (!(livingEntity2 instanceof ArmorStand) || !((ArmorStand)livingEntity2).isMarker())
