@@ -1,0 +1,19 @@
+--- a/net/minecraft/world/ContainerHelper.java
++++ b/net/minecraft/world/ContainerHelper.java
+@@ -7,6 +_,7 @@
+ import net.minecraft.nbt.CompoundTag;
+ import net.minecraft.nbt.ListTag;
+ import net.minecraft.world.item.ItemStack;
++import org.bukkit.Bukkit;
+ 
+ public class ContainerHelper {
+     public static final String TAG_ITEMS = "Items";
+@@ -52,6 +_,8 @@
+                 items.set(i1, ItemStack.parse(levelRegistry, compound).orElse(ItemStack.EMPTY));
+             }
+         }
++        de.erethon.papyrus.events.ContainerLoadEvent event = new de.erethon.papyrus.events.ContainerLoadEvent(items, !Bukkit.isPrimaryThread());
++        Bukkit.getPluginManager().callEvent(event);
+     }
+ 
+     public static int clearOrCountMatchingItems(Container container, Predicate<ItemStack> itemPredicate, int maxItems, boolean simulate) {
