@@ -1,0 +1,11 @@
+--- a/net/minecraft/network/protocol/game/ClientboundContainerSetSlotPacket.java
++++ b/net/minecraft/network/protocol/game/ClientboundContainerSetSlotPacket.java
+@@ -33,7 +_,7 @@
+         buffer.writeContainerId(this.containerId);
+         buffer.writeVarInt(this.stateId);
+         buffer.writeShort(this.slot);
+-        ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, this.itemStack);
++        ItemStack.OPTIONAL_TRANSLATED_STREAM_CODEC.encode(buffer, this.itemStack);
+     }
+ 
+     @Override

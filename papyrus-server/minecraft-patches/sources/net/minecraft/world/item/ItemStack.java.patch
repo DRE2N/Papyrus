@@ -1,0 +1,58 @@
+--- a/net/minecraft/world/item/ItemStack.java
++++ b/net/minecraft/world/item/ItemStack.java
+@@ -93,6 +_,7 @@
+ import net.minecraft.world.level.block.state.pattern.BlockInWorld;
+ import net.minecraft.world.level.saveddata.maps.MapId;
+ import org.apache.commons.lang3.mutable.MutableBoolean;
++import org.bukkit.craftbukkit.inventory.CraftItemStack;
+ import org.slf4j.Logger;
+ 
+ public final class ItemStack implements DataComponentHolder {
+@@ -168,6 +_,37 @@
+             }
+         }
+     };
++    // Papyrus start - Item translations. Just a copy of the above but without disabling the translator
++    public static final StreamCodec<RegistryFriendlyByteBuf, ItemStack> OPTIONAL_TRANSLATED_STREAM_CODEC = new StreamCodec<RegistryFriendlyByteBuf, ItemStack>() {
++        private static final StreamCodec<RegistryFriendlyByteBuf, Holder<Item>> ITEM_STREAM_CODEC = ByteBufCodecs.holderRegistry(Registries.ITEM);
++
++        public ItemStack decode(RegistryFriendlyByteBuf registryfriendlybytebuf) {
++            int i = registryfriendlybytebuf.readVarInt();
++
++            if (i <= 0) {
++                return ItemStack.EMPTY;
++            } else {
++                Holder<Item> holder = (Holder) ITEM_STREAM_CODEC.decode(registryfriendlybytebuf);
++                DataComponentPatch datacomponentpatch = (DataComponentPatch) DataComponentPatch.STREAM_CODEC.decode(registryfriendlybytebuf);
++                ItemStack itemstack = new ItemStack(holder, i, datacomponentpatch);
++                if (false && !datacomponentpatch.isEmpty()) {
++                    CraftItemStack.setItemMeta(itemstack, CraftItemStack.getItemMeta(itemstack));
++                }
++                return itemstack;
++            }
++        }
++
++        public void encode(RegistryFriendlyByteBuf registryfriendlybytebuf, ItemStack itemstack) {
++            if (itemstack.isEmpty() || itemstack.getItem() == null) { // CraftBukkit - NPE fix itemstack.getItem()
++                registryfriendlybytebuf.writeVarInt(0);
++            } else {
++                registryfriendlybytebuf.writeVarInt(itemstack.getCount());
++                ITEM_STREAM_CODEC.encode(registryfriendlybytebuf, itemstack.getItemHolder()); // CraftBukkit - decompile error
++                DataComponentPatch.STREAM_CODEC.encode(registryfriendlybytebuf, itemstack.components.asClientFilteredPatch()); // Papyrus - Filter out server-only components
++            }
++        }
++    };
++    // Papyrus end
+     public static final StreamCodec<RegistryFriendlyByteBuf, ItemStack> STREAM_CODEC = new StreamCodec<RegistryFriendlyByteBuf, ItemStack>() {
+         @Override
+         public ItemStack decode(RegistryFriendlyByteBuf buffer) {
+@@ -191,6 +_,9 @@
+     public static final StreamCodec<RegistryFriendlyByteBuf, List<ItemStack>> OPTIONAL_LIST_STREAM_CODEC = OPTIONAL_STREAM_CODEC.apply(
+         ByteBufCodecs.collection(NonNullList::createWithCapacity)
+     );
++    // Papyrus start - Item translations
++    public static final StreamCodec<RegistryFriendlyByteBuf, List<ItemStack>> OPTIONAL_TRANSLATED_LIST_STREAM_CODEC = ItemStack.OPTIONAL_TRANSLATED_STREAM_CODEC.apply(ByteBufCodecs.collection(NonNullList::createWithCapacity));
++    // Papyrus end
+     private static final Logger LOGGER = LogUtils.getLogger();
+     public static final ItemStack EMPTY = new ItemStack((Void)null);
+     private static final Component DISABLED_ITEM_TOOLTIP = Component.translatable("item.disabled").withStyle(ChatFormatting.RED);

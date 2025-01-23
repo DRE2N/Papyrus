@@ -1,0 +1,11 @@
+--- a/net/minecraft/network/protocol/game/ClientboundSetEquipmentPacket.java
++++ b/net/minecraft/network/protocol/game/ClientboundSetEquipmentPacket.java
+@@ -54,7 +_,7 @@
+             boolean flag = i != size - 1;
+             int ordinal = equipmentSlot.ordinal();
+             buffer.writeByte(flag ? ordinal | -128 : ordinal);
+-            ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, pair.getSecond());
++            ItemStack.OPTIONAL_TRANSLATED_STREAM_CODEC.encode(buffer, pair.getSecond());
+         }
+         } // Paper - data sanitization
+     }

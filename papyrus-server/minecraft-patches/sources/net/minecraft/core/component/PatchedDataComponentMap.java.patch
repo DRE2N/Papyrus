@@ -1,0 +1,22 @@
+--- a/net/minecraft/core/component/PatchedDataComponentMap.java
++++ b/net/minecraft/core/component/PatchedDataComponentMap.java
+@@ -212,6 +_,19 @@
+         }
+     }
+ 
++    // Papyrus start - ItemStack filtering
++    public DataComponentPatch asClientFilteredPatch() {
++        if (this.patch.isEmpty()) {
++            return DataComponentPatch.EMPTY;
++        } else {
++            PatchedDataComponentMap filteredPatch = this.copy();
++            filteredPatch.remove(DataComponents.ATTRIBUTE_MODIFIERS); // Client does not like our attributes
++            filteredPatch.remove(DataComponents.CUSTOM_DATA); // Players shouldn't know about item chances and so on
++            return filteredPatch.asPatch();
++        }
++    }
++    // Papyrus end
++
+     public PatchedDataComponentMap copy() {
+         this.copyOnWrite = true;
+         return new PatchedDataComponentMap(this.prototype, this.patch, true);
