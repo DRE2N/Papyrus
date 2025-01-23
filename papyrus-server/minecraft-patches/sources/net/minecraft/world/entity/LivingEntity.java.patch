@@ -88,7 +88,7 @@
      }
  
      @Override
-@@ -1359,8 +_,95 @@
+@@ -1359,8 +_,103 @@
          return this.getHealth() <= 0.0F;
      }
  
@@ -96,7 +96,6 @@
 +        if (isInvulnerable() || isRemoved() || dead || getHealth() <= 0F || isInvulnerableTo((ServerLevel) level, damageSource) || level().isClientSide) {
 +            return false;
 +        }
-+        markHurt();
 +        if (invulnerableTime > 0) {
 +            return false;
 +        }
@@ -108,6 +107,15 @@
 +                // Remove the value of the attackers penetration attribute from the victims resistance
 +                // This can result in negative resistance values, which is intended
 +                resistance = resistance - living.getAttributeValue(damageType.penetration);
++
++                double critChance = living.getAttributeValue(Attributes.STAT_CRIT_CHANCE);
++                double critDamage = living.getAttributeValue(Attributes.STAT_CRIT_DAMAGE);
++                // Crit damage. If I do 100 initial damage, and my crit damage is 200, I will do 200 damage
++                boolean isCrit = Math.random() < (critChance / 100.0);
++                if (isCrit && damageType == CraftPDamageType.PHYSICAL) {
++                    amount *= (float) (critDamage / 100.0);
++                }
++                damageSource.critical(isCrit);
 +            }
 +            finalDmg = amount - resistance;
 +            // Call the bukkit event
@@ -154,7 +162,6 @@
 +            if (this instanceof ServerPlayer player && player.isRealPlayer) {
 +                indicateDamage(x, z);
 +            }
-+            markHurt();
 +
 +            if (attacker instanceof LivingEntity living) {
 +                org.bukkit.entity.LivingEntity attackerBukkit = living.getBukkitLivingEntity();
@@ -165,6 +172,7 @@
 +                return false;
 +            }
 +        }
++        markHurt();
 +        invulnerableTime = (int) getAttribute(Attributes.COMBAT_HURTINVULNERABILITY).getValue();
 +        playHurtSound(damageSource);
 +        level().broadcastDamageEvent(this, damageSource); // hurt animation

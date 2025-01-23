@@ -17,12 +17,11 @@
  
      @Deprecated(since = "1.20.4", forRemoval = true)
      public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, final double damage) {
-@@ -27,6 +_,17 @@
+@@ -27,6 +_,16 @@
          this.critical = false; // Paper - add critical damage API
      }
  
 +    // Papyrus start - add damage type
-+    @Deprecated
 +    public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final DamageSource damageSource, final double damage, PDamageType type) {
 +        super(damagee, cause, damageSource, damage);
 +        this.damager = damager;
