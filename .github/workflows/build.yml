@@ -37,4 +37,4 @@ jobs:
           prerelease: true
           title: "Development Build"
           files: |
-            build/libs/papyrus-paperclip-*-mojmap.jar
+            papyrus-server/build/libs/papyrus-paperclip-*-mojmap.jar
