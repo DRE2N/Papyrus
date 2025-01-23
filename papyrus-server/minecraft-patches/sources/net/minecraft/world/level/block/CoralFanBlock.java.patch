@@ -1,0 +1,18 @@
+--- a/net/minecraft/world/level/block/CoralFanBlock.java
++++ b/net/minecraft/world/level/block/CoralFanBlock.java
+@@ -37,6 +_,7 @@
+ 
+     @Override
+     protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
++        if (true) return; // Papyrus - Disable coral fan updates
+         if (!scanForWater(state, level, pos)) {
+             // CraftBukkit start
+             if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralFanBlock.WATERLOGGED, false)).isCancelled()) {
+@@ -58,6 +_,7 @@
+         BlockState neighborState,
+         RandomSource random
+     ) {
++        if (true) return state; // Papyrus - Disable coral fan updates
+         if (direction == Direction.DOWN && !state.canSurvive(level, pos)) {
+             return Blocks.AIR.defaultBlockState();
+         } else {

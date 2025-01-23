@@ -1,0 +1,11 @@
+--- a/net/minecraft/network/protocol/game/ClientboundLoginPacket.java
++++ b/net/minecraft/network/protocol/game/ClientboundLoginPacket.java
+@@ -55,7 +_,7 @@
+         buffer.writeBoolean(this.showDeathScreen);
+         buffer.writeBoolean(this.doLimitedCrafting);
+         this.commonPlayerSpawnInfo.write(buffer);
+-        buffer.writeBoolean(this.enforcesSecureChat);
++        buffer.writeBoolean(true); // Papyrus - Enforce secure chat
+     }
+ 
+     @Override

@@ -1,0 +1,12 @@
+--- a/net/minecraft/world/level/levelgen/feature/CoralFeature.java
++++ b/net/minecraft/world/level/levelgen/feature/CoralFeature.java
+@@ -34,6 +_,9 @@
+     protected abstract boolean placeFeature(LevelAccessor level, RandomSource random, BlockPos pos, BlockState state);
+ 
+     protected boolean placeCoralBlock(LevelAccessor level, RandomSource random, BlockPos pos, BlockState state) {
++        if (true) {
++            level.setBlock(pos, state, 2); // Papyrus - Use the held block state
++        }
+         BlockPos blockPos = pos.above();
+         BlockState blockState = level.getBlockState(pos);
+         if ((blockState.is(Blocks.WATER) || blockState.is(BlockTags.CORALS)) && level.getBlockState(blockPos).is(Blocks.WATER)) {

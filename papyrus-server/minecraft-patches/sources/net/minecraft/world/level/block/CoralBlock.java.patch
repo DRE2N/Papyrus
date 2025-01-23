@@ -1,0 +1,18 @@
+--- a/net/minecraft/world/level/block/CoralBlock.java
++++ b/net/minecraft/world/level/block/CoralBlock.java
+@@ -36,6 +_,7 @@
+ 
+     @Override
+     protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
++        if (true) return; // Papyrus - don't tick coral
+         if (!this.scanForWater(level, pos)) {
+             // CraftBukkit start
+             if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState()).isCancelled()) {
+@@ -57,6 +_,7 @@
+         BlockState neighborState,
+         RandomSource random
+     ) {
++        if (true) return state; // Papyrus - don't update coral
+         if (!this.scanForWater(level, pos)) {
+             scheduledTickAccess.scheduleTick(pos, this, 60 + random.nextInt(40));
+         }

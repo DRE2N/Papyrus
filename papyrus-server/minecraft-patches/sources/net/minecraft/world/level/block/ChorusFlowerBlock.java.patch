@@ -1,0 +1,52 @@
+--- a/net/minecraft/world/level/block/ChorusFlowerBlock.java
++++ b/net/minecraft/world/level/block/ChorusFlowerBlock.java
+@@ -54,7 +_,8 @@
+ 
+     @Override
+     protected boolean isRandomlyTicking(BlockState state) {
+-        return state.getValue(AGE) < 5;
++        //return state.getValue(AGE) < 5;
++        return false; // Papyrus - Disable random ticking
+     }
+ 
+     @Override
+@@ -64,6 +_,9 @@
+ 
+     @Override
+     protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
++        if (true) { // Papyrus - Disable random ticking
++            return;
++        }
+         BlockPos blockPos = pos.above();
+         if (level.isEmptyBlock(blockPos) && blockPos.getY() <= level.getMaxY()) {
+             int ageValue = state.getValue(AGE);
+@@ -172,6 +_,9 @@
+         BlockState neighborState,
+         RandomSource random
+     ) {
++        if (true) { // Papyrus - Disable updates
++            return state;
++        }
+         if (direction != Direction.UP && !state.canSurvive(level, pos)) {
+             scheduledTickAccess.scheduleTick(pos, this, 1);
+         }
+@@ -181,6 +_,9 @@
+ 
+     @Override
+     protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
++        if (true) { // Papyrus - Disable random ticking
++            return true;
++        }
+         BlockState blockState = level.getBlockState(pos.below());
+         if (!blockState.is(this.plant) && !blockState.is(Blocks.END_STONE)) {
+             if (!blockState.isAir()) {
+@@ -271,6 +_,9 @@
+ 
+     @Override
+     protected void onProjectileHit(Level level, BlockState state, BlockHitResult hit, Projectile projectile) {
++        if (true) { // Papyrus - Disable updates
++            return;
++        }
+         BlockPos blockPos = hit.getBlockPos();
+         if (level instanceof ServerLevel serverLevel && projectile.mayInteract(serverLevel, blockPos) && projectile.mayBreak(serverLevel)) {
+             // CraftBukkit start

@@ -1,0 +1,10 @@
+--- a/net/minecraft/world/level/block/ChorusPlantBlock.java
++++ b/net/minecraft/world/level/block/ChorusPlantBlock.java
+@@ -120,6 +_,6 @@
+ 
+     @Override
+     protected boolean isPathfindable(BlockState state, PathComputationType pathComputationType) {
+-        return false;
++        return true; // Papyrus - Allow pathfinding on chorus plants
+     }
+ }
