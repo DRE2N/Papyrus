@@ -46,7 +46,7 @@
  
      @Override
      public float getBukkitYaw() {
-@@ -375,7 +_,39 @@
+@@ -375,7 +_,40 @@
              .add(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE)
              .add(Attributes.WATER_MOVEMENT_EFFICIENCY)
              .add(Attributes.MOVEMENT_EFFICIENCY)
@@ -70,6 +70,7 @@
 +            .add(Attributes.RESISTANCE_PHYSICAL)
 +            .add(Attributes.PENETRATION_PHYSICAL)
 +            .add(Attributes.PENETRATION_MAGICAL)
++            .add(Attributes.PENETRATION_PURE)
 +            .add(Attributes.PENETRATION_AIR)
 +            .add(Attributes.PENETRATION_EARTH)
 +            .add(Attributes.PENETRATION_FIRE)
