@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/Mob.java
 +++ b/net/minecraft/world/entity/Mob.java
-@@ -1595,12 +_,25 @@
+@@ -1595,12 +_,26 @@
  
      @Override
      public boolean doHurtTarget(ServerLevel level, Entity source) {
@@ -18,6 +18,7 @@
 +        boolean flag;
 +        if (source instanceof LivingEntity livingEntity) {
 +            f = (float) this.getAttributeValue(livingEntity.attackDamageType.advantage);
++            f = (float) getBukkitLivingEntity().onAttack(livingEntity.getBukkitLivingEntity(), f, attackDamageType.apiType);
 +            flag = livingEntity.hurtServer(level, damageSource, f, attackDamageType);
 +        } else {
 +            f = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);

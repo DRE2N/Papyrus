@@ -88,6 +88,14 @@
      }
  
      @Override
+@@ -549,6 +_,7 @@
+         }
+ 
+         this.tickEffects();
++        getBukkitLivingEntity().tick(); // Papyrus - Spellbook tick
+         this.animStepO = this.animStep;
+         this.yBodyRotO = this.yBodyRot;
+         this.yHeadRotO = this.yHeadRot;
 @@ -1359,8 +_,103 @@
          return this.getHealth() <= 0.0F;
      }
