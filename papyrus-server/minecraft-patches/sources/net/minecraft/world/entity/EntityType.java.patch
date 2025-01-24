@@ -1,0 +1,83 @@
+--- a/net/minecraft/world/entity/EntityType.java
++++ b/net/minecraft/world/entity/EntityType.java
+@@ -2,10 +_,8 @@
+ 
+ import com.google.common.collect.ImmutableSet;
+ import com.mojang.logging.LogUtils;
+-import java.util.List;
+-import java.util.Optional;
+-import java.util.Set;
+-import java.util.Spliterator;
++
++import java.util.*;
+ import java.util.function.Consumer;
+ import java.util.function.Function;
+ import java.util.function.Supplier;
+@@ -177,6 +_,7 @@
+ import net.minecraft.world.phys.shapes.Shapes;
+ import net.minecraft.world.phys.shapes.VoxelShape;
+ import org.bukkit.event.entity.CreatureSpawnEvent;
++import org.bukkit.plugin.Plugin;
+ import org.slf4j.Logger;
+ 
+ public class EntityType<T extends Entity> implements FeatureElement, EntityTypeTest<Entity, T> {
+@@ -184,6 +_,7 @@
+     private final Holder.Reference<EntityType<?>> builtInRegistryHolder = BuiltInRegistries.ENTITY_TYPE.createIntrusiveHolder(this);
+     private static final float MAGIC_HORSE_WIDTH = 1.3964844F;
+     private static final int DISPLAY_TRACKING_RANGE = 10;
++    public static final Map<String, Map.Entry<Plugin, Class<? extends Entity>>> customEntities = new HashMap<>(); // Papyrus - Custom Entities
+     public static final EntityType<Boat> ACACIA_BOAT = register(
+         "acacia_boat",
+         EntityType.Builder.of(boatFactory(() -> Items.ACACIA_BOAT), MobCategory.MISC)
+@@ -1362,17 +_,40 @@
+     }
+     public static Optional<Entity> create(CompoundTag tag, Level level, EntitySpawnReason spawnReason, boolean generation) {
+         // Paper end - Don't fire sync event during generation
+-        return Util.ifElse(
+-            by(tag).map(entityType -> entityType.create(level, spawnReason)),
+-            // Paper start - Don't fire sync event during generation
+-            entity -> {
+-                if (generation) entity.generation = true; // Paper - Don't fire sync event during generation
+-                entity.load(tag);
+-            },
+-            // Paper end - Don't fire sync event during generation
+-            () -> LOGGER.warn("Skipping Entity with id {}", tag.getString("id"))
+-        );
+-    }
++        return Util.ifElse(EntityType.by(tag).map((entitytypes) -> {
++            // Papyrus start - Custom entities
++            if (tag.contains("papyrus-entity-id")) {
++                String customEntityId = tag.getString("papyrus-entity-id");
++                if (customEntities.containsKey(customEntityId)) {
++                    Map.Entry<Plugin, Class<? extends Entity>> entityEntry = customEntities.get(customEntityId);
++                    if (entitytypes.getBaseClass().isAssignableFrom(entityEntry.getValue())) {
++                        return EntityType.createCustomEntity(entityEntry.getValue(), entitytypes, entityEntry.getKey(), level, spawnReason);
++                    } else {
++                        LOGGER.warn("Entity type {} is not assignable from custom entity class {}", entitytypes, entityEntry.getValue());
++                    }
++                }
++            }
++            // Papyrus end
++            return entitytypes.create(level, spawnReason);
++        }), (entity) -> {
++            if (generation) entity.generation = true; // Paper - Don't fire sync event during generation
++            entity.load(tag);
++        }, () -> {
++            EntityType.LOGGER.warn("Skipping Entity with id {}", tag.getString("id"));
++        });
++    }
++
++    // Papyrus start - Custom entities
++    public static Entity createCustomEntity(Class<? extends Entity> customEntityClass, EntityType<?> type, Plugin plugin, Level level, EntitySpawnReason spawnReason) {
++        try {
++            return customEntityClass.getConstructor(EntityType.class, Level.class).newInstance(type, level);
++        } catch (Exception e) {
++            LOGGER.warn("Failed to create custom entity", e);
++            e.printStackTrace();
++            return type.create(level, spawnReason);
++        }
++    }
++    // Papyrus end
+ 
+     public AABB getSpawnAABB(double x, double y, double z) {
+         float f = this.spawnDimensionsScale * this.getWidth() / 2.0F;
