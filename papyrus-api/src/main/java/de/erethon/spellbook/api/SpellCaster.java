@@ -343,5 +343,4 @@ public interface SpellCaster {
         }
     }
 
-
 }

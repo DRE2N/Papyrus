@@ -1,6 +1,6 @@
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftLivingEntity.java
-@@ -2,12 +_,13 @@
+@@ -2,12 +_,15 @@
  
  import com.google.common.base.Preconditions;
  import com.google.common.collect.Sets;
@@ -13,6 +13,8 @@
 +
 +import java.util.*;
 +
++import de.erethon.papyrus.CraftPDamageType;
++import de.erethon.papyrus.PDamageType;
 +import de.erethon.spellbook.api.SpellData;
 +import de.erethon.spellbook.api.SpellEffect;
 +import de.erethon.spellbook.api.SpellTrait;
@@ -20,6 +22,22 @@
  import net.minecraft.core.component.DataComponents;
  import net.minecraft.network.protocol.game.ClientboundHurtAnimationPacket;
  import net.minecraft.server.level.ServerLevel;
+@@ -15,6 +_,7 @@
+ import net.minecraft.sounds.SoundEvents;
+ import net.minecraft.world.InteractionHand;
+ import net.minecraft.world.damagesource.DamageSource;
++import net.minecraft.world.damagesource.DamageSources;
+ import net.minecraft.world.effect.MobEffectInstance;
+ import net.minecraft.world.entity.EntitySpawnReason;
+ import net.minecraft.world.entity.EntityType;
+@@ -50,6 +_,7 @@
+ import org.bukkit.craftbukkit.inventory.CraftEntityEquipment;
+ import org.bukkit.craftbukkit.inventory.CraftItemStack;
+ import org.bukkit.craftbukkit.potion.CraftPotionEffectType;
++import org.bukkit.damage.DamageType;
+ import org.bukkit.entity.AbstractArrow;
+ import org.bukkit.entity.AbstractWindCharge;
+ import org.bukkit.entity.Arrow;
 @@ -92,6 +_,21 @@
  public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      private CraftEntityEquipment equipment;
@@ -42,7 +60,7 @@
      public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
          super(server, entity);
  
-@@ -1211,4 +_,97 @@
+@@ -1211,4 +_,115 @@
          return this.getHandle().canUseSlot(org.bukkit.craftbukkit.CraftEquipmentSlot.getNMS(slot));
      }
      // Paper end - Expose canUseSlot
@@ -138,5 +156,23 @@
 +    public void setChanneling(boolean channeling) {
 +        this.channeling = channeling;
 +    }
++
++    @Override
++    public void damage(double amount, PDamageType type) {
++        getHandle().hurtServer((ServerLevel) getHandle().level(), getHandle().damageSources().generic(), (float) amount, CraftPDamageType.ofAPI(type));
++    }
++
++    @Override
++    public void damage(double amount, Entity source, PDamageType type) {
++        DamageSource reason = this.getHandle().damageSources().generic();
++
++        if (source instanceof HumanEntity) {
++            reason = this.getHandle().damageSources().playerAttack(((CraftHumanEntity) source).getHandle());
++        } else if (source instanceof LivingEntity) {
++            reason = this.getHandle().damageSources().mobAttack(((CraftLivingEntity) source).getHandle());
++        }
++        getHandle().hurtServer((ServerLevel) getHandle().level(), reason, (float) amount, CraftPDamageType.ofAPI(type));
++    }
++
 +    // Papyrus end
  }
