@@ -78,7 +78,7 @@ subprojects {
         repositories {
             maven {
                 name = "erethon"
-                url = uri("https://repo.erethon.de/releases/")
+                url = uri("https://repo.erethon.de/snapshots/")
                 credentials(PasswordCredentials::class)
                 authentication {
                     create<BasicAuthentication>("basic")
