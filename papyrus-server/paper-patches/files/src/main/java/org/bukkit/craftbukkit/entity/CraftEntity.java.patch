@@ -1,0 +1,27 @@
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
+@@ -67,9 +_,9 @@
+     private static PermissibleBase perm;
+     private static final CraftPersistentDataTypeRegistry DATA_TYPE_REGISTRY = new CraftPersistentDataTypeRegistry();
+ 
+-    protected final CraftServer server;
++    protected CraftServer server;
+     protected Entity entity;
+-    private final EntityType entityType;
++    protected EntityType entityType; // Papyrus - Make not final
+     private EntityDamageEvent lastDamageEvent;
+     private final CraftPersistentDataContainer persistentDataContainer = new CraftPersistentDataContainer(CraftEntity.DATA_TYPE_REGISTRY);
+     protected net.kyori.adventure.pointer.Pointers adventure$pointers; // Paper - implement pointers
+@@ -82,6 +_,12 @@
+         return this.apiScheduler;
+     };
+     // Paper end - Folia schedulers
++
++    // Papyrus start - Add new constructor
++    public CraftEntity(CraftServer server) {
++        this.server = server;
++    }
++    // Papyrus end
+ 
+     public CraftEntity(final CraftServer server, final Entity entity) {
+         this.server = server;

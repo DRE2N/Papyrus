@@ -38,7 +38,7 @@
  import org.bukkit.entity.AbstractArrow;
  import org.bukkit.entity.AbstractWindCharge;
  import org.bukkit.entity.Arrow;
-@@ -92,6 +_,21 @@
+@@ -92,6 +_,28 @@
  public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      private CraftEntityEquipment equipment;
  
@@ -56,6 +56,13 @@
 +    private int energy = 0;
 +    private boolean channeling = false;
 +    // Papyrus end
++
++    public CraftLivingEntity(CraftServer server) {
++        super(server);
++        if (entity instanceof Mob || entity instanceof ArmorStand) {
++            this.equipment = new CraftEntityEquipment(this);
++        }
++    }
 +
      public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
          super(server, entity);
