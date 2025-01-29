@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/entity/Entity.java
++++ b/net/minecraft/world/entity/Entity.java
+@@ -264,7 +_,7 @@
+     private final Set<TagKey<Fluid>> fluidOnEyes = new HashSet<>();
+     public int invulnerableTime;
+     protected boolean firstTick = true;
+-    protected final SynchedEntityData entityData;
++    protected SynchedEntityData entityData; // Papyrus - Not final, for Aether
+     protected static final EntityDataAccessor<Byte> DATA_SHARED_FLAGS_ID = SynchedEntityData.defineId(Entity.class, EntityDataSerializers.BYTE);
+     protected static final int FLAG_ONFIRE = 0;
+     private static final int FLAG_SHIFT_KEY_DOWN = 1;
