@@ -58,6 +58,11 @@ public interface SpellCaster {
      */
     Set<SpellTrait> getActiveTraits();
 
+    /**
+     * @return a Set of Tags that are currently on the SpellCaster.
+     */
+    Set<String> getTags();
+
     boolean isChanneling();
 
     void setChanneling(boolean channeling);

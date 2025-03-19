@@ -38,7 +38,7 @@
  import org.bukkit.entity.AbstractArrow;
  import org.bukkit.entity.AbstractWindCharge;
  import org.bukkit.entity.Arrow;
-@@ -92,6 +_,28 @@
+@@ -92,6 +_,29 @@
  public class CraftLivingEntity extends CraftEntity implements LivingEntity {
      private CraftEntityEquipment equipment;
  
@@ -48,6 +48,7 @@
 +    private Set<SpellbookSpell> activeSpells = new HashSet<>();
 +    private Set<SpellTrait> activeTraits = new HashSet<>();
 +    private final SpellData[] assignedSlots = new SpellData[8];
++    private final Set<String> tags = new HashSet<>();
 +
 +    Map<SpellData, Long> usedSpells = new LinkedHashMap<>();
 +    Set<SpellEffect> effects = new HashSet<>();
@@ -67,7 +68,7 @@
      public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
          super(server, entity);
  
-@@ -1211,4 +_,115 @@
+@@ -1211,4 +_,120 @@
          return this.getHandle().canUseSlot(org.bukkit.craftbukkit.CraftEquipmentSlot.getNMS(slot));
      }
      // Paper end - Expose canUseSlot
@@ -120,6 +121,11 @@
 +    @Override
 +    public Set<SpellTrait> getActiveTraits() {
 +        return activeTraits;
++    }
++
++    @Override
++    public Set<String> getTags() {
++        return tags;
 +    }
 +
 +    @Override
