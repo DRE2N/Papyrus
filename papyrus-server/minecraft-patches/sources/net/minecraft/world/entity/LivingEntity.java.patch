@@ -122,8 +122,8 @@
 +                boolean isCrit = Math.random() < (critChance / 100.0);
 +                if (isCrit && damageType == CraftPDamageType.PHYSICAL) {
 +                    amount *= (float) (critDamage / 100.0);
++                    damageSource.critical();
 +                }
-+                damageSource.critical(isCrit);
 +            }
 +            finalDmg = amount - resistance;
 +            // Call the bukkit event

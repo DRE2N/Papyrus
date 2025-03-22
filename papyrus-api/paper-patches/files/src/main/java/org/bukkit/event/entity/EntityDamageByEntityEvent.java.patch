@@ -13,27 +13,26 @@
  public class EntityDamageByEntityEvent extends EntityDamageEvent {
      private final Entity damager;
      private final boolean critical; // Paper
-+    private PDamageType damageType;
++    private PDamageType damageType; // Papyrus
  
      @Deprecated(since = "1.20.4", forRemoval = true)
      public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, final double damage) {
-@@ -27,6 +_,16 @@
-         this.critical = false; // Paper - add critical damage API
+@@ -47,6 +_,15 @@
+         this.critical = critical;
      }
  
 +    // Papyrus start - add damage type
 +    public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final DamageSource damageSource, final double damage, PDamageType type) {
-+        super(damagee, cause, damageSource, damage);
++       super(damagee, cause, damageSource, damage);
 +        this.damager = damager;
 +        this.critical = false; // Paper - add critical damage API
 +        this.damageType = type;
 +    }
 +    // Papyrus end
 +
-+
-     @Deprecated(since = "1.20.4", forRemoval = true)
-     public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final Map<DamageModifier, Double> modifiers, @NotNull final Map<DamageModifier, ? extends Function<? super Double, Double>> modifierFunctions) {
-         this(damager, damagee, cause, DamageSource.builder(DamageType.GENERIC).withCausingEntity(damager).withDirectEntity(damager).build(), modifiers, modifierFunctions);
+     /**
+      * Shows this damage instance was critical.
+      * The damage instance can be critical if the attacking player met the respective conditions.
 @@ -83,4 +_,14 @@
      public Entity getDamager() {
          return damager;
