@@ -18,7 +18,7 @@
  
      /**
       * Gets the height of the living entity's eyes above its Location.
-@@ -1476,4 +_,10 @@
+@@ -1452,4 +_,10 @@
       */
      boolean canUseEquipmentSlot(org.bukkit.inventory.@NotNull EquipmentSlot slot);
      // Paper end - Expose canUseSlot

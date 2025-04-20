@@ -9,21 +9,22 @@
  import org.bukkit.damage.DamageSource;
  import org.bukkit.damage.DamageType;
  import org.bukkit.entity.Entity;
-@@ -14,6 +_,7 @@
- public class EntityDamageByEntityEvent extends EntityDamageEvent {
+@@ -16,6 +_,8 @@
      private final Entity damager;
-     private final boolean critical; // Paper
-+    private PDamageType damageType; // Papyrus
+     private final boolean critical;
  
++    private PDamageType damageType; // Papyrus
++
+     @ApiStatus.Internal
      @Deprecated(since = "1.20.4", forRemoval = true)
      public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, final double damage) {
-@@ -47,6 +_,15 @@
+@@ -51,6 +_,15 @@
          this.critical = critical;
      }
  
 +    // Papyrus start - add damage type
 +    public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final DamageSource damageSource, final double damage, PDamageType type) {
-+       super(damagee, cause, damageSource, damage);
++        super(damagee, cause, damageSource, damage);
 +        this.damager = damager;
 +        this.critical = false; // Paper - add critical damage API
 +        this.damageType = type;
@@ -31,16 +32,16 @@
 +    // Papyrus end
 +
      /**
-      * Shows this damage instance was critical.
-      * The damage instance can be critical if the attacking player met the respective conditions.
-@@ -83,4 +_,14 @@
-     public Entity getDamager() {
-         return damager;
+      * Returns the entity that damaged the defender.
+      *
+@@ -84,4 +_,14 @@
+     public @NotNull DamageSource getDamageSource() {
+         return super.getDamageSource();
      }
 +
 +    // Papyrus start - add damage type
 +    public PDamageType getDamageType() {
-+        return damageType;
++       return damageType;
 +    }
 +
 +    public void setDamageType(PDamageType type) {

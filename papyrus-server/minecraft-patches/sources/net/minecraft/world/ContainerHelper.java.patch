@@ -9,7 +9,7 @@
  public class ContainerHelper {
      public static final String TAG_ITEMS = "Items";
 @@ -52,6 +_,8 @@
-                 items.set(i1, ItemStack.parse(levelRegistry, compound).orElse(ItemStack.EMPTY));
+                 items.set(i1, ItemStack.parse(levelRegistry, compoundOrEmpty).orElse(ItemStack.EMPTY));
              }
          }
 +        de.erethon.papyrus.events.ContainerLoadEvent event = new de.erethon.papyrus.events.ContainerLoadEvent(items, !Bukkit.isPrimaryThread());

@@ -1,27 +1,27 @@
 --- a/net/minecraft/world/entity/player/Inventory.java
 +++ b/net/minecraft/world/entity/player/Inventory.java
-@@ -3,6 +_,7 @@
- import com.google.common.collect.ImmutableList;
- import java.util.List;
+@@ -4,6 +_,7 @@
+ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+ import java.util.Map;
  import java.util.function.Predicate;
 +
  import net.minecraft.CrashReport;
  import net.minecraft.CrashReportCategory;
  import net.minecraft.ReportedException;
-@@ -21,6 +_,7 @@
+@@ -23,6 +_,7 @@
+ import net.minecraft.world.entity.EquipmentSlot;
  import net.minecraft.world.item.Item;
  import net.minecraft.world.item.ItemStack;
- import net.minecraft.world.level.block.state.BlockState;
 +import org.bukkit.Bukkit;
  
  public class Inventory implements Container, Nameable {
      public static final int POP_TIME_DURATION = 5;
-@@ -486,6 +_,10 @@
-                 this.offhand.set(i1 - 150, itemStack);
+@@ -495,6 +_,10 @@
+                 this.setItem(i1, itemStack);
              }
          }
 +        // Papyrus start - Inventory API
-+        de.erethon.papyrus.events.PlayerInventoryLoadEvent loadEvent = new de.erethon.papyrus.events.PlayerInventoryLoadEvent(player, items, armor, offhand);
++        de.erethon.papyrus.events.PlayerInventoryLoadEvent loadEvent = new de.erethon.papyrus.events.PlayerInventoryLoadEvent(player, items, equipment);
 +        Bukkit.getPluginManager().callEvent(loadEvent);
 +        // Papyrus end
      }

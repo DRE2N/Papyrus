@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
-@@ -11,6 +_,8 @@
+@@ -10,6 +_,8 @@
  import com.mojang.logging.LogUtils;
  import com.mojang.serialization.DataResult;
  import com.mojang.serialization.Dynamic;
@@ -9,44 +9,39 @@
  import it.unimi.dsi.fastutil.doubles.DoubleDoubleImmutablePair;
  import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
  import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
-@@ -136,6 +_,9 @@
- import net.minecraft.world.phys.shapes.VoxelShape;
+@@ -133,17 +_,16 @@
  import net.minecraft.world.scores.PlayerTeam;
  import net.minecraft.world.scores.Scoreboard;
+ import org.jetbrains.annotations.Contract;
 +import org.bukkit.Bukkit;
 +import org.bukkit.craftbukkit.damage.CraftDamageSource;
 +import org.bukkit.event.entity.*;
  import org.slf4j.Logger;
  
  // CraftBukkit start
-@@ -149,15 +_,7 @@
- import org.bukkit.craftbukkit.attribute.CraftAttributeMap;
+ import org.bukkit.Location;
  import org.bukkit.craftbukkit.event.CraftEventFactory;
  import org.bukkit.craftbukkit.inventory.CraftItemStack;
--import org.bukkit.event.entity.ArrowBodyCountChangeEvent;
 -import org.bukkit.event.entity.EntityDamageEvent;
  import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
--import org.bukkit.event.entity.EntityKnockbackEvent;
 -import org.bukkit.event.entity.EntityPotionEffectEvent;
 -import org.bukkit.event.entity.EntityRegainHealthEvent;
--import org.bukkit.event.entity.EntityRemoveEvent;
 -import org.bukkit.event.entity.EntityResurrectEvent;
--import org.bukkit.event.entity.EntityTeleportEvent;
- import org.bukkit.event.player.PlayerItemConsumeEvent;
  // CraftBukkit end
  
-@@ -301,6 +_,10 @@
-     public org.bukkit.craftbukkit.entity.CraftLivingEntity getBukkitLivingEntity() { return (org.bukkit.craftbukkit.entity.CraftLivingEntity) super.getBukkitEntity(); } // Paper
-     public boolean silentDeath = false; // Paper - mark entity as dying silently for cancellable death event
+ public abstract class LivingEntity extends Entity implements Attackable {
+@@ -274,6 +_,10 @@
      public net.kyori.adventure.util.TriState frictionState = net.kyori.adventure.util.TriState.NOT_SET; // Paper - Friction API
+     public int shieldBlockingDelay = this.level().paperConfig().misc.shieldBlockingDelay; // Paper - Make shield blocking delay configurable
+     // CraftBukkit end
 +    // Papyrus start - Spellbook
 +    public double energy = 0;
 +    public CraftPDamageType attackDamageType = CraftPDamageType.PHYSICAL;
 +    // Papyrus end
  
-     @Override
-     public float getBukkitYaw() {
-@@ -375,7 +_,40 @@
+     protected LivingEntity(EntityType<? extends LivingEntity> entityType, Level level) {
+         super(entityType, level);
+@@ -348,7 +_,40 @@
              .add(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE)
              .add(Attributes.WATER_MOVEMENT_EFFICIENCY)
              .add(Attributes.MOVEMENT_EFFICIENCY)
@@ -88,15 +83,15 @@
      }
  
      @Override
-@@ -549,6 +_,7 @@
+@@ -497,6 +_,7 @@
          }
  
          this.tickEffects();
 +        getBukkitLivingEntity().tick(); // Papyrus - Spellbook tick
-         this.animStepO = this.animStep;
-         this.yBodyRotO = this.yBodyRot;
          this.yHeadRotO = this.yHeadRot;
-@@ -1359,8 +_,103 @@
+         this.yBodyRotO = this.yBodyRot;
+         this.yRotO = this.getYRot();
+@@ -1372,8 +_,93 @@
          return this.getHealth() <= 0.0F;
      }
  
@@ -137,25 +132,15 @@
 +            }
 +            finalDmg = event.getDamage();
 +            if (damageSource.getEntity() instanceof ServerPlayer player && player.isRealPlayer) {
-+                setLastHurtByPlayer(player);
++                setLastHurtByPlayer(player, 100);
 +            } else if (damageSource.getEntity() instanceof LivingEntity livingEntity){
 +                setLastHurtByMob(livingEntity);
 +            }
 +
-+            if (isDamageSourceBlocked(damageSource)) { // TODO: Maybe change isDamageSourceBlocked logic
-+                hurtCurrentlyUsedShield(amount);
-+
-+                if (!damageSource.isDirect()) {
-+                    Entity entity = damageSource.getEntity();
-+                    if (entity instanceof LivingEntity && entity.distanceToSqr(this) <= (200.0D * 200.0D)) {
-+                        blockUsingShield((LivingEntity) entity);
-+                    }
-+                }
-+                finalDmg = finalDmg - getAttributeValue(damageType.resistance);
-+                if (useItem.is(Items.SHIELD)) {
-+                    // Use the HEAD slot modifier from shields for the damage
-+                    finalDmg -= useItem.get(DataComponents.ATTRIBUTE_MODIFIERS).compute(1, EquipmentSlot.HEAD);
-+                }
++            finalDmg = finalDmg - getAttributeValue(damageType.resistance);
++            if (useItem.is(Items.SHIELD)) {
++                // Use the HEAD slot modifier from shields for the damage
++                finalDmg -= useItem.get(DataComponents.ATTRIBUTE_MODIFIERS).compute(1, EquipmentSlot.HEAD);
 +            }
 +
 +            // Knockback
@@ -200,12 +185,12 @@
          if (this.isInvulnerableTo(level, damageSource)) {
              return false;
          } else if (this.isRemoved() || this.dead || this.getHealth() <= 0.0F) { // CraftBukkit - Don't allow entities that got set to dead/killed elsewhere to get damaged and die
-@@ -1522,7 +_,7 @@
+@@ -1525,7 +_,7 @@
  
              return flag2;
          }
 -    }
 +    } Papyrus - Remove this method */
  
-     protected void resolveMobResponsibleForDamage(DamageSource damageSource) {
-         if (damageSource.getEntity() instanceof LivingEntity livingEntity
+     public float applyItemBlocking(ServerLevel level, DamageSource damageSource, float damageAmount) {
+         // Paper start

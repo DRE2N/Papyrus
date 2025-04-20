@@ -9,7 +9,7 @@
  import net.minecraft.Util;
  import net.minecraft.core.BlockPos;
  import net.minecraft.core.Direction;
-@@ -907,7 +_,7 @@
+@@ -869,7 +_,7 @@
      }
  
      @Override
@@ -18,7 +18,7 @@
          if (this.isInvulnerableTo(level, damageSource)) {
              return false;
          } else if (this.abilities.invulnerable && !damageSource.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
-@@ -934,7 +_,7 @@
+@@ -896,7 +_,7 @@
  
                  // return amount != 0.0F && super.hurtServer(level, damageSource, amount);
                  // CraftBukkit start - Don't filter out 0 damage
@@ -27,7 +27,7 @@
                  if (damaged) {
                      this.removeEntitiesOnShoulder();
                  }
-@@ -1217,37 +_,39 @@
+@@ -1162,37 +_,39 @@
          // Paper start - PlayerAttackEntityEvent
          boolean willAttack = target.isAttackable() && !target.skipAttackInteraction(this); // Vanilla logic
          io.papermc.paper.event.player.PrePlayerAttackEntityEvent playerAttackEntityEvent = new io.papermc.paper.event.player.PrePlayerAttackEntityEvent(
@@ -83,11 +83,11 @@
                          boolean flag1;
                          if (this.isSprinting() && flag) {
                              this.sendSoundEffect(this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, this.getSoundSource(), 1.0F, 1.0F); // Paper - send while respecting visibility
-@@ -1258,14 +_,14 @@
+@@ -1203,14 +_,14 @@
  
                          f += weaponItem.getItem().getAttackDamageBonus(target, f, damageSource);
                          boolean flag2 = flag
--                            && this.fallDistance > 0.0F
+-                            && this.fallDistance > 0.0
 -                            && !this.onGround()
 -                            && !this.onClimbable()
 -                            && !this.isInWater()
@@ -106,7 +106,7 @@
                          flag2 = flag2 && !this.level().paperConfig().entities.behavior.disablePlayerCrits; // Paper - Toggleable player crits
                          if (flag2) {
                              damageSource = damageSource.critical(); // Paper - critical damage API
-@@ -1288,156 +_,164 @@
+@@ -1233,147 +_,164 @@
                          }
  
                          Vec3 deltaMovement = target.getDeltaMovement();
@@ -161,7 +161,7 @@
                                      if (livingEntity2 != this
 -                                        && livingEntity2 != target
 -                                        && !this.isAlliedTo(livingEntity2)
--                                        && (!(livingEntity2 instanceof ArmorStand) || !((ArmorStand)livingEntity2).isMarker())
+-                                        && !(livingEntity2 instanceof ArmorStand armorStand && armorStand.isMarker())
 -                                        && this.distanceToSqr(livingEntity2) < 9.0) {
 -                                        float f6 = this.getEnchantedDamage(livingEntity2, f5, damageSource) * attackStrengthScale;
 +                                            && livingEntity2 != target
@@ -169,25 +169,31 @@
 +                                            && (!(livingEntity2 instanceof ArmorStand) || !((ArmorStand) livingEntity2).isMarker())
 +                                            && this.distanceToSqr(livingEntity2) < 9.0) {
 +                                        float f6 = this.getEnchantedDamage(livingEntity2, f5, damageSource);// * attackStrengthScale; Papyrus - Remove attack cooldown
-                                         // CraftBukkit start - Only apply knockback if the event is not cancelled
+                                         // Paper start - Only apply knockback if the event is not cancelled
                                          livingEntity2.lastDamageCancelled = false;
--                                        livingEntity2.hurtServer((ServerLevel) this.level(), damageSource.knownCause(org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK), f6);
--                                        if (livingEntity2.lastDamageCancelled) {
--                                            continue;
--                                        }
--                                        // CraftBukkit end
--                                        livingEntity2.knockback(
--                                            0.4F, Mth.sin(this.getYRot() * (float) (Math.PI / 180.0)), -Mth.cos(this.getYRot() * (float) (Math.PI / 180.0))
--                                            , this, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.SWEEP_ATTACK // CraftBukkit // Paper - knockback events
--                                        );
--                                        // CraftBukkit - moved up
--                                        if (this.level() instanceof ServerLevel serverLevel) {
+-                                        if (this.level() instanceof ServerLevel serverLevel && livingEntity2.hurtServer(serverLevel, damageSource.knownCause(org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK), f6) && !livingEntity2.lastDamageCancelled) {
+-                                        // Paper end - Only apply knockback if the event is not cancelled
++                                        if (!livingEntity2.hurtServer((ServerLevel) this.level(), this.damageSources().playerAttack(this).critical(), f6, attackDamageType)) { // Papyrus - Add damage type
++                                            if (livingEntity2.lastDamageCancelled) {
++                                                continue;
++                                            }
++                                            // CraftBukkit end
+                                             livingEntity2.knockback(
+-                                                0.4F, Mth.sin(this.getYRot() * (float) (Math.PI / 180.0)), -Mth.cos(this.getYRot() * (float) (Math.PI / 180.0))
+-                                                    , this, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.SWEEP_ATTACK // Paper - knockback events
++                                                    0.4F, Mth.sin(this.getYRot() * (float) (Math.PI / 180.0)), -Mth.cos(this.getYRot() * (float) (Math.PI / 180.0))
++                                                    , this, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.SWEEP_ATTACK // CraftBukkit // Paper - knockback events
+                                             );
 -                                            EnchantmentHelper.doPostAttackEffects(serverLevel, livingEntity2, damageSource);
--                                        }
--                                    }
++                                            // CraftBukkit - moved up
++                                            if (this.level() instanceof ServerLevel serverLevel) {
++                                                EnchantmentHelper.doPostAttackEffects(serverLevel, livingEntity2, damageSource);
++                                            }
+                                         }
+                                     }
 -                                }
 -
--                                this.sendSoundEffect(this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, this.getSoundSource(), 1.0F, 1.0F); // Paper - send while respecting visibility
+-                                sendSoundEffect(this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, this.getSoundSource(), 1.0F, 1.0F); // Paper - send while respecting visibility
 -                                this.sweepAttack();
 -                            }
 -
@@ -215,17 +221,17 @@
 -                            }
 -
 -                            if (flag2) {
--                                this.sendSoundEffect(this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_CRIT, this.getSoundSource(), 1.0F, 1.0F); // Paper - send while respecting visibility
+-                                sendSoundEffect(this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_CRIT, this.getSoundSource(), 1.0F, 1.0F); // Paper - send while respecting visibility
 -                                this.crit(target);
 -                            }
 -
 -                            if (!flag2 && !flag3) {
 -                                if (flag) {
--                                    this.sendSoundEffect(
+-                                    sendSoundEffect(
 -                                            this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_STRONG, this.getSoundSource(), 1.0F, 1.0F // Paper - send while respecting visibility
 -                                        );
 -                                } else {
--                                    this.sendSoundEffect(
+-                                    sendSoundEffect(
 -                                            this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_WEAK, this.getSoundSource(), 1.0F, 1.0F // Paper - send while respecting visibility
 -                                        );
 -                                }
@@ -258,21 +264,6 @@
 -                                if (weaponItem.isEmpty()) {
 -                                    if (weaponItem == this.getMainHandItem()) {
 -                                        this.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-+                                        if (!livingEntity2.hurtServer((ServerLevel) this.level(), this.damageSources().playerAttack(this).critical(), f6, attackDamageType)) { // Papyrus - Add damage type
-+                                            if (livingEntity2.lastDamageCancelled) {
-+                                                continue;
-+                                            }
-+                                            // CraftBukkit end
-+                                            livingEntity2.knockback(
-+                                                    0.4F, Mth.sin(this.getYRot() * (float) (Math.PI / 180.0)), -Mth.cos(this.getYRot() * (float) (Math.PI / 180.0))
-+                                                    , this, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.SWEEP_ATTACK // CraftBukkit // Paper - knockback events
-+                                            );
-+                                            // CraftBukkit - moved up
-+                                            if (this.level() instanceof ServerLevel serverLevel) {
-+                                                EnchantmentHelper.doPostAttackEffects(serverLevel, livingEntity2, damageSource);
-+                                            }
-+                                        }
-+                                    }
 +
 +                                    this.sendSoundEffect(this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, this.getSoundSource(), 1.0F, 1.0F); // Paper - send while respecting visibility
 +                                    this.sweepAttack();
@@ -329,12 +320,8 @@
 -
 -                            this.causeFoodExhaustion(this.level().spigotConfig.combatExhaustion, org.bukkit.event.entity.EntityExhaustionEvent.ExhaustionReason.ATTACK); // CraftBukkit - EntityExhaustionEvent // Spigot - Change to use configurable value
 -                        } else {
--                            this.sendSoundEffect(this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_NODAMAGE, this.getSoundSource(), 1.0F, 1.0F); // Paper - send while respecting visibility
--                            // CraftBukkit start - resync on cancelled event
--                            if (this instanceof ServerPlayer) {
--                                ((ServerPlayer) this).getBukkitEntity().updateInventory();
--                            }
--                            // CraftBukkit end
+-                            sendSoundEffect(this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_NODAMAGE, this.getSoundSource(), 1.0F, 1.0F); // Paper - send while respecting visibility
+-                            this.containerMenu.sendAllDataToRemote(); // CraftBukkit - resync on cancelled event
 +                                        this.sendSoundEffect(
 +                                                this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_WEAK, this.getSoundSource(), 1.0F, 1.0F // Paper - send while respecting visibility
 +                                        );
@@ -393,6 +380,6 @@
 +                                }
 +                                // CraftBukkit end
 +                            }
+                             // CraftBukkit end
                          }
                      }
-                 }

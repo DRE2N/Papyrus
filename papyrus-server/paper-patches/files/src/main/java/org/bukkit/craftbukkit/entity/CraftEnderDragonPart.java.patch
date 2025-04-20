@@ -15,7 +15,7 @@
  
  public class CraftEnderDragonPart extends CraftComplexPart implements EnderDragonPart {
      public CraftEnderDragonPart(CraftServer server, net.minecraft.world.entity.boss.EnderDragonPart entity) {
-@@ -82,4 +_,23 @@
+@@ -80,4 +_,23 @@
      public void resetMaxHealth() {
          this.getParent().resetMaxHealth();
      }
