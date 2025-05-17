@@ -1,23 +1,17 @@
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftMob.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftMob.java
-@@ -12,12 +_,19 @@
- import org.bukkit.loot.LootTable;
+@@ -13,7 +_,13 @@
  
  public abstract class CraftMob extends CraftLivingEntity implements Mob, io.papermc.paper.entity.PaperLeashable { // Paper - Leashable API
+ 
+-    private final com.destroystokyo.paper.entity.PaperPathfinder paperPathfinder; // Paper - Mob Pathfinding API
++    protected com.destroystokyo.paper.entity.PaperPathfinder paperPathfinder; // Paper - Mob Pathfinding API // Papyrus - make not final
 +
 +    // Papyrus start - Add constructor
 +    public CraftMob(CraftServer server) {
 +        super(server);
 +    }
 +    // Papyrus end
-+
+ 
      public CraftMob(CraftServer server, net.minecraft.world.entity.Mob entity) {
          super(server, entity);
-          paperPathfinder = new com.destroystokyo.paper.entity.PaperPathfinder(entity); // Paper - Mob Pathfinding API
-     }
- 
--    private final com.destroystokyo.paper.entity.PaperPathfinder paperPathfinder; // Paper - Mob Pathfinding API
-+    protected com.destroystokyo.paper.entity.PaperPathfinder paperPathfinder; // Paper - Mob Pathfinding API // Papyrus - make not final
-     @Override public com.destroystokyo.paper.entity.Pathfinder getPathfinder() { return paperPathfinder; } // Paper - Mob Pathfinding API
-     @Override
-     public void setTarget(LivingEntity target) {

@@ -1,15 +1,15 @@
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
-@@ -205,6 +_,8 @@
- 
- import net.md_5.bungee.api.chat.BaseComponent; // Spigot
+@@ -204,6 +_,8 @@
+ import org.bukkit.scoreboard.Scoreboard;
+ import org.jetbrains.annotations.NotNull;
  
 +import de.erethon.papyrus.events.PlayerDataSaveEvent;
 +
  @DelegateDeserialization(CraftOfflinePlayer.class)
  public class CraftPlayer extends CraftHumanEntity implements Player {
-     private long firstPlayed = 0;
-@@ -1520,6 +_,10 @@
+ 
+@@ -1532,6 +_,10 @@
  
      @Override
      public void saveData() {
