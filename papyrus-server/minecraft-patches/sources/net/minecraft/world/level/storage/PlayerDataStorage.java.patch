@@ -1,0 +1,25 @@
+--- a/net/minecraft/world/level/storage/PlayerDataStorage.java
++++ b/net/minecraft/world/level/storage/PlayerDataStorage.java
+@@ -9,6 +_,8 @@
+ import java.time.LocalDateTime;
+ import java.time.format.DateTimeFormatter;
+ import java.util.Optional;
++
++import de.erethon.papyrus.events.PlayerDataRequestEvent;
+ import net.minecraft.Util;
+ import net.minecraft.nbt.CompoundTag;
+ import net.minecraft.nbt.NbtAccounter;
+@@ -59,6 +_,13 @@
+     }
+ 
+     private Optional<CompoundTag> load(String name, String stringUuid, String suffix) { // CraftBukkit
++        // Papyrus start - Player database
++        PlayerDataRequestEvent requestEvent = new PlayerDataRequestEvent(stringUuid);
++        requestEvent.callEvent();
++        if (requestEvent.getData() != null) { // Null -> No database present. Empty -> Database has no data for that player. We still don't want to run the Bukkit logic though.
++            return requestEvent.getData();
++        }
++        // Papyrus end
+         File file = new File(this.playerDir, stringUuid + suffix); // CraftBukkit
+         // Spigot start
+         boolean usingWrongFile = false;
