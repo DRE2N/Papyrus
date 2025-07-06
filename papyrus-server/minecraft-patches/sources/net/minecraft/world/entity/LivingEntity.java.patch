@@ -1,17 +1,17 @@
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
-@@ -10,6 +_,8 @@
- import com.mojang.logging.LogUtils;
+@@ -11,6 +_,8 @@
  import com.mojang.serialization.DataResult;
  import com.mojang.serialization.Dynamic;
+ import com.mojang.serialization.JavaOps;
 +import de.erethon.papyrus.CraftPDamageType;
 +import io.papermc.paper.event.entity.EntityKnockbackEvent;
  import it.unimi.dsi.fastutil.doubles.DoubleDoubleImmutablePair;
  import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
  import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
-@@ -133,17 +_,16 @@
- import net.minecraft.world.scores.PlayerTeam;
- import net.minecraft.world.scores.Scoreboard;
+@@ -136,17 +_,16 @@
+ import net.minecraft.world.waypoints.Waypoint;
+ import net.minecraft.world.waypoints.WaypointTransmitter;
  import org.jetbrains.annotations.Contract;
 +import org.bukkit.Bukkit;
 +import org.bukkit.craftbukkit.damage.CraftDamageSource;
@@ -29,8 +29,8 @@
 -import org.bukkit.event.entity.EntityResurrectEvent;
  // CraftBukkit end
  
- public abstract class LivingEntity extends Entity implements Attackable {
-@@ -274,6 +_,10 @@
+ public abstract class LivingEntity extends Entity implements Attackable, WaypointTransmitter {
+@@ -287,6 +_,10 @@
      public net.kyori.adventure.util.TriState frictionState = net.kyori.adventure.util.TriState.NOT_SET; // Paper - Friction API
      public int shieldBlockingDelay = this.level().paperConfig().misc.shieldBlockingDelay; // Paper - Make shield blocking delay configurable
      // CraftBukkit end
@@ -41,11 +41,14 @@
  
      protected LivingEntity(EntityType<? extends LivingEntity> entityType, Level level) {
          super(entityType, level);
-@@ -348,7 +_,40 @@
+@@ -360,9 +_,42 @@
              .add(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE)
              .add(Attributes.WATER_MOVEMENT_EFFICIENCY)
              .add(Attributes.MOVEMENT_EFFICIENCY)
--            .add(Attributes.ATTACK_KNOCKBACK);
+-            .add(Attributes.ATTACK_KNOCKBACK)
+             .add(Attributes.CAMERA_DISTANCE)
+-            .add(Attributes.WAYPOINT_TRANSMIT_RANGE);
++            .add(Attributes.WAYPOINT_TRANSMIT_RANGE)
 +            .add(Attributes.ATTACK_KNOCKBACK)
 +            // Papyrus start - Add attributes
 +            .add(Attributes.FOLLOW_RANGE) // Papyrus - For custom mobs
@@ -83,7 +86,7 @@
      }
  
      @Override
-@@ -497,6 +_,7 @@
+@@ -511,6 +_,7 @@
          }
  
          this.tickEffects();
@@ -91,7 +94,7 @@
          this.yHeadRotO = this.yHeadRot;
          this.yBodyRotO = this.yBodyRot;
          this.yRotO = this.getYRot();
-@@ -1372,8 +_,93 @@
+@@ -1404,8 +_,93 @@
          return this.getHealth() <= 0.0F;
      }
  
@@ -185,7 +188,7 @@
          if (this.isInvulnerableTo(level, damageSource)) {
              return false;
          } else if (this.isRemoved() || this.dead || this.getHealth() <= 0.0F) { // CraftBukkit - Don't allow entities that got set to dead/killed elsewhere to get damaged and die
-@@ -1525,7 +_,7 @@
+@@ -1557,7 +_,7 @@
  
              return flag2;
          }

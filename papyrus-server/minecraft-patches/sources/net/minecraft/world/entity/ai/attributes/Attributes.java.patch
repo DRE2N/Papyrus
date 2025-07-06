@@ -1,7 +1,7 @@
 --- a/net/minecraft/world/entity/ai/attributes/Attributes.java
 +++ b/net/minecraft/world/entity/ai/attributes/Attributes.java
-@@ -92,6 +_,102 @@
-         "water_movement_efficiency", new RangedAttribute("attribute.name.water_movement_efficiency", 0.0, 0.0, 1.0).setSyncable(true)
+@@ -101,6 +_,102 @@
+         "waypoint_receive_range", new RangedAttribute("attribute.name.waypoint_receive_range", 0.0, 0.0, 6.0E7).setSentiment(Attribute.Sentiment.NEUTRAL)
      );
  
 +    // Papyrus start - Spellbook attributes

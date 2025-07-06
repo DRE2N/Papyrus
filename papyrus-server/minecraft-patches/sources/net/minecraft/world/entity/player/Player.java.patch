@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
-@@ -15,6 +_,8 @@
+@@ -16,6 +_,8 @@
  import java.util.function.Predicate;
  import javax.annotation.Nonnull;
  import javax.annotation.Nullable;
@@ -9,7 +9,7 @@
  import net.minecraft.Util;
  import net.minecraft.core.BlockPos;
  import net.minecraft.core.Direction;
-@@ -869,7 +_,7 @@
+@@ -878,7 +_,7 @@
      }
  
      @Override
@@ -18,7 +18,7 @@
          if (this.isInvulnerableTo(level, damageSource)) {
              return false;
          } else if (this.abilities.invulnerable && !damageSource.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
-@@ -896,7 +_,7 @@
+@@ -905,7 +_,7 @@
  
                  // return amount != 0.0F && super.hurtServer(level, damageSource, amount);
                  // CraftBukkit start - Don't filter out 0 damage
@@ -27,7 +27,7 @@
                  if (damaged) {
                      this.removeEntitiesOnShoulder();
                  }
-@@ -1162,37 +_,39 @@
+@@ -1174,37 +_,39 @@
          // Paper start - PlayerAttackEntityEvent
          boolean willAttack = target.isAttackable() && !target.skipAttackInteraction(this); // Vanilla logic
          io.papermc.paper.event.player.PrePlayerAttackEntityEvent playerAttackEntityEvent = new io.papermc.paper.event.player.PrePlayerAttackEntityEvent(
@@ -83,7 +83,7 @@
                          boolean flag1;
                          if (this.isSprinting() && flag) {
                              this.sendSoundEffect(this, this.getX(), this.getY(), this.getZ(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, this.getSoundSource(), 1.0F, 1.0F); // Paper - send while respecting visibility
-@@ -1203,14 +_,14 @@
+@@ -1215,14 +_,14 @@
  
                          f += weaponItem.getItem().getAttackDamageBonus(target, f, damageSource);
                          boolean flag2 = flag
@@ -106,7 +106,7 @@
                          flag2 = flag2 && !this.level().paperConfig().entities.behavior.disablePlayerCrits; // Paper - Toggleable player crits
                          if (flag2) {
                              damageSource = damageSource.critical(); // Paper - critical damage API
-@@ -1233,147 +_,164 @@
+@@ -1245,147 +_,164 @@
                          }
  
                          Vec3 deltaMovement = target.getDeltaMovement();

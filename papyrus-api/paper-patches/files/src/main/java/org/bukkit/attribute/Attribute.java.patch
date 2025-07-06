@@ -1,8 +1,8 @@
 --- a/src/main/java/org/bukkit/attribute/Attribute.java
 +++ b/src/main/java/org/bukkit/attribute/Attribute.java
-@@ -146,6 +_,42 @@
+@@ -158,6 +_,42 @@
       */
-     Attribute SPAWN_REINFORCEMENTS = getAttribute("spawn_reinforcements");
+     Attribute WAYPOINT_RECEIVE_RANGE = getAttribute("waypoint_receive_range");
  
 +    // Papyrus start - Attributes
 +    Attribute ADVANTAGE_AIR = getAttribute("advantage_air");

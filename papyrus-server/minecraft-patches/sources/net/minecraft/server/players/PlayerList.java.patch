@@ -1,6 +1,6 @@
 --- a/net/minecraft/server/players/PlayerList.java
 +++ b/net/minecraft/server/players/PlayerList.java
-@@ -20,6 +_,8 @@
+@@ -19,6 +_,8 @@
  import java.util.function.Function;
  import java.util.function.Predicate;
  import javax.annotation.Nullable;
@@ -9,7 +9,7 @@
  import net.minecraft.ChatFormatting;
  import net.minecraft.FileUtil;
  import net.minecraft.commands.CommandSourceStack;
-@@ -487,7 +_,11 @@
+@@ -490,7 +_,11 @@
      protected void save(ServerPlayer player) {
          if (!player.getBukkitEntity().isPersistent()) return; // CraftBukkit
          player.lastSave = MinecraftServer.currentTick; // Paper - Incremental chunk and player saving

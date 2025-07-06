@@ -1,10 +1,9 @@
 --- a/net/minecraft/world/entity/EntityType.java
 +++ b/net/minecraft/world/entity/EntityType.java
-@@ -3,9 +_,8 @@
+@@ -3,8 +_,8 @@
  import com.google.common.collect.ImmutableSet;
  import com.mojang.logging.LogUtils;
  import com.mojang.serialization.Codec;
--import java.util.List;
 -import java.util.Optional;
 -import java.util.Set;
 +
@@ -12,7 +11,7 @@
  import java.util.function.Consumer;
  import java.util.function.Function;
  import java.util.function.Supplier;
-@@ -176,6 +_,7 @@
+@@ -177,6 +_,7 @@
  import net.minecraft.world.phys.Vec3;
  import net.minecraft.world.phys.shapes.Shapes;
  import net.minecraft.world.phys.shapes.VoxelShape;
@@ -20,7 +19,7 @@
  import org.slf4j.Logger;
  
  public class EntityType<T extends Entity> implements FeatureElement, EntityTypeTest<Entity, T> {
-@@ -184,6 +_,7 @@
+@@ -185,6 +_,7 @@
      public static final Codec<EntityType<?>> CODEC = BuiltInRegistries.ENTITY_TYPE.byNameCodec();
      private static final float MAGIC_HORSE_WIDTH = 1.3964844F;
      private static final int DISPLAY_TRACKING_RANGE = 10;
@@ -28,25 +27,25 @@
      public static final EntityType<Boat> ACACIA_BOAT = register(
          "acacia_boat",
          EntityType.Builder.of(boatFactory(() -> Items.ACACIA_BOAT), MobCategory.MISC)
-@@ -1376,17 +_,40 @@
+@@ -1386,17 +_,40 @@
  
-     public static Optional<Entity> create(CompoundTag tag, Level level, EntitySpawnReason spawnReason, boolean generation) {
+     public static Optional<Entity> create(ValueInput input, Level level, EntitySpawnReason spawnReason, boolean generation) {
          // Paper end - Don't fire sync event during generation
 -        return Util.ifElse(
--            by(tag).map(entityType -> entityType.create(level, spawnReason)),
--                // Paper start - Don't fire sync event during generation
--                entity -> {
--                    if (generation) entity.generation = true; // Paper - Don't fire sync event during generation
--                    entity.load(tag);
--                },
--                // Paper end - Don't fire sync event during generation
--            () -> LOGGER.warn("Skipping Entity with id {}", tag.getStringOr("id", "[invalid]"))
+-            by(input).map(entityType -> entityType.create(level, spawnReason)),
+-            // Paper start - Don't fire sync event during generation
+-            entity -> {
+-                if (generation) entity.generation = true; // Paper - Don't fire sync event during generation
+-                entity.load(input);
+-            },
+-            // Paper end - Don't fire sync event during generation
+-            () -> LOGGER.warn("Skipping Entity with id {}", input.getStringOr("id", "[invalid]"))
 -        );
 -    }
-+        return Util.ifElse(EntityType.by(tag).map((entitytypes) -> {
++        return Util.ifElse(EntityType.by(input).map((entitytypes) -> {
 +            // Papyrus start - Custom entities
-+            if (tag.contains("papyrus-entity-id")) {
-+                Optional<String> customEntityId = tag.getString("papyrus-entity-id");
++            if (input.getString("papyrus-entity-id").isPresent()) {
++                Optional<String> customEntityId = input.getString("papyrus-entity-id");
 +                if (customEntityId.isPresent() && customEntities.containsKey(customEntityId.get())) {
 +                    Map.Entry<Plugin, Class<? extends Entity>> entityEntry = customEntities.get(customEntityId.get());
 +                    if (entitytypes.getBaseClass().isAssignableFrom(entityEntry.getValue())) {
@@ -60,9 +59,9 @@
 +            return entitytypes.create(level, spawnReason);
 +        }), (entity) -> {
 +            if (generation) entity.generation = true; // Paper - Don't fire sync event during generation
-+            entity.load(tag);
++            entity.load(input);
 +        }, () -> {
-+            EntityType.LOGGER.warn("Skipping Entity with id {}", tag.getString("id"));
++            EntityType.LOGGER.warn("Skipping Entity with id {}", input.getString("id"));
 +        });
 +    }
 +
