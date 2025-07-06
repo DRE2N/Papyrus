@@ -1,14 +1,9 @@
 --- a/paper-server/build.gradle.kts
 +++ b/paper-server/build.gradle.kts
-@@ -25,12 +_,16 @@
- paperweight {
-     minecraftVersion = providers.gradleProperty("mcVersion")
-     gitFilePatches = false
--
--    spigot {
--        enabled = true
--        buildDataRef = "436eac9815c211be1a2a6ca0702615f995e81c44"
--        packageVersion = "v1_21_R5" // also needs to be updated in MappingEnvironment
+@@ -32,6 +_,16 @@
+         packageVersion = "v1_21_R5" // also needs to be updated in MappingEnvironment
+     }
+ 
 +    val papyrus = forks.register("papyrus") {
 +        upstream.patchDir("paperServer") {
 +            upstreamPath = "paper-server"
@@ -16,12 +11,12 @@
 +            patchesDir = rootDirectory.dir("papyrus-server/paper-patches")
 +            outputDir = rootDirectory.dir("paper-server")
 +        }
-     }
-+
++    }
 +    activeFork = papyrus
- 
++
      reobfPackagesToFix.addAll(
          "co.aikar.timings",
+         "com.destroystokyo.paper",
 @@ -107,7 +_,20 @@
      }
  }
