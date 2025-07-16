@@ -13,8 +13,8 @@ public class CraftCustomMob extends CraftMob implements CustomMob {
     public CraftCustomMob(CraftServer server, Mob entity) {
         super(server);
         this.server = server;
-        setHandle(entity);
         paperPathfinder = new com.destroystokyo.paper.entity.PaperPathfinder(entity);
+        setHandle(entity);
     }
 
     @Override
