@@ -1,0 +1,66 @@
+--- a/net/minecraft/world/level/NaturalSpawner.java
++++ b/net/minecraft/world/level/NaturalSpawner.java
+@@ -1,6 +_,9 @@
+ package net.minecraft.world.level;
+ 
+ import com.mojang.logging.LogUtils;
++import de.erethon.papyrus.events.MobSpawnForBiomeEvent;
++import de.erethon.papyrus.events.PreCategorySpawnEvent;
++import de.erethon.papyrus.events.MobSpawnFinalizedEvent;
+ import it.unimi.dsi.fastutil.objects.Object2IntMap;
+ import it.unimi.dsi.fastutil.objects.Object2IntMaps;
+ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+@@ -235,9 +_,21 @@
+         spawnCategoryForPosition(category, level, chunk, pos, filter, callback, Integer.MAX_VALUE, null);
+     }
+     public static void spawnCategoryForPosition(
+-        MobCategory category, ServerLevel level, ChunkAccess chunk, BlockPos pos, NaturalSpawner.SpawnPredicate filter, NaturalSpawner.AfterSpawnCallback callback, final int maxSpawns, final @Nullable Consumer<Entity> trackEntity
++        MobCategory category, ServerLevel level, ChunkAccess chunk, BlockPos pos, NaturalSpawner.SpawnPredicate filter, NaturalSpawner.AfterSpawnCallback callback, int maxSpawns, @Nullable Consumer<Entity> trackEntity
+     ) {
+-        // Paper end - Optional per player mob spawns
++        PreCategorySpawnEvent event = new PreCategorySpawnEvent(category, level, chunk, pos, filter, callback, maxSpawns, trackEntity);
++        event.callEvent();
++        if (event.isShouldAbortVanillaLogic()) {
++            return;
++        }
++        level = event.getLevel();
++        chunk = event.getChunk();
++        pos = event.getPos();
++        filter = event.getFilter();
++        callback = event.getCallback();
++        maxSpawns = event.getMaxSpawns();
++        trackEntity = event.getTrackEntity();
++         // Paper end - Optional per player mob spawns
+         StructureManager structureManager = level.structureManager();
+         ChunkGenerator generator = level.getChunkSource().getGenerator();
+         int y = pos.getY();
+@@ -294,12 +_,14 @@
+                                 if (mobForSpawn == null) {
+                                     return;
+                                 }
+-
+                                 mobForSpawn.snapTo(d, y, d1, level.random.nextFloat() * 360.0F, 0.0F);
+                                 if (isValidPositionForMob(level, mobForSpawn, d2)) {
+                                     spawnGroupData = mobForSpawn.finalizeSpawn(
+                                         level, level.getCurrentDifficultyAt(mobForSpawn.blockPosition()), EntitySpawnReason.NATURAL, spawnGroupData
+                                     );
++                                    MobSpawnFinalizedEvent spawnEvent = new MobSpawnFinalizedEvent(category, level, chunk, pos, mobForSpawn);
++                                    spawnEvent.callEvent();
++                                    mobForSpawn = spawnEvent.getMob();
+                                     // CraftBukkit start
+                                     // SPIGOT-7045: Give ocelot babies back their special spawn reason. Note: This is the only modification required as ocelots count as monsters which means they only spawn during normal chunk ticking and do not spawn during chunk generation as starter mobs.
+                                     level.addFreshEntityWithPassengers(mobForSpawn, (mobForSpawn instanceof net.minecraft.world.entity.animal.Ocelot && !((org.bukkit.entity.Ageable) mobForSpawn.getBukkitEntity()).isAdult()) ? org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.OCELOT_BABY : org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL);
+@@ -427,9 +_,12 @@
+     private static WeightedList<MobSpawnSettings.SpawnerData> mobsAt(
+         ServerLevel level, StructureManager structureManager, ChunkGenerator generator, MobCategory cetagory, BlockPos pos, @Nullable Holder<Biome> biome
+     ) {
+-        return isInNetherFortressBounds(pos, level, cetagory, structureManager)
++        WeightedList<MobSpawnSettings.SpawnerData> spawnerData = isInNetherFortressBounds(pos, level, cetagory, structureManager)
+             ? NetherFortressStructure.FORTRESS_ENEMIES
+             : generator.getMobsAt(biome != null ? biome : level.getBiome(pos), structureManager, cetagory, pos);
++        MobSpawnForBiomeEvent mobSpawnForBiomeEvent = new MobSpawnForBiomeEvent(level, structureManager, generator, cetagory, pos, biome, spawnerData);
++        mobSpawnForBiomeEvent.callEvent();
++        return mobSpawnForBiomeEvent.getSpawnerData();
+     }
+ 
+     public static boolean isInNetherFortressBounds(BlockPos pos, ServerLevel level, MobCategory category, StructureManager structureManager) {
