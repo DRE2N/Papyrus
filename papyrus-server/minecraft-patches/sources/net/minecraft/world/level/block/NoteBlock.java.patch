@@ -1,0 +1,22 @@
+--- a/net/minecraft/world/level/block/NoteBlock.java
++++ b/net/minecraft/world/level/block/NoteBlock.java
+@@ -111,6 +_,9 @@
+     protected InteractionResult useItemOn(
+         ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult
+     ) {
++        if (true) { // Papyrus - Disable interaction
++            return InteractionResult.CONSUME;
++        }
+         return (InteractionResult)(stack.is(ItemTags.NOTE_BLOCK_TOP_INSTRUMENTS) && hitResult.getDirection() == Direction.UP
+             ? InteractionResult.PASS
+             : super.useItemOn(stack, state, level, pos, player, hand, hitResult));
+@@ -118,6 +_,9 @@
+ 
+     @Override
+     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
++        if (true) { // Papyrus - Disable interaction
++            return InteractionResult.CONSUME;
++        }
+         if (!level.isClientSide) {
+             if (!io.papermc.paper.configuration.GlobalConfiguration.get().blockUpdates.disableNoteblockUpdates) state = state.cycle(NoteBlock.NOTE); // Paper - prevent noteblock note from updating
+             level.setBlock(pos, state, 3);
