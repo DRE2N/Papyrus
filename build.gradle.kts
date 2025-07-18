@@ -44,6 +44,7 @@ subprojects {
     repositories {
         mavenCentral()
         maven(paperMavenPublicUrl)
+        maven("https://repo.erethon.de/snapshots")
     }
 
     tasks.withType<AbstractArchiveTask>().configureEach {
