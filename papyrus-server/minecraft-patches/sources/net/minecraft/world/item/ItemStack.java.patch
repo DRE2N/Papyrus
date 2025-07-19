@@ -16,40 +16,12 @@
  import org.slf4j.Logger;
  
  public final class ItemStack implements DataComponentHolder {
-@@ -131,6 +_,37 @@
+@@ -131,6 +_,9 @@
      public static final StreamCodec<RegistryFriendlyByteBuf, ItemStack> OPTIONAL_UNTRUSTED_STREAM_CODEC = createOptionalStreamCodec(
          DataComponentPatch.DELIMITED_STREAM_CODEC
      );
 +    // Papyrus start - Item translations. Just a copy of the above but without disabling the translator
-+    public static final StreamCodec<RegistryFriendlyByteBuf, ItemStack> OPTIONAL_TRANSLATED_STREAM_CODEC = new StreamCodec<RegistryFriendlyByteBuf, ItemStack>() {
-+        private static final StreamCodec<RegistryFriendlyByteBuf, Holder<Item>> ITEM_STREAM_CODEC = ByteBufCodecs.holderRegistry(Registries.ITEM);
-+
-+        public ItemStack decode(RegistryFriendlyByteBuf registryfriendlybytebuf) {
-+            int i = registryfriendlybytebuf.readVarInt();
-+
-+            if (i <= 0) {
-+                return ItemStack.EMPTY;
-+            } else {
-+                Holder<Item> holder = (Holder) ITEM_STREAM_CODEC.decode(registryfriendlybytebuf);
-+                DataComponentPatch datacomponentpatch = (DataComponentPatch) DataComponentPatch.STREAM_CODEC.decode(registryfriendlybytebuf);
-+                ItemStack itemstack = new ItemStack(holder, i, datacomponentpatch);
-+                if (false && !datacomponentpatch.isEmpty()) {
-+                    CraftItemStack.setItemMeta(itemstack, CraftItemStack.getItemMeta(itemstack));
-+                }
-+                return itemstack;
-+            }
-+        }
-+
-+        public void encode(RegistryFriendlyByteBuf registryfriendlybytebuf, ItemStack itemstack) {
-+            if (itemstack.isEmpty() || itemstack.getItem() == null) { // CraftBukkit - NPE fix itemstack.getItem()
-+                registryfriendlybytebuf.writeVarInt(0);
-+            } else {
-+                registryfriendlybytebuf.writeVarInt(itemstack.getCount());
-+                ITEM_STREAM_CODEC.encode(registryfriendlybytebuf, itemstack.getItemHolder()); // CraftBukkit - decompile error
-+                DataComponentPatch.STREAM_CODEC.encode(registryfriendlybytebuf, itemstack.components.asClientFilteredPatch()); // Papyrus - Filter out server-only components
-+            }
-+        }
-+    };
++    public static final StreamCodec<RegistryFriendlyByteBuf, ItemStack> OPTIONAL_TRANSLATED_STREAM_CODEC = createOptionalAlwaysTranslatedStreamCodec(DataComponentPatch.STREAM_CODEC);
 +    // Papyrus end
      public static final StreamCodec<RegistryFriendlyByteBuf, ItemStack> STREAM_CODEC = new StreamCodec<RegistryFriendlyByteBuf, ItemStack>() {
          @Override
@@ -64,3 +36,45 @@
      private static final Logger LOGGER = LogUtils.getLogger();
      public static final ItemStack EMPTY = new ItemStack((Void)null);
      private static final Component DISABLED_ITEM_TOOLTIP = Component.translatable("item.disabled").withStyle(ChatFormatting.RED);
+@@ -213,6 +_,41 @@
+             }
+         };
+     }
++
++    // Papyrus start - Item translations
++    private static StreamCodec<RegistryFriendlyByteBuf, ItemStack> createOptionalAlwaysTranslatedStreamCodec(
++            final StreamCodec<RegistryFriendlyByteBuf, DataComponentPatch> codec
++    ) {
++        return new StreamCodec<RegistryFriendlyByteBuf, ItemStack>() {
++            @Override
++            public ItemStack decode(RegistryFriendlyByteBuf buffer) {
++                int varInt = buffer.readVarInt();
++                if (varInt <= 0) {
++                    return ItemStack.EMPTY;
++                } else {
++                    Holder<Item> holder = Item.STREAM_CODEC.decode(buffer);
++                    DataComponentPatch dataComponentPatch = codec.decode(buffer);
++                    return new ItemStack(holder, varInt, dataComponentPatch);
++                }
++            }
++
++            @Override
++            public void encode(RegistryFriendlyByteBuf buffer, ItemStack value) {
++                if (value.isEmpty() || value.getItem() == null) { // CraftBukkit - NPE fix itemstack.getItem()
++                    buffer.writeVarInt(0);
++                } else {
++                    buffer.writeVarInt(io.papermc.paper.util.sanitizer.ItemComponentSanitizer.sanitizeCount(io.papermc.paper.util.sanitizer.ItemObfuscationSession.currentSession(), value, value.getCount())); // Paper - potentially sanitize count
++                    Item.STREAM_CODEC.encode(buffer, value.getItemHolder());
++                    // Paper start - adventure; conditionally render translatable components
++                    try (final io.papermc.paper.util.SafeAutoClosable ignored = io.papermc.paper.util.sanitizer.ItemObfuscationSession.withContext(c -> c.itemStack(value))) { // pass the itemstack as context to the obfuscation session
++                        codec.encode(buffer, value.components.asPatch());
++                    }
++                    // Paper end - adventure; conditionally render translatable components
++                }
++            }
++        };
++    }
++    // Papyrus end
+ 
+     public static StreamCodec<RegistryFriendlyByteBuf, ItemStack> validatedStreamCodec(final StreamCodec<RegistryFriendlyByteBuf, ItemStack> codec) {
+         return new StreamCodec<RegistryFriendlyByteBuf, ItemStack>() {
