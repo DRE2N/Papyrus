@@ -91,6 +91,9 @@ public interface SpellCaster {
         }
     }
 
+    /**
+     * Called when this entity takes damage
+     */
     default double onDamage(LivingEntity damager, double damage, PDamageType type) {
         for (SpellbookSpell spell : getActiveSpells()) {
             damage = spell.onDamage(damager, damage, type);
@@ -104,6 +107,10 @@ public interface SpellCaster {
         return Math.max(damage, 0);
     }
 
+
+    /**
+     * Called when this entity deals damage
+     */
     default double onAttack(LivingEntity target, double damage, PDamageType type) {
         for (SpellbookSpell spell : getActiveSpells()) {
             damage = spell.onAttack(target, damage, type);

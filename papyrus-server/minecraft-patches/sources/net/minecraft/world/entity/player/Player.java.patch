@@ -106,7 +106,7 @@
                          flag2 = flag2 && !this.level().paperConfig().entities.behavior.disablePlayerCrits; // Paper - Toggleable player crits
                          if (flag2) {
                              damageSource = damageSource.critical(); // Paper - critical damage API
-@@ -1245,147 +_,164 @@
+@@ -1245,147 +_,165 @@
                          }
  
                          Vec3 deltaMovement = target.getDeltaMovement();
@@ -114,6 +114,7 @@
 +                        // Papyrus start - Add damage type
 +                        boolean flag4;
 +                        if (target instanceof LivingEntity livingEntity) {
++                            f2 = (float) getBukkitEntity().onAttack(livingEntity.getBukkitLivingEntity(), f2, attackDamageType.apiType);
 +                            flag4 = livingEntity.hurtServer((ServerLevel) level(), damageSource, f2, attackDamageType);
 +                        } else {
 +                            flag4 = target.hurtOrSimulate(damageSource, f2);
