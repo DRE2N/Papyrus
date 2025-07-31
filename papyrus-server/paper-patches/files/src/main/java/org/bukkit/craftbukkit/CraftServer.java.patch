@@ -13,22 +13,25 @@
      // Paper end - Folia reagion threading API
  
 +    // Papyrus start
-+    private final SpellbookAPI spellbookAPI;
++    private SpellbookAPI spellbookAPI;
 +    // Papyrus end
 +
      static {
          ConfigurationSerialization.registerClass(CraftOfflinePlayer.class);
          ConfigurationSerialization.registerClass(CraftPlayerProfile.class);
-@@ -496,6 +_,12 @@
+@@ -496,6 +_,15 @@
          this.potionBrewer = new io.papermc.paper.potion.PaperPotionBrewer(console); // Paper - custom potion mixes
          datapackManager = new io.papermc.paper.datapack.PaperDatapackManager(console.getPackRepository()); // Paper
          this.spark = new io.papermc.paper.SparksFly(this); // Paper - spark
-+        spellbookAPI = new SpellbookAPI(this); // Papyrus - Spellbook API
 +    }
 +
 +    @Override
 +    public SpellbookAPI getSpellbookAPI() {
 +        return spellbookAPI;
++    }
++
++    public void setSpellbookAPI(SpellbookAPI api) {
++        this.spellbookAPI = api;
      }
  
      public boolean getCommandBlockOverride(String command) {
