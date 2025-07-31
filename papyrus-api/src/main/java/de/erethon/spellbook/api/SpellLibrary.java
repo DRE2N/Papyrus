@@ -22,6 +22,7 @@ public class SpellLibrary {
 
     public SpellLibrary(SpellbookAPI spellbookAPI) {
         this.spellbookAPI = spellbookAPI;
+        reload();
     }
 
     public HashMap<String, SpellData> getLoaded() {
