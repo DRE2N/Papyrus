@@ -52,7 +52,7 @@
      implementation("org.ow2.asm:asm-commons:9.8")
      implementation("org.spongepowered:configurate-yaml:4.2.0-20250225.064233-199")
      implementation("org.spongepowered:configurate-core:4.2.0-20250225.064233-204") // Pinned dependency of above pinned yaml snapshot.
-+    implementation("de.erethon:bedrock:1.5.7") { isTransitive = false } // Papyrus - Bedrock
++    implementation("de.erethon:bedrock:1.5.8") { isTransitive = false } // Papyrus - Bedrock
  
      // Deps that were previously in the API but have now been moved here for backwards compat, eventually to be removed
      runtimeOnly("commons-lang:commons-lang:2.6")
