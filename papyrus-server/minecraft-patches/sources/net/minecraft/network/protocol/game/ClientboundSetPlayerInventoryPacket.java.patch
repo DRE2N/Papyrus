@@ -1,0 +1,11 @@
+--- a/net/minecraft/network/protocol/game/ClientboundSetPlayerInventoryPacket.java
++++ b/net/minecraft/network/protocol/game/ClientboundSetPlayerInventoryPacket.java
+@@ -11,7 +_,7 @@
+     public static final StreamCodec<RegistryFriendlyByteBuf, ClientboundSetPlayerInventoryPacket> STREAM_CODEC = StreamCodec.composite(
+         ByteBufCodecs.VAR_INT,
+         ClientboundSetPlayerInventoryPacket::slot,
+-        ItemStack.OPTIONAL_STREAM_CODEC,
++        ItemStack.OPTIONAL_TRANSLATED_STREAM_CODEC, // Papyrus - Use for obfuscation
+         ClientboundSetPlayerInventoryPacket::contents,
+         ClientboundSetPlayerInventoryPacket::new
+     );

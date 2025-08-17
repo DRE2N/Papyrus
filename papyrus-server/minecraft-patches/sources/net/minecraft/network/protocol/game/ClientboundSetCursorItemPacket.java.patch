@@ -1,0 +1,11 @@
+--- a/net/minecraft/network/protocol/game/ClientboundSetCursorItemPacket.java
++++ b/net/minecraft/network/protocol/game/ClientboundSetCursorItemPacket.java
+@@ -8,7 +_,7 @@
+ 
+ public record ClientboundSetCursorItemPacket(ItemStack contents) implements Packet<ClientGamePacketListener> {
+     public static final StreamCodec<RegistryFriendlyByteBuf, ClientboundSetCursorItemPacket> STREAM_CODEC = StreamCodec.composite(
+-        ItemStack.OPTIONAL_STREAM_CODEC, ClientboundSetCursorItemPacket::contents, ClientboundSetCursorItemPacket::new
++        ItemStack.OPTIONAL_TRANSLATED_STREAM_CODEC, ClientboundSetCursorItemPacket::contents, ClientboundSetCursorItemPacket::new // Papyrus - Use for obfuscation
+     );
+ 
+     @Override

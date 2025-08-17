@@ -67,7 +67,7 @@
 +                    Item.STREAM_CODEC.encode(buffer, value.getItemHolder());
 +                    // Paper start - adventure; conditionally render translatable components
 +                    try (final io.papermc.paper.util.SafeAutoClosable ignored = io.papermc.paper.util.sanitizer.ItemObfuscationSession.withContext(c -> c.itemStack(value))) { // pass the itemstack as context to the obfuscation session
-+                        codec.encode(buffer, value.components.asPatch());
++                        codec.encode(buffer, value.components.asClientFilteredPatch()); // Papyrus - Filter our components
 +                    }
 +                    // Paper end - adventure; conditionally render translatable components
 +                }
