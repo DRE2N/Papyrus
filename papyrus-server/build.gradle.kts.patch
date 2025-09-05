@@ -48,15 +48,17 @@
      implementation("ca.spottedleaf:concurrentutil:0.0.3")
      implementation("org.jline:jline-terminal-ffm:3.27.1") // use ffm on java 22+
      implementation("org.jline:jline-terminal-jni:3.27.1") // fall back to jni on java 21
-@@ -156,6 +_,7 @@
-     implementation("org.ow2.asm:asm-commons:9.8")
-     implementation("org.spongepowered:configurate-yaml:4.2.0-20250225.064233-199")
-     implementation("org.spongepowered:configurate-core:4.2.0-20250225.064233-204") // Pinned dependency of above pinned yaml snapshot.
-+    implementation("de.erethon:bedrock:1.5.17") // Papyrus - Bedrock
+@@ -186,6 +_,9 @@
+     // Spark
+     implementation("me.lucko:spark-api:0.1-20240720.200737-2")
+     implementation("me.lucko:spark-paper:1.10.133-20250413.112336-1")
++
++    // Erethon
++    implementation("de.erethon:bedrock:1.5.17")
+ }
  
-     // Deps that were previously in the API but have now been moved here for backwards compat, eventually to be removed
-     runtimeOnly("commons-lang:commons-lang:2.6")
-@@ -205,14 +_,14 @@
+ tasks.jar {
+@@ -200,14 +_,14 @@
          val gitBranch = git.exec(providers, "rev-parse", "--abbrev-ref", "HEAD").get().trim()
          attributes(
              "Main-Class" to "org.bukkit.craftbukkit.Main",
@@ -76,7 +78,7 @@
              "Build-Number" to (build ?: ""),
              "Build-Time" to buildTime.toString(),
              "Git-Branch" to gitBranch,
-@@ -271,12 +_,7 @@
+@@ -266,12 +_,7 @@
      jvmArgumentProviders.add(provider)
  }
  
