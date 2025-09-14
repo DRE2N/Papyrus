@@ -1,0 +1,20 @@
+--- a/net/minecraft/server/level/ChunkMap.java
++++ b/net/minecraft/server/level/ChunkMap.java
+@@ -249,7 +_,16 @@
+             return;
+         }
+ 
+-        final int index = entity.getType().getCategory().ordinal();
++        // Papyrus start
++        net.minecraft.world.entity.MobCategory category = entity.getType().getCategory();
++        if (entity instanceof de.erethon.papyrus.entities.MobSpawnCategoryOverrideProvider custom) {
++            category = custom.getEffectiveMobCategory();
++        }
++        if (category == net.minecraft.world.entity.MobCategory.MISC) {
++            return;
++        }
++        final int index = category.ordinal();
++        // Papyrus end
+         final ca.spottedleaf.moonrise.common.list.ReferenceList<ServerPlayer> inRange =
+             this.level.moonrise$getNearbyPlayers().getPlayers(entity.chunkPosition(), ca.spottedleaf.moonrise.common.misc.NearbyPlayers.NearbyMapType.TICK_VIEW_DISTANCE);
+         if (inRange == null) {
