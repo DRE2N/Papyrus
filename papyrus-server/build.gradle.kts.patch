@@ -54,7 +54,7 @@
      implementation("me.lucko:spark-paper:1.10.133-20250413.112336-1")
 +
 +    // Erethon
-+    implementation("de.erethon:bedrock:1.5.17")
++    implementation("de.erethon:bedrock:1.5.18")
  }
  
  tasks.jar {
