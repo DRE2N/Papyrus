@@ -11,7 +11,7 @@
  import java.util.function.Consumer;
  import java.util.function.Function;
  import java.util.function.Supplier;
-@@ -177,6 +_,7 @@
+@@ -182,6 +_,7 @@
  import net.minecraft.world.phys.Vec3;
  import net.minecraft.world.phys.shapes.Shapes;
  import net.minecraft.world.phys.shapes.VoxelShape;
@@ -19,19 +19,18 @@
  import org.slf4j.Logger;
  
  public class EntityType<T extends Entity> implements FeatureElement, EntityTypeTest<Entity, T> {
-@@ -185,6 +_,7 @@
-     public static final Codec<EntityType<?>> CODEC = BuiltInRegistries.ENTITY_TYPE.byNameCodec();
+@@ -191,6 +_,7 @@
+     public static final StreamCodec<RegistryFriendlyByteBuf, EntityType<?>> STREAM_CODEC = ByteBufCodecs.registry(Registries.ENTITY_TYPE);
      private static final float MAGIC_HORSE_WIDTH = 1.3964844F;
      private static final int DISPLAY_TRACKING_RANGE = 10;
 +    public static final Map<String, Map.Entry<Plugin, Class<? extends Entity>>> customEntities = new HashMap<>(); // Papyrus - Custom Entities
      public static final EntityType<Boat> ACACIA_BOAT = register(
          "acacia_boat",
          EntityType.Builder.of(boatFactory(() -> Items.ACACIA_BOAT), MobCategory.MISC)
-@@ -1386,17 +_,40 @@
- 
+@@ -1494,16 +_,45 @@
      public static Optional<Entity> create(ValueInput input, Level level, EntitySpawnReason spawnReason, boolean generation) {
          // Paper end - Don't fire sync event during generation
--        return Util.ifElse(
+         return Util.ifElse(
 -            by(input).map(entityType -> entityType.create(level, spawnReason)),
 -            // Paper start - Don't fire sync event during generation
 -            entity -> {
@@ -40,30 +39,33 @@
 -            },
 -            // Paper end - Don't fire sync event during generation
 -            () -> LOGGER.warn("Skipping Entity with id {}", input.getStringOr("id", "[invalid]"))
--        );
--    }
-+        return Util.ifElse(EntityType.by(input).map((entitytypes) -> {
-+            // Papyrus start - Custom entities
-+            if (input.getString("papyrus-entity-id").isPresent()) {
-+                Optional<String> customEntityId = input.getString("papyrus-entity-id");
-+                if (customEntityId.isPresent() && customEntities.containsKey(customEntityId.get())) {
-+                    Map.Entry<Plugin, Class<? extends Entity>> entityEntry = customEntities.get(customEntityId.get());
-+                    if (entitytypes.getBaseClass().isAssignableFrom(entityEntry.getValue())) {
-+                        return EntityType.createCustomEntity(entityEntry.getValue(), entitytypes, entityEntry.getKey(), level, spawnReason);
-+                    } else {
-+                        LOGGER.warn("Entity type {} is not assignable from custom entity class {}", entitytypes, entityEntry.getValue());
++                EntityType.by(input).map(entitytypes -> {
++                    // Papyrus start - Custom entities
++                    if (input.getString("papyrus-entity-id").isPresent()) {
++                        Optional<String> customEntityId = input.getString("papyrus-entity-id");
++                        if (customEntityId.isPresent() && customEntities.containsKey(customEntityId.get())) {
++                            Map.Entry<Plugin, Class<? extends Entity>> entityEntry = customEntities.get(customEntityId.get());
++                            if (entitytypes.getBaseClass().isAssignableFrom(entityEntry.getValue())) {
++                                return EntityType.createCustomEntity(entityEntry.getValue(), entitytypes, entityEntry.getKey(), level, spawnReason);
++                            } else {
++                                LOGGER.warn("Entity type {} is not assignable from custom entity class {}", entitytypes, entityEntry.getValue());
++                            }
++                        }
 +                    }
++                    // Papyrus end
++                    return entitytypes.create(level, spawnReason);
++                }),
++                // Paper start - Don't fire sync event during generation
++                entity -> {
++                    if (generation) entity.generation = true; // Paper - Don't fire sync event during generation
++                    entity.load(input);
++                },
++                // Paper end - Don't fire sync event during generation
++                () -> {
++                    EntityType.LOGGER.warn("Skipping Entity with id {}", input.getString("id"));
 +                }
-+            }
-+            // Papyrus end
-+            return entitytypes.create(level, spawnReason);
-+        }), (entity) -> {
-+            if (generation) entity.generation = true; // Paper - Don't fire sync event during generation
-+            entity.load(input);
-+        }, () -> {
-+            EntityType.LOGGER.warn("Skipping Entity with id {}", input.getString("id"));
-+        });
-+    }
+         );
+     }
 +
 +    // Papyrus start - Custom entities
 +    public static Entity createCustomEntity(Class<? extends Entity> customEntityClass, EntityType<?> type, Plugin plugin, Level level, EntitySpawnReason spawnReason) {
@@ -77,5 +79,5 @@
 +    }
 +    // Papyrus end
  
-     public AABB getSpawnAABB(double x, double y, double z) {
-         float f = this.spawnDimensionsScale * this.getWidth() / 2.0F;
+     public static Optional<Entity> create(EntityType<?> entityType, ValueInput input, Level level, EntitySpawnReason spawnReason) {
+         Optional<Entity> optional = Optional.ofNullable(entityType.create(level, spawnReason));

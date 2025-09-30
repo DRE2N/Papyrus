@@ -9,7 +9,7 @@
  import net.kyori.adventure.text.Component;
  import net.kyori.adventure.text.minimessage.MiniMessage;
  import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
-@@ -2723,4 +_,6 @@
+@@ -2760,4 +_,6 @@
       */
      void allowPausing(@NotNull org.bukkit.plugin.Plugin plugin, boolean value);
      // Paper end - API to check if the server is sleeping

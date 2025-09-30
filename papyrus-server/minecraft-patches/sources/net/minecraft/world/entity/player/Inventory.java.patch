@@ -16,7 +16,7 @@
  
  public class Inventory implements Container, Nameable {
      public static final int POP_TIME_DURATION = 5;
-@@ -506,6 +_,10 @@
+@@ -507,6 +_,10 @@
                  this.setItem(itemStackWithSlot.slot(), itemStackWithSlot.stack());
              }
          }

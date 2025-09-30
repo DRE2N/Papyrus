@@ -9,17 +9,17 @@
  import net.minecraft.Util;
  import net.minecraft.nbt.CompoundTag;
  import net.minecraft.nbt.NbtAccounter;
-@@ -62,6 +_,13 @@
+@@ -93,6 +_,13 @@
      }
  
-     private Optional<CompoundTag> load(String name, String stringUuid, String suffix) { // CraftBukkit
+     public Optional<CompoundTag> load(NameAndId nameAndId) {
 +        // Papyrus start - Player database
-+        PlayerDataRequestEvent requestEvent = new PlayerDataRequestEvent(stringUuid);
++        PlayerDataRequestEvent requestEvent = new PlayerDataRequestEvent(nameAndId.id().toString());
 +        requestEvent.callEvent();
 +        if (requestEvent.getData() != null) { // Null -> No database present. Empty -> Database has no data for that player. We still don't want to run the Bukkit logic though.
 +            return requestEvent.getData();
 +        }
 +        // Papyrus end
-         File file = new File(this.playerDir, stringUuid + suffix); // CraftBukkit
-         // Spigot start
-         boolean usingWrongFile = false;
+         Optional<CompoundTag> optional = this.load(nameAndId, ".dat");
+         if (optional.isEmpty()) {
+             this.backup(nameAndId, ".dat");

@@ -10,7 +10,7 @@
  import it.unimi.dsi.fastutil.objects.Object2IntMap;
  import it.unimi.dsi.fastutil.objects.Object2IntMaps;
  import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-@@ -79,7 +_,11 @@
+@@ -81,7 +_,11 @@
  
          for (Entity entity : entities) {
              if (!(entity instanceof Mob mob && (mob.isPersistenceRequired() || mob.requiresCustomPersistence()))) {
@@ -23,7 +23,7 @@
                  if (category != MobCategory.MISC) {
                      // Paper start - Only count natural spawns
                      if (!entity.level().paperConfig().entities.spawning.countAllMobsForSpawning &&
-@@ -235,9 +_,21 @@
+@@ -237,9 +_,21 @@
          spawnCategoryForPosition(category, level, chunk, pos, filter, callback, Integer.MAX_VALUE, null);
      }
      public static void spawnCategoryForPosition(
@@ -47,7 +47,7 @@
          StructureManager structureManager = level.structureManager();
          ChunkGenerator generator = level.getChunkSource().getGenerator();
          int y = pos.getY();
-@@ -294,12 +_,14 @@
+@@ -296,12 +_,14 @@
                                  if (mobForSpawn == null) {
                                      return;
                                  }

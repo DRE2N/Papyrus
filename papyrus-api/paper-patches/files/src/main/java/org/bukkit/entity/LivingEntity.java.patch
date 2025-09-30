@@ -1,24 +1,15 @@
 --- a/src/main/java/org/bukkit/entity/LivingEntity.java
 +++ b/src/main/java/org/bukkit/entity/LivingEntity.java
-@@ -6,6 +_,8 @@
- import java.util.UUID;
- import io.papermc.paper.world.damagesource.CombatTracker;
- import io.papermc.paper.world.damagesource.FallLocationType;
-+
-+import de.erethon.spellbook.api.SpellCaster;
- import org.bukkit.FluidCollisionMode;
- import org.bukkit.Location;
- import org.bukkit.Material;
-@@ -30,7 +_,7 @@
+@@ -29,7 +_,7 @@
  /**
   * Represents a living entity, such as a monster or player
   */
 -public interface LivingEntity extends Attributable, Damageable, ProjectileSource, io.papermc.paper.entity.Frictional { // Paper
-+public interface LivingEntity extends Attributable, Damageable, ProjectileSource, io.papermc.paper.entity.Frictional, SpellCaster { // Papyrus
++public interface LivingEntity extends Attributable, Damageable, ProjectileSource, io.papermc.paper.entity.Frictional, de.erethon.spellbook.api.SpellCaster { // Papyrus
  
      /**
       * Gets the height of the living entity's eyes above its Location.
-@@ -1455,6 +_,12 @@
+@@ -1466,6 +_,12 @@
       */
      boolean canUseEquipmentSlot(org.bukkit.inventory.@NotNull EquipmentSlot slot);
      // Paper end - Expose canUseSlot

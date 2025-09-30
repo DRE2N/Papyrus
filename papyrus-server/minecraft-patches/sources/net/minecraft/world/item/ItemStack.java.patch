@@ -1,14 +1,6 @@
 --- a/net/minecraft/world/item/ItemStack.java
 +++ b/net/minecraft/world/item/ItemStack.java
-@@ -33,6 +_,7 @@
- import net.minecraft.core.component.DataComponents;
- import net.minecraft.core.component.PatchedDataComponentMap;
- import net.minecraft.core.registries.BuiltInRegistries;
-+import net.minecraft.core.registries.Registries;
- import net.minecraft.network.RegistryFriendlyByteBuf;
- import net.minecraft.network.chat.CommonComponents;
- import net.minecraft.network.chat.Component;
-@@ -92,6 +_,7 @@
+@@ -94,6 +_,7 @@
  import net.minecraft.world.level.block.state.pattern.BlockInWorld;
  import org.apache.commons.lang3.function.TriConsumer;
  import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -16,7 +8,7 @@
  import org.slf4j.Logger;
  
  public final class ItemStack implements DataComponentHolder {
-@@ -131,6 +_,9 @@
+@@ -133,6 +_,9 @@
      public static final StreamCodec<RegistryFriendlyByteBuf, ItemStack> OPTIONAL_UNTRUSTED_STREAM_CODEC = createOptionalStreamCodec(
          DataComponentPatch.DELIMITED_STREAM_CODEC
      );
@@ -26,7 +18,7 @@
      public static final StreamCodec<RegistryFriendlyByteBuf, ItemStack> STREAM_CODEC = new StreamCodec<RegistryFriendlyByteBuf, ItemStack>() {
          @Override
          public ItemStack decode(RegistryFriendlyByteBuf buffer) {
-@@ -154,6 +_,9 @@
+@@ -156,6 +_,9 @@
      public static final StreamCodec<RegistryFriendlyByteBuf, List<ItemStack>> OPTIONAL_LIST_STREAM_CODEC = OPTIONAL_STREAM_CODEC.apply(
          ByteBufCodecs.collection(NonNullList::createWithCapacity)
      );
@@ -36,7 +28,7 @@
      private static final Logger LOGGER = LogUtils.getLogger();
      public static final ItemStack EMPTY = new ItemStack((Void)null);
      private static final Component DISABLED_ITEM_TOOLTIP = Component.translatable("item.disabled").withStyle(ChatFormatting.RED);
-@@ -213,6 +_,41 @@
+@@ -215,6 +_,41 @@
              }
          };
      }
