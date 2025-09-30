@@ -90,10 +90,28 @@
          }
  
          this.tickEffects();
-+        getBukkitLivingEntity().tick(); // Papyrus - Spellbook tick
++        spellbookTick(); // Papyrus - Spellbook
          this.yHeadRotO = this.yHeadRot;
          this.yBodyRotO = this.yBodyRot;
          this.yRotO = this.getYRot();
+@@ -520,6 +_,17 @@
+         profilerFiller.pop();
+     }
+ 
++    // Papyrus start
++    private void spellbookTick() {
++        if (tickCount % 20 == 0) {
++            double energyRegen = getAttribute(Attributes.STAT_ENERGY_REGEN).getValue();
++            double healthRegen = getAttribute(Attributes.STAT_HEALTH_REGEN).getValue();
++            getBukkitLivingEntity().addEnergy((int) energyRegen);
++            heal((float) healthRegen);
++        }
++    }
++    // Papyrus end
++
+     protected boolean shouldTakeDrowningDamage() {
+         return this.getAirSupply() <= -20;
+     }
 @@ -1410,8 +_,93 @@
          return this.getHealth() <= 0.0F;
      }

@@ -63,21 +63,25 @@
                                      // CraftBukkit start
                                      // SPIGOT-7045: Give ocelot babies back their special spawn reason. Note: This is the only modification required as ocelots count as monsters which means they only spawn during normal chunk ticking and do not spawn during chunk generation as starter mobs.
                                      level.addFreshEntityWithPassengers(mobForSpawn, (mobForSpawn instanceof net.minecraft.world.entity.animal.Ocelot && !((org.bukkit.entity.Ageable) mobForSpawn.getBukkitEntity()).isAdult()) ? org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.OCELOT_BABY : org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL);
-@@ -427,9 +_,12 @@
+@@ -433,9 +_,14 @@
      private static WeightedList<MobSpawnSettings.SpawnerData> mobsAt(
-         ServerLevel level, StructureManager structureManager, ChunkGenerator generator, MobCategory cetagory, BlockPos pos, @Nullable Holder<Biome> biome
+         ServerLevel level, StructureManager structureManager, ChunkGenerator generator, MobCategory category, BlockPos pos, @Nullable Holder<Biome> biome
      ) {
--        return isInNetherFortressBounds(pos, level, cetagory, structureManager)
-+        WeightedList<MobSpawnSettings.SpawnerData> spawnerData = isInNetherFortressBounds(pos, level, cetagory, structureManager)
-             ? NetherFortressStructure.FORTRESS_ENEMIES
-             : generator.getMobsAt(biome != null ? biome : level.getBiome(pos), structureManager, cetagory, pos);
-+        MobSpawnForBiomeEvent mobSpawnForBiomeEvent = new MobSpawnForBiomeEvent(level, structureManager, generator, cetagory, pos, biome, spawnerData);
+-        return isInNetherFortressBounds(pos, level, category, structureManager)
+-            ? NetherFortressStructure.FORTRESS_ENEMIES
+-            : generator.getMobsAt(biome != null ? biome : level.getBiome(pos), structureManager, category, pos);
++        // Papyrus start - mob spawn event
++        WeightedList<MobSpawnSettings.SpawnerData> spawnerData = isInNetherFortressBounds(pos, level, category, structureManager)
++                ? NetherFortressStructure.FORTRESS_ENEMIES
++                : generator.getMobsAt(biome != null ? biome : level.getBiome(pos), structureManager, category, pos);
++        MobSpawnForBiomeEvent mobSpawnForBiomeEvent = new MobSpawnForBiomeEvent(level, structureManager, generator, category, pos, biome, spawnerData);
 +        mobSpawnForBiomeEvent.callEvent();
 +        return mobSpawnForBiomeEvent.getSpawnerData();
++        // Papyrus end
      }
  
      public static boolean isInNetherFortressBounds(BlockPos pos, ServerLevel level, MobCategory category, StructureManager structureManager) {
-@@ -626,7 +_,11 @@
+@@ -632,7 +_,11 @@
              }
  
              this.spawnPotential.addCharge(blockPos, d);
