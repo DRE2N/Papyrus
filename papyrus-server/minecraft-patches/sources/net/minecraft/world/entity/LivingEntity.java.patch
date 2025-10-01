@@ -94,7 +94,7 @@
          this.yHeadRotO = this.yHeadRot;
          this.yBodyRotO = this.yBodyRot;
          this.yRotO = this.getYRot();
-@@ -520,6 +_,17 @@
+@@ -520,6 +_,18 @@
          profilerFiller.pop();
      }
  
@@ -106,6 +106,7 @@
 +            getBukkitLivingEntity().addEnergy((int) energyRegen);
 +            heal((float) healthRegen);
 +        }
++        getBukkitLivingEntity().tick();
 +    }
 +    // Papyrus end
 +
