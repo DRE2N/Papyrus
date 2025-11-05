@@ -9,7 +9,7 @@
  import net.minecraft.Util;
  import net.minecraft.core.BlockPos;
  import net.minecraft.core.Direction;
-@@ -730,7 +_,7 @@
+@@ -731,7 +_,7 @@
      }
  
      @Override
@@ -18,7 +18,7 @@
          if (this.isInvulnerableTo(level, damageSource)) {
              return false;
          } else if (this.abilities.invulnerable && !damageSource.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
-@@ -757,7 +_,7 @@
+@@ -758,7 +_,7 @@
  
                  // return amount != 0.0F && super.hurtServer(level, damageSource, amount);
                  // CraftBukkit start - Don't filter out 0 damage
@@ -27,7 +27,7 @@
                  if (damaged) {
                      this.removeEntitiesOnShoulder();
                  }
-@@ -1022,15 +_,15 @@
+@@ -1023,15 +_,15 @@
          // Paper start - PlayerAttackEntityEvent
          boolean willAttack = target.isAttackable() && !target.skipAttackInteraction(this); // Vanilla logic
          io.papermc.paper.event.player.PrePlayerAttackEntityEvent playerAttackEntityEvent = new io.papermc.paper.event.player.PrePlayerAttackEntityEvent(
@@ -48,7 +48,7 @@
                  ItemStack weaponItem = this.getWeaponItem();
                  DamageSource damageSource = Optional.ofNullable(weaponItem.getItem().getDamageSource(this)).orElse(this.damageSources().playerAttack(this));
                  float f1 = this.getEnchantedDamage(target, f, damageSource) - f;
-@@ -1093,7 +_,15 @@
+@@ -1094,7 +_,15 @@
                          }
  
                          Vec3 deltaMovement = target.getDeltaMovement();
@@ -65,7 +65,7 @@
                          if (flag4) {
                              float f4 = this.getKnockback(target, damageSource) + (flag1 ? 1.0F : 0.0F);
                              if (f4 > 0.0F) {
-@@ -1132,7 +_,7 @@
+@@ -1133,7 +_,7 @@
                                          float f6 = this.getEnchantedDamage(livingEntity2, f5, damageSource) * attackStrengthScale;
                                          // Paper start - Only apply knockback if the event is not cancelled
                                          livingEntity2.lastDamageCancelled = false;

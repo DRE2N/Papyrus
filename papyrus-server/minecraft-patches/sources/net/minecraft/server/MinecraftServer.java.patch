@@ -1,14 +1,14 @@
 --- a/net/minecraft/server/MinecraftServer.java
 +++ b/net/minecraft/server/MinecraftServer.java
-@@ -1501,6 +_,11 @@
+@@ -1651,6 +_,11 @@
          // Paper start - Server Tick Events
          long endTime = System.nanoTime();
-         long remaining = (TICK_TIME - (endTime - lastTick)) - catchupTime;
+         long remaining = this.nextTickTimeNanos - endTime;
 +        // Papyrus start - Tick spells
 +        if (remaining > 0) {
 +            server.getSpellbookAPI().getQueue().run();
 +        }
 +        // Papyrus end
-         new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.tickCount, ((double)(endTime - lastTick) / 1000000D), remaining).callEvent();
+         new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.tickCount, ((double)(endTime - this.currentTickStart) / 1000000D), remaining).callEvent();
          // Paper end - Server Tick Events
-         this.server.spark.tickEnd(((double)(endTime - lastTick) / 1000000D)); // Paper - spark
+         this.server.spark.tickEnd(((double)(endTime - this.currentTickStart) / 1000000D)); // Paper - spark

@@ -1,30 +1,34 @@
 --- a/net/minecraft/world/entity/Mob.java
 +++ b/net/minecraft/world/entity/Mob.java
-@@ -1533,12 +_,26 @@
+@@ -1533,12 +_,27 @@
  
      @Override
-     public boolean doHurtTarget(ServerLevel level, Entity source) {
+     public boolean doHurtTarget(ServerLevel level, Entity target) {
+-        float f = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
 +        /* Papyrus start - Add attack damage type, remove enchantment handling
-         float f = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
-         ItemStack weaponItem = this.getWeaponItem();
-         DamageSource damageSource = Optional.ofNullable(weaponItem.getItem().getDamageSource(this)).orElse(this.damageSources().mobAttack(this));
-         f = EnchantmentHelper.modifyDamage(level, weaponItem, source, damageSource, f);
-         f += weaponItem.getItem().getAttackDamageBonus(source, f, damageSource);
--        boolean flag = source.hurtServer(level, damageSource, f);
++         float f = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
++         ItemStack weaponItem = this.getWeaponItem();
++         DamageSource damageSource = Optional.ofNullable(weaponItem.getItem().getDamageSource(this)).orElse(this.damageSources().mobAttack(this));
++         f = EnchantmentHelper.modifyDamage(level, weaponItem, source, damageSource, f);
++         f += weaponItem.getItem().getAttackDamageBonus(source, f, damageSource);
++        boolean flag = source.hurtServer(level, damageSource, f);
 +        */
 +        float f = 0;
-+        ItemStack weaponItem = this.getWeaponItem();
-+        DamageSource damageSource = Optional.ofNullable(weaponItem.getItem().getDamageSource(this)).orElse(this.damageSources().mobAttack(this));
+         ItemStack weaponItem = this.getWeaponItem();
+         DamageSource damageSource = Optional.ofNullable(weaponItem.getItem().getDamageSource(this)).orElse(this.damageSources().mobAttack(this));
+-        f = EnchantmentHelper.modifyDamage(level, weaponItem, target, damageSource, f);
+-        f += weaponItem.getItem().getAttackDamageBonus(target, f, damageSource);
+-        boolean flag = target.hurtServer(level, damageSource, f);
 +        boolean flag;
-+        if (source instanceof LivingEntity livingEntity) {
++        if (target instanceof LivingEntity livingEntity) {
 +            f = (float) this.getAttributeValue(livingEntity.attackDamageType.advantage);
 +            f = (float) getBukkitLivingEntity().onAttack(livingEntity.getBukkitLivingEntity(), f, attackDamageType.apiType);
 +            flag = livingEntity.hurtServer(level, damageSource, f, attackDamageType);
 +        } else {
 +            f = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
-+            flag = source.hurtServer(level, damageSource, f);
++            flag = target.hurtServer(level, damageSource, f);
 +        }
 +        // Papyrus end
          if (flag) {
-             float knockback = this.getKnockback(source, damageSource);
-             if (knockback > 0.0F && source instanceof LivingEntity livingEntity) {
+             float knockback = this.getKnockback(target, damageSource);
+             if (knockback > 0.0F && target instanceof LivingEntity livingEntity) {

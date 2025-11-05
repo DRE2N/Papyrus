@@ -81,7 +81,7 @@
      }
  
      public static boolean isInNetherFortressBounds(BlockPos pos, ServerLevel level, MobCategory category, StructureManager structureManager) {
-@@ -632,7 +_,11 @@
+@@ -629,7 +_,11 @@
              }
  
              this.spawnPotential.addCharge(blockPos, d);

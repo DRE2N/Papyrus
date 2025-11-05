@@ -9,7 +9,7 @@
  import it.unimi.dsi.fastutil.doubles.DoubleDoubleImmutablePair;
  import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
  import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
-@@ -137,17 +_,16 @@
+@@ -138,17 +_,16 @@
  import net.minecraft.world.waypoints.Waypoint;
  import net.minecraft.world.waypoints.WaypointTransmitter;
  import org.jetbrains.annotations.Contract;
@@ -30,7 +30,7 @@
  // CraftBukkit end
  
  public abstract class LivingEntity extends Entity implements Attackable, WaypointTransmitter {
-@@ -287,6 +_,10 @@
+@@ -288,6 +_,10 @@
      public boolean silentDeath = false; // Paper - mark entity as dying silently for cancellable death event
      public net.kyori.adventure.util.TriState frictionState = net.kyori.adventure.util.TriState.NOT_SET; // Paper - Friction API
      // CraftBukkit end
@@ -39,9 +39,9 @@
 +    public CraftPDamageType attackDamageType = CraftPDamageType.PHYSICAL;
 +    // Papyrus end
  
-     protected LivingEntity(EntityType<? extends LivingEntity> entityType, Level level) {
-         super(entityType, level);
-@@ -366,9 +_,42 @@
+     protected LivingEntity(EntityType<? extends LivingEntity> type, Level level) {
+         super(type, level);
+@@ -367,9 +_,42 @@
              .add(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE)
              .add(Attributes.WATER_MOVEMENT_EFFICIENCY)
              .add(Attributes.MOVEMENT_EFFICIENCY)
@@ -86,7 +86,7 @@
      }
  
      @Override
-@@ -513,6 +_,7 @@
+@@ -514,6 +_,7 @@
          }
  
          this.tickEffects();
@@ -94,7 +94,7 @@
          this.yHeadRotO = this.yHeadRot;
          this.yBodyRotO = this.yBodyRot;
          this.yRotO = this.getYRot();
-@@ -520,6 +_,18 @@
+@@ -521,6 +_,18 @@
          profilerFiller.pop();
      }
  
@@ -113,7 +113,7 @@
      protected boolean shouldTakeDrowningDamage() {
          return this.getAirSupply() <= -20;
      }
-@@ -1410,8 +_,93 @@
+@@ -1411,8 +_,93 @@
          return this.getHealth() <= 0.0F;
      }
  
@@ -207,7 +207,7 @@
          if (this.isInvulnerableTo(level, damageSource)) {
              return false;
          } else if (this.isRemoved() || this.dead || this.getHealth() <= 0.0F) { // CraftBukkit - Don't allow entities that got set to dead/killed elsewhere to get damaged and die
-@@ -1564,7 +_,7 @@
+@@ -1565,7 +_,7 @@
  
              return flag2;
          }
