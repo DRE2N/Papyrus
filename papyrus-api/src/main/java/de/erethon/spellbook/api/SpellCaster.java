@@ -72,14 +72,16 @@ public interface SpellCaster {
         while(effectIterator.hasNext()) {
             SpellEffect effect = effectIterator.next();
             if (effect.shouldRemove()) {
+                SpellEffectRemoveEvent event = new SpellEffectRemoveEvent(effect.caster, effect, effect.data, RemovalReason.EXPIRED);
+                event.callEvent();
+                if (event.isCancelled()) {
+                    return;
+                }
                 effect.onRemove();
                 effectIterator.remove();
                 for (SpellEffect eventEffect: getEffects()) {
                     eventEffect.onRemoveEffect(effect);
-                }
-                SpellEffectRemoveEvent event = new SpellEffectRemoveEvent(effect.caster, effect, effect.data, RemovalReason.EXPIRED);
-                Bukkit.getPluginManager().callEvent(event);
-            } else {
+                }} else {
                 effect.tick();
             }
         }
@@ -155,23 +157,28 @@ public interface SpellCaster {
         if (hasEffect(data)) {
             SpellEffect oldEffect = getEffects().stream().filter(e -> e.data.equals(data)).findFirst().get();
             if (oldEffect.canAdd(duration, stacks)) {
+                SpellEffectAddEvent event = new SpellEffectAddEvent(this, oldEffect, data, true);
+                event.callEvent();
+                if (event.isCancelled()) {
+                    return;
+                }
                 if (!onEffectAdd(oldEffect, false)) {
                     return;
                 }
                 oldEffect.add(duration, stacks);
-                SpellEffectAddEvent event = new SpellEffectAddEvent(this, oldEffect, data, true);
-                Bukkit.getPluginManager().callEvent(event);
             }
         } else {
             SpellEffect effect = data.getActiveEffect(caster, (LivingEntity) this, duration, stacks);
+            SpellEffectAddEvent event = new SpellEffectAddEvent(this, effect, data, false);
+            event.callEvent();
+            if (event.isCancelled()) {
+                return;
+            }
             if (!onEffectAdd(effect, true)) {
                 return;
             }
             getEffects().add(effect);
-            effect.onApply();
-            SpellEffectAddEvent event = new SpellEffectAddEvent(this, effect, data, false);
-            Bukkit.getPluginManager().callEvent(event);
-        }
+            effect.onApply();}
     }
 
     default void removeEffect(EffectData effect) {
@@ -179,13 +186,16 @@ public interface SpellCaster {
         while (iterator.hasNext()) {
             SpellEffect itr = iterator.next();
             if (itr.data == effect) {
+                SpellEffectRemoveEvent event = new SpellEffectRemoveEvent(this, itr, effect, RemovalReason.CLEANSED);
+                event.callEvent();
+                if (event.isCancelled()) {
+                    continue;
+                }
                 if (!onEffectRemove(itr)) {
                     continue;
                 }
                 iterator.remove();
                 onEffectRemove(itr);
-                SpellEffectRemoveEvent event = new SpellEffectRemoveEvent(this, itr, effect, RemovalReason.CLEANSED);
-                Bukkit.getPluginManager().callEvent(event);
             }
         }
     }
