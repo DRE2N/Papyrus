@@ -1,9 +1,9 @@
 --- a/paper-server/build.gradle.kts
 +++ b/paper-server/build.gradle.kts
-@@ -22,9 +_,18 @@
- paperweight {
+@@ -22,6 +_,16 @@
      minecraftVersion = providers.gradleProperty("mcVersion")
      gitFilePatches = false
+ 
 +    val papyrus = forks.register("papyrus") {
 +        upstream.patchDir("paperServer") {
 +            upstreamPath = "paper-server"
@@ -13,23 +13,61 @@
 +        }
 +    }
 +    activeFork = papyrus
- 
++
      spigot {
--        enabled = true
-+        enabled = false
+         enabled = false
          buildDataRef = "42d18d4c4653ffc549778dbe223f6994a031d69e"
-         packageVersion = "v1_21_R6" // also needs to be updated in MappingEnvironment
+@@ -45,6 +_,29 @@
      }
+ }
+ 
++val generatedDir: java.nio.file.Path = layout.projectDirectory.dir("../paper-server/src/generated/java").asFile.toPath()
++sourceSets {
++    main {
++        java {
++            srcDir(generatedDir)
++            srcDir("../paper-server/src/main/java")
++        }
++        resources { srcDir("../paper-server/src/main/resources") }
++    }
++    test {
++        java { srcDir("../paper-server/src/test/java") }
++        resources { srcDir("../paper-server/src/test/resources") }
++    }
++}
++
++val log4jPlugins = sourceSets.create("log4jPlugins") {
++    java { srcDir("../paper-server/src/log4jPlugins/java") }
++}
++
++configurations.named(log4jPlugins.compileClasspathConfigurationName) {
++    extendsFrom(configurations.compileClasspath.get())
++}
++
+ tasks.generateDevelopmentBundle {
+     libraryRepositories.addAll(
+         "https://repo.maven.apache.org/maven2/",
+@@ -104,10 +_,6 @@
+     }
+ }
+ 
+-val log4jPlugins = sourceSets.create("log4jPlugins")
+-configurations.named(log4jPlugins.compileClasspathConfigurationName) {
+-    extendsFrom(configurations.compileClasspath.get())
+-}
+ val alsoShade: Configuration by configurations.creating
+ 
+ val runtimeConfiguration by configurations.consumable("runtimeConfiguration") {
 @@ -127,7 +_,7 @@
  }
  
  dependencies {
 -    implementation(project(":paper-api"))
 +    implementation(project(":papyrus-api"))
-     implementation("ca.spottedleaf:concurrentutil:0.0.5")
+     implementation("ca.spottedleaf:concurrentutil:0.0.7")
      implementation("org.jline:jline-terminal-ffm:3.27.1") // use ffm on java 22+
      implementation("org.jline:jline-terminal-jni:3.27.1") // fall back to jni on java 21
-@@ -183,6 +_,8 @@
+@@ -184,6 +_,8 @@
      // Spark
      implementation("me.lucko:spark-api:0.1-20240720.200737-2")
      implementation("me.lucko:spark-paper:1.10.152")
@@ -38,7 +76,7 @@
  }
  
  tasks.jar {
-@@ -197,14 +_,14 @@
+@@ -198,14 +_,14 @@
          val gitBranch = git.exec(providers, "rev-parse", "--abbrev-ref", "HEAD").get().trim()
          attributes(
              "Main-Class" to "org.bukkit.craftbukkit.Main",
@@ -58,26 +96,21 @@
              "Build-Number" to (build ?: ""),
              "Build-Time" to buildTime.toString(),
              "Git-Branch" to gitBranch,
-@@ -263,7 +_,7 @@
+@@ -264,17 +_,9 @@
      jvmArgumentProviders.add(provider)
  }
  
 -val generatedDir: java.nio.file.Path = layout.projectDirectory.dir("src/generated/java").asFile.toPath()
-+val generatedDir: java.nio.file.Path = layout.projectDirectory.dir("../paper-server/src/generated/java").asFile.toPath()
  idea {
      module {
          generatedSourceDirs.add(generatedDir.toFile())
-@@ -273,7 +_,13 @@
-     main {
-         java {
-             srcDir(generatedDir)
-+            srcDir("../paper-server/src/main/java")
-         }
-+        resources { srcDir("../paper-server/src/main/resources") }
-+    }
-+    test {
-+        java { srcDir("../paper-server/src/test/java") }
-+        resources { srcDir("../paper-server/src/test/resources") }
+-    }
+-}
+-sourceSets {
+-    main {
+-        java {
+-            srcDir(generatedDir)
+-        }
      }
  }
  

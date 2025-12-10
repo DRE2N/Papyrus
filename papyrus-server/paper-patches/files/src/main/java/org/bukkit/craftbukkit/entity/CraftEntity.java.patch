@@ -1,6 +1,6 @@
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
-@@ -92,9 +_,9 @@
+@@ -93,9 +_,9 @@
          .resolving(net.kyori.adventure.permission.PermissionChecker.POINTER, entity1 -> entity1::permissionValue)
          .build();
  
@@ -12,7 +12,7 @@
      private EntityDamageEvent lastDamageEvent;
      private final CraftPersistentDataContainer persistentDataContainer = new CraftPersistentDataContainer(CraftEntity.DATA_TYPE_REGISTRY);
      // Paper start - Folia shedulers
-@@ -106,6 +_,12 @@
+@@ -107,6 +_,12 @@
          return this.apiScheduler;
      };
      // Paper end - Folia schedulers

@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/Mob.java
 +++ b/net/minecraft/world/entity/Mob.java
-@@ -1533,12 +_,27 @@
+@@ -1578,15 +_,29 @@
  
      @Override
      public boolean doHurtTarget(ServerLevel level, Entity target) {
@@ -15,9 +15,10 @@
 +        */
 +        float f = 0;
          ItemStack weaponItem = this.getWeaponItem();
-         DamageSource damageSource = Optional.ofNullable(weaponItem.getItem().getDamageSource(this)).orElse(this.damageSources().mobAttack(this));
+         DamageSource damageSource = weaponItem.getDamageSource(this, () -> this.damageSources().mobAttack(this));
 -        f = EnchantmentHelper.modifyDamage(level, weaponItem, target, damageSource, f);
 -        f += weaponItem.getItem().getAttackDamageBonus(target, f, damageSource);
+-        Vec3 deltaMovement = target.getDeltaMovement();
 -        boolean flag = target.hurtServer(level, damageSource, f);
 +        boolean flag;
 +        if (target instanceof LivingEntity livingEntity) {
@@ -30,5 +31,8 @@
 +        }
 +        // Papyrus end
          if (flag) {
-             float knockback = this.getKnockback(target, damageSource);
-             if (knockback > 0.0F && target instanceof LivingEntity livingEntity) {
+-            this.causeExtraKnockback(target, this.getKnockback(target, damageSource), deltaMovement);
++            this.causeExtraKnockback(target, this.getKnockback(target, damageSource), getDeltaMovement());
+             if (target instanceof LivingEntity livingEntity) {
+                 weaponItem.hurtEnemy(livingEntity, this);
+             }

@@ -15,7 +15,7 @@
          if (state.getValue(WATERLOGGED)) {
              return true;
          } else {
-@@ -75,6 +_,7 @@
+@@ -74,6 +_,7 @@
          BlockState neighborState,
          RandomSource random
      ) {
@@ -23,7 +23,7 @@
          if (state.getValue(WATERLOGGED)) {
              scheduledTickAccess.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
          }
-@@ -86,6 +_,7 @@
+@@ -85,6 +_,7 @@
  
      @Override
      protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {

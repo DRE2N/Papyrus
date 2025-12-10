@@ -1,15 +1,15 @@
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
-@@ -13,6 +_,8 @@
+@@ -11,6 +_,8 @@
+ import java.util.Optional;
+ import java.util.OptionalInt;
  import java.util.function.Predicate;
- import javax.annotation.Nonnull;
- import javax.annotation.Nullable;
 +
 +import de.erethon.papyrus.CraftPDamageType;
- import net.minecraft.Util;
  import net.minecraft.core.BlockPos;
  import net.minecraft.core.Direction;
-@@ -731,7 +_,7 @@
+ import net.minecraft.core.GlobalPos;
+@@ -726,7 +_,7 @@
      }
  
      @Override
@@ -18,7 +18,7 @@
          if (this.isInvulnerableTo(level, damageSource)) {
              return false;
          } else if (this.abilities.invulnerable && !damageSource.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
-@@ -758,7 +_,7 @@
+@@ -753,7 +_,7 @@
  
                  // return amount != 0.0F && super.hurtServer(level, damageSource, amount);
                  // CraftBukkit start - Don't filter out 0 damage
@@ -27,9 +27,9 @@
                  if (damaged) {
                      this.removeEntitiesOnShoulder();
                  }
-@@ -1023,15 +_,15 @@
+@@ -1021,14 +_,14 @@
          // Paper start - PlayerAttackEntityEvent
-         boolean willAttack = target.isAttackable() && !target.skipAttackInteraction(this); // Vanilla logic
+         boolean willAttack = !this.cannotAttack(target); // Vanilla logic
          io.papermc.paper.event.player.PrePlayerAttackEntityEvent playerAttackEntityEvent = new io.papermc.paper.event.player.PrePlayerAttackEntityEvent(
 -            (org.bukkit.entity.Player) this.getBukkitEntity(),
 -            target.getBukkitEntity(),
@@ -40,37 +40,34 @@
          );
  
          if (playerAttackEntityEvent.callEvent() && willAttack) { // Logic moved to willAttack local variable.
-             {
 -        // Paper end - PlayerAttackEntityEvent
--                float f = this.isAutoSpinAttack() ? this.autoSpinAttackDmg : (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
+-            float f = this.isAutoSpinAttack() ? this.autoSpinAttackDmg : (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
 +                // Paper end - PlayerAttackEntityEvent
 +                float f = this.isAutoSpinAttack() ? this.autoSpinAttackDmg : (float) this.getAttributeValue(attackDamageType.advantage); // Papyrus - Add damage type
-                 ItemStack weaponItem = this.getWeaponItem();
-                 DamageSource damageSource = Optional.ofNullable(weaponItem.getItem().getDamageSource(this)).orElse(this.damageSources().playerAttack(this));
-                 float f1 = this.getEnchantedDamage(target, f, damageSource) - f;
-@@ -1094,7 +_,15 @@
-                         }
+             ItemStack weaponItem = this.getWeaponItem();
+             DamageSource damageSource = this.createAttackSource(weaponItem); final DamageSource dmgSourceFinal = damageSource; // Paper - damage events
+             float attackStrengthScale = this.getAttackStrengthScale(0.5F);
+@@ -1063,7 +_,13 @@
+                     }
  
-                         Vec3 deltaMovement = target.getDeltaMovement();
--                        boolean flag4 = target.hurtOrSimulate(damageSource, f2);
-+                        // Papyrus start - Add damage type
-+                        boolean flag4;
-+                        if (target instanceof LivingEntity livingEntity) {
-+                            f2 = (float) getBukkitEntity().onAttack(livingEntity.getBukkitLivingEntity(), f2, attackDamageType.apiType);
-+                            flag4 = livingEntity.hurtServer((ServerLevel) level(), damageSource, f2, attackDamageType);
-+                            } else {
-+                            flag4 = target.hurtOrSimulate(damageSource, f2);
-+                        }
-+                        // Papyrus end
-                         if (flag4) {
-                             float f4 = this.getKnockback(target, damageSource) + (flag1 ? 1.0F : 0.0F);
-                             if (f4 > 0.0F) {
-@@ -1133,7 +_,7 @@
-                                         float f6 = this.getEnchantedDamage(livingEntity2, f5, damageSource) * attackStrengthScale;
-                                         // Paper start - Only apply knockback if the event is not cancelled
-                                         livingEntity2.lastDamageCancelled = false;
--                                        if (this.level() instanceof ServerLevel serverLevel && livingEntity2.hurtServer(serverLevel, damageSource.knownCause(org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK), f6) && !livingEntity2.lastDamageCancelled) {
-+                                        if (this.level() instanceof ServerLevel serverLevel && livingEntity2.hurtServer(serverLevel, damageSource.knownCause(org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK), f6, attackDamageType) && !livingEntity2.lastDamageCancelled) {
-                                         // Paper end - Only apply knockback if the event is not cancelled
-                                             livingEntity2.knockback(
-                                                 0.4F, Mth.sin(this.getYRot() * (float) (Math.PI / 180.0)), -Mth.cos(this.getYRot() * (float) (Math.PI / 180.0))
+                     Vec3 deltaMovement = target.getDeltaMovement();
+-                    boolean flag3 = target.hurtOrSimulate(damageSource, f2);
++                    boolean flag3;
++                    if (target instanceof LivingEntity livingEntity) {
++                        f2 = (float) getBukkitEntity().onAttack(livingEntity.getBukkitLivingEntity(), f2, attackDamageType.apiType);
++                        flag3 = livingEntity.hurtServer((ServerLevel) level(), damageSource, f2, attackDamageType);
++                    } else {
++                        flag3 = target.hurtOrSimulate(damageSource, f2);
++                    }
+                     if (flag3) {
+                         this.causeExtraKnockback(target, this.getKnockback(target, damageSource) + (flag1 ? 0.5F : 0.0F), deltaMovement);
+                         if (isSweepAttack) {
+@@ -1254,7 +_,7 @@
+                     float f1 = this.getEnchantedDamage(livingEntity, var12, damageSource) * strengthScale;
+                     // Paper start - Only apply knockback if the event is not canceled
+                     livingEntity.lastDamageCancelled = false;
+-                    if (livingEntity.hurtServer(serverLevel, damageSource.knownCause(org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK), f1) && !livingEntity.lastDamageCancelled) {
++                    if (livingEntity.hurtServer(serverLevel, damageSource.knownCause(org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK), f1, attackDamageType) && !livingEntity.lastDamageCancelled) {
+                         // Paper end - Only apply knockback if the event is not canceled
+                         livingEntity.knockback(0.4F, Mth.sin(this.getYRot() * (float) (Math.PI / 180.0)), -Mth.cos(this.getYRot() * (float) (Math.PI / 180.0)), this, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.SWEEP_ATTACK); // Paper - knockback events
+                         EnchantmentHelper.doPostAttackEffects(serverLevel, livingEntity, damageSource);

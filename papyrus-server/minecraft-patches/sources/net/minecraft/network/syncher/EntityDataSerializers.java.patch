@@ -1,6 +1,6 @@
 --- a/net/minecraft/network/syncher/EntityDataSerializers.java
 +++ b/net/minecraft/network/syncher/EntityDataSerializers.java
-@@ -65,7 +_,7 @@
+@@ -67,7 +_,7 @@
              // If the codec is called during an obfuscation session, downgrade the context's obf level to OVERSIZED if it isn't already.
              // Entity data cannot be fully obfuscated as entities might render out specific values (e.g. count or custom name).
              try (final io.papermc.paper.util.SafeAutoClosable ignored = io.papermc.paper.util.sanitizer.ItemObfuscationSession.withContext(c -> c.level(io.papermc.paper.util.sanitizer.ItemObfuscationSession.ObfuscationLevel.OVERSIZED))) {

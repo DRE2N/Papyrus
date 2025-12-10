@@ -1,20 +1,19 @@
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragonPart.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftEnderDragonPart.java
-@@ -1,10 +_,11 @@
- package org.bukkit.craftbukkit.entity;
+@@ -2,9 +_,10 @@
  
-+import de.erethon.papyrus.CraftPDamageType;
-+import de.erethon.papyrus.PDamageType;
-+import net.minecraft.server.level.ServerLevel;
  import org.bukkit.craftbukkit.CraftServer;
  import org.bukkit.damage.DamageSource;
 -import org.bukkit.entity.EnderDragon;
 -import org.bukkit.entity.EnderDragonPart;
 -import org.bukkit.entity.Entity;
 +import org.bukkit.entity.*;
++import de.erethon.papyrus.CraftPDamageType;
++import de.erethon.papyrus.PDamageType;
++import net.minecraft.server.level.ServerLevel;
  
  public class CraftEnderDragonPart extends CraftComplexPart implements EnderDragonPart {
-     public CraftEnderDragonPart(CraftServer server, net.minecraft.world.entity.boss.EnderDragonPart entity) {
+     public CraftEnderDragonPart(CraftServer server, net.minecraft.world.entity.boss.enderdragon.EnderDragonPart entity) {
 @@ -70,4 +_,23 @@
      public void resetMaxHealth() {
          this.getParent().resetMaxHealth();

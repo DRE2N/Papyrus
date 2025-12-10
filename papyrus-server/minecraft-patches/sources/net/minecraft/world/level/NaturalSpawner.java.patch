@@ -10,7 +10,7 @@
  import it.unimi.dsi.fastutil.objects.Object2IntMap;
  import it.unimi.dsi.fastutil.objects.Object2IntMaps;
  import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-@@ -81,7 +_,11 @@
+@@ -82,7 +_,11 @@
  
          for (Entity entity : entities) {
              if (!(entity instanceof Mob mob && (mob.isPersistenceRequired() || mob.requiresCustomPersistence()))) {
@@ -23,7 +23,7 @@
                  if (category != MobCategory.MISC) {
                      // Paper start - Only count natural spawns
                      if (!entity.level().paperConfig().entities.spawning.countAllMobsForSpawning &&
-@@ -237,9 +_,21 @@
+@@ -238,9 +_,21 @@
          spawnCategoryForPosition(category, level, chunk, pos, filter, callback, Integer.MAX_VALUE, null);
      }
      public static void spawnCategoryForPosition(
@@ -47,7 +47,7 @@
          StructureManager structureManager = level.structureManager();
          ChunkGenerator generator = level.getChunkSource().getGenerator();
          int y = pos.getY();
-@@ -296,12 +_,14 @@
+@@ -297,12 +_,14 @@
                                  if (mobForSpawn == null) {
                                      return;
                                  }
@@ -62,7 +62,7 @@
 +                                    mobForSpawn = spawnEvent.getMob();
                                      // CraftBukkit start
                                      // SPIGOT-7045: Give ocelot babies back their special spawn reason. Note: This is the only modification required as ocelots count as monsters which means they only spawn during normal chunk ticking and do not spawn during chunk generation as starter mobs.
-                                     level.addFreshEntityWithPassengers(mobForSpawn, (mobForSpawn instanceof net.minecraft.world.entity.animal.Ocelot && !((org.bukkit.entity.Ageable) mobForSpawn.getBukkitEntity()).isAdult()) ? org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.OCELOT_BABY : org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL);
+                                     level.addFreshEntityWithPassengers(mobForSpawn, (mobForSpawn instanceof net.minecraft.world.entity.animal.feline.Ocelot && !((org.bukkit.entity.Ageable) mobForSpawn.getBukkitEntity()).isAdult()) ? org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.OCELOT_BABY : org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL);
 @@ -433,9 +_,14 @@
      private static WeightedList<MobSpawnSettings.SpawnerData> mobsAt(
          ServerLevel level, StructureManager structureManager, ChunkGenerator generator, MobCategory category, BlockPos pos, @Nullable Holder<Biome> biome
@@ -81,7 +81,7 @@
      }
  
      public static boolean isInNetherFortressBounds(BlockPos pos, ServerLevel level, MobCategory category, StructureManager structureManager) {
-@@ -629,7 +_,11 @@
+@@ -627,7 +_,11 @@
              }
  
              this.spawnPotential.addCharge(blockPos, d);

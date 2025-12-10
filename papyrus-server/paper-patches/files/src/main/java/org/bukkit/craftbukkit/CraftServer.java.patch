@@ -1,6 +1,6 @@
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -11,10 +_,12 @@
+@@ -12,10 +_,12 @@
  import com.mojang.brigadier.exceptions.CommandSyntaxException;
  import com.mojang.serialization.Dynamic;
  import com.mojang.serialization.Lifecycle;
@@ -13,7 +13,7 @@
  import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
  import java.awt.image.BufferedImage;
  import java.io.ByteArrayOutputStream;
-@@ -387,6 +_,10 @@
+@@ -388,6 +_,10 @@
      }
      // Paper end - Folia reagion threading API
  
@@ -24,7 +24,7 @@
      static {
          ConfigurationSerialization.registerClass(CraftOfflinePlayer.class);
          ConfigurationSerialization.registerClass(CraftPlayerProfile.class);
-@@ -486,6 +_,15 @@
+@@ -487,6 +_,15 @@
          this.spark = new io.papermc.paper.SparksFly(this); // Paper - spark
      }
  
@@ -40,7 +40,7 @@
      public boolean getCommandBlockOverride(String command) {
          return this.overrideAllCommandBlockCommands || this.commandsConfiguration.getStringList("command-block-overrides").contains(command);
      }
-@@ -1748,6 +_,12 @@
+@@ -1750,6 +_,12 @@
      }
  
      public ChunkGenerator getGenerator(String world) {

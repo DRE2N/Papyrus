@@ -8,14 +8,15 @@
 +import de.erethon.papyrus.events.ItemModifierAddEvent;
 +import io.papermc.paper.event.entity.EntityKnockbackEvent;
  import it.unimi.dsi.fastutil.doubles.DoubleDoubleImmutablePair;
- import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
- import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
-@@ -137,18 +_,18 @@
+ import it.unimi.dsi.fastutil.objects.Object2LongMap;
+ import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+@@ -139,19 +_,19 @@
  import net.minecraft.world.scores.Scoreboard;
  import net.minecraft.world.waypoints.Waypoint;
  import net.minecraft.world.waypoints.WaypointTransmitter;
 +import org.bukkit.craftbukkit.attribute.CraftAttributeInstance;
  import org.jetbrains.annotations.Contract;
+ import org.jspecify.annotations.Nullable;
 +import org.bukkit.Bukkit;
 +import org.bukkit.craftbukkit.damage.CraftDamageSource;
 +import org.bukkit.event.entity.*;
@@ -33,9 +34,9 @@
  // CraftBukkit end
  
  public abstract class LivingEntity extends Entity implements Attackable, WaypointTransmitter {
-@@ -288,6 +_,10 @@
-     public boolean silentDeath = false; // Paper - mark entity as dying silently for cancellable death event
+@@ -291,6 +_,10 @@
      public net.kyori.adventure.util.TriState frictionState = net.kyori.adventure.util.TriState.NOT_SET; // Paper - Friction API
+     public int invulnerableDuration = LivingEntity.INVULNERABLE_DURATION; // Paper - configurable invulnerable duration
      // CraftBukkit end
 +    // Papyrus start - Spellbook
 +    public double energy = 0;
@@ -165,7 +166,7 @@
 +            finalDmg = finalDmg - getAttributeValue(damageType.resistance);
 +            if (useItem.is(Items.SHIELD)) {
 +                // Use the HEAD slot modifier from shields for the damage
-+                finalDmg -= useItem.get(DataComponents.ATTRIBUTE_MODIFIERS).compute(1, EquipmentSlot.HEAD);
++                finalDmg -= useItem.get(DataComponents.ATTRIBUTE_MODIFIERS).compute(damageType.resistance, 1, EquipmentSlot.HEAD);
 +            }
 +
 +            // Knockback
@@ -219,7 +220,7 @@
  
      public float applyItemBlocking(ServerLevel level, DamageSource damageSource, float damageAmount) {
          // Paper start
-@@ -3418,7 +_,13 @@
+@@ -3536,7 +_,13 @@
                          AttributeInstance instance = this.attributes.getInstance(holder);
                          if (instance != null) {
                              instance.removeModifier(attributeModifier.id());

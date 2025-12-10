@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/ai/attributes/Attributes.java
 +++ b/net/minecraft/world/entity/ai/attributes/Attributes.java
-@@ -101,6 +_,102 @@
+@@ -102,6 +_,102 @@
          "waypoint_receive_range", new RangedAttribute("attribute.name.waypoint_receive_range", 0.0, 0.0, 6.0E7).setSentiment(Attribute.Sentiment.NEUTRAL)
      );
  
@@ -101,5 +101,5 @@
 +    // Papyrus end
 +
      private static Holder<Attribute> register(String name, Attribute attribute) {
-         return Registry.registerForHolder(BuiltInRegistries.ATTRIBUTE, ResourceLocation.withDefaultNamespace(name), attribute);
+         return Registry.registerForHolder(BuiltInRegistries.ATTRIBUTE, Identifier.withDefaultNamespace(name), attribute);
      }

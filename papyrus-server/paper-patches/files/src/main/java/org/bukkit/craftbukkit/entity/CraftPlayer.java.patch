@@ -1,6 +1,6 @@
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
-@@ -213,6 +_,8 @@
+@@ -222,6 +_,8 @@
  import org.jspecify.annotations.NonNull;
  import org.jspecify.annotations.Nullable;
  
@@ -9,7 +9,7 @@
  @DelegateDeserialization(CraftOfflinePlayer.class)
  public class CraftPlayer extends CraftHumanEntity implements Player, PluginMessageBridgeImpl {
      private static final org.slf4j.Logger LOGGER = LogUtils.getClassLogger();
-@@ -1453,6 +_,10 @@
+@@ -1348,6 +_,10 @@
  
      @Override
      public void saveData() {
