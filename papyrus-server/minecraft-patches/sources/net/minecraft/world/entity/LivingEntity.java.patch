@@ -117,7 +117,7 @@
      protected boolean shouldTakeDrowningDamage() {
          return this.getAirSupply() <= -20;
      }
-@@ -1411,8 +_,93 @@
+@@ -1423,8 +_,94 @@
          return this.getHealth() <= 0.0F;
      }
  
@@ -146,27 +146,37 @@
 +                    damageSource.critical();
 +                }
 +            }
++            // Now remove the resistance from the damage
 +            finalDmg = amount - resistance;
++
++            // Spells or traits may modify damage, but take effect after resistances
++            if (attacker instanceof LivingEntity living) {
++                org.bukkit.entity.LivingEntity attackerBukkit = living.getBukkitLivingEntity();
++                finalDmg = getBukkitLivingEntity().onDamage(attackerBukkit, finalDmg, damageType.apiType);
++            }
++
 +            // Call the bukkit event
 +            EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(attacker.getBukkitEntity(), getBukkitEntity(),EntityDamageEvent.DamageCause.ENTITY_ATTACK, new CraftDamageSource(damageSource), finalDmg, damageType.apiType);
 +            Bukkit.getServer().getPluginManager().callEvent(event);
 +            if (event.isCancelled()) {
 +                return false;
 +            }
++            // TODO: Doesn't work for now.
++            //  We kinda have to split this up, as we need the final final damage for the event to properly display dmg values
++            //  but the event is also where we change the damage type. Currently nothing changes the damage type anyways though.
 +            if (event.getDamageType() != damageType.apiType) {
 +                damageType = CraftPDamageType.ofAPI(event.getDamageType());
 +            }
++
 +            finalDmg = event.getDamage();
++            if (finalDmg <= 0) {
++                return false; // Do not deal knockback or mark as last hurt if no damage was dealt
++            }
++
 +            if (damageSource.getEntity() instanceof ServerPlayer player && player.isRealPlayer) {
 +                setLastHurtByPlayer(player, 100);
 +            } else if (damageSource.getEntity() instanceof LivingEntity livingEntity){
 +                setLastHurtByMob(livingEntity);
-+            }
-+
-+            finalDmg = finalDmg - getAttributeValue(damageType.resistance);
-+            if (useItem.is(Items.SHIELD)) {
-+                // Use the HEAD slot modifier from shields for the damage
-+                finalDmg -= useItem.get(DataComponents.ATTRIBUTE_MODIFIERS).compute(damageType.resistance, 1, EquipmentSlot.HEAD);
 +            }
 +
 +            // Knockback
@@ -180,15 +190,6 @@
 +            this.knockback(0.4000000059604645D, x, z, attacker, EntityKnockbackEvent.Cause.DAMAGE);
 +            if (this instanceof ServerPlayer player && player.isRealPlayer) {
 +                indicateDamage(x, z);
-+            }
-+
-+            if (attacker instanceof LivingEntity living) {
-+                org.bukkit.entity.LivingEntity attackerBukkit = living.getBukkitLivingEntity();
-+                finalDmg = getBukkitLivingEntity().onDamage(attackerBukkit, finalDmg, damageType.apiType);
-+            }
-+
-+            if (finalDmg <= 0) {
-+                return false;
 +            }
 +        }
 +        markHurt();
@@ -211,7 +212,7 @@
          if (this.isInvulnerableTo(level, damageSource)) {
              return false;
          } else if (this.isRemoved() || this.dead || this.getHealth() <= 0.0F) { // CraftBukkit - Don't allow entities that got set to dead/killed elsewhere to get damaged and die
-@@ -1565,7 +_,7 @@
+@@ -1577,7 +_,7 @@
  
              return flag2;
          }
@@ -220,7 +221,7 @@
  
      public float applyItemBlocking(ServerLevel level, DamageSource damageSource, float damageAmount) {
          // Paper start
-@@ -3536,7 +_,13 @@
+@@ -3548,7 +_,13 @@
                          AttributeInstance instance = this.attributes.getInstance(holder);
                          if (instance != null) {
                              instance.removeModifier(attributeModifier.id());
