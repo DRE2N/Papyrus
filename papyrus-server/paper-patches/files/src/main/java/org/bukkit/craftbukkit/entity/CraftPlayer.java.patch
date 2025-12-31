@@ -9,7 +9,7 @@
  @DelegateDeserialization(CraftOfflinePlayer.class)
  public class CraftPlayer extends CraftHumanEntity implements Player, PluginMessageBridgeImpl {
      private static final org.slf4j.Logger LOGGER = LogUtils.getClassLogger();
-@@ -1348,6 +_,10 @@
+@@ -1349,6 +_,10 @@
  
      @Override
      public void saveData() {
