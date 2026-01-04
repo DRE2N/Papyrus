@@ -35,6 +35,12 @@ public class SpellEffect {
     }
 
     public boolean canAdd(int duration, int newStacks) {
+        if (data.getStackMode() == EffectData.StackMode.PROLONG) {
+            return ticksLeft + duration <= data.getMaxDuration();
+        } else if (data.getStackMode() == EffectData.StackMode.INTENSIFY) {
+            return stacks + newStacks <= data.getMaxStacks();
+        }
+        // Default: check both (or return false for unknown modes)
         return ticksLeft + duration <= data.getMaxDuration() && stacks + newStacks <= data.getMaxStacks();
     }
 
