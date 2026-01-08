@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/level/block/ShelfBlock.java
++++ b/net/minecraft/world/level/block/ShelfBlock.java
+@@ -90,7 +_,7 @@
+ 
+     @Override
+     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+-        return new ShelfBlockEntity(pos, state);
++        return null; // Papyrus - Don't create block entities for shelves (decorative block only, no storage)
+     }
+ 
+     @Override

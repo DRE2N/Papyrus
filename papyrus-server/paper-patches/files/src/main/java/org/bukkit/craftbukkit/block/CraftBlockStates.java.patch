@@ -1,0 +1,11 @@
+--- a/src/main/java/org/bukkit/craftbukkit/block/CraftBlockStates.java
++++ b/src/main/java/org/bukkit/craftbukkit/block/CraftBlockStates.java
+@@ -123,7 +_,7 @@
+         register(BlockEntityType.SCULK_CATALYST, CraftSculkCatalyst.class, CraftSculkCatalyst::new);
+         register(BlockEntityType.SCULK_SENSOR, CraftSculkSensor.class, CraftSculkSensor::new);
+         register(BlockEntityType.SCULK_SHRIEKER, CraftSculkShrieker.class, CraftSculkShrieker::new);
+-        register(BlockEntityType.SHELF, CraftShelf.class, CraftShelf::new);
++        //register(BlockEntityType.SHELF, CraftShelf.class, CraftShelf::new); Papyrus - Disable shelves
+         register(BlockEntityType.SHULKER_BOX, CraftShulkerBox.class, CraftShulkerBox::new);
+         register(BlockEntityType.SIGN, CraftSign.class, CraftSign::new);
+         register(BlockEntityType.SKULL, CraftSkull.class, CraftSkull::new);
