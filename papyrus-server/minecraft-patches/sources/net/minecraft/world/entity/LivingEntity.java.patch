@@ -225,10 +225,11 @@
  
      public float applyItemBlocking(final ServerLevel level, final DamageSource source, final float damage) {
          // Paper start
-@@ -3614,6 +_,13 @@
+@@ -3613,7 +_,13 @@
+                         AttributeInstance instance = this.attributes.getInstance(attribute);
                          if (instance != null) {
                              instance.removeModifier(modifier.id());
-                             instance.addTransientModifier(modifier);
+-                            instance.addTransientModifier(modifier);
 +                            // Papyrus start - Add modifier event
 +                            ItemModifierAddEvent event = new ItemModifierAddEvent(getBukkitLivingEntity(), CraftItemStack.asCraftMirror(current), CraftAttributeInstance.convert(modifier));
 +                            event.callEvent();
