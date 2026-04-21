@@ -27,7 +27,7 @@ jobs:
       - name: Apply Patches
         run: ./gradlew applyAllPatches -x test
       - name: Build
-        run: ./gradlew createMojmapPaperclipJar -x test
+        run: ./gradlew createPaperclipJar -x test
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
