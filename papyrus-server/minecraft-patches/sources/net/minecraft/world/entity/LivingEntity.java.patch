@@ -1,16 +1,16 @@
 --- a/net/minecraft/world/entity/LivingEntity.java
 +++ b/net/minecraft/world/entity/LivingEntity.java
-@@ -11,6 +_,9 @@
- import com.mojang.serialization.DataResult;
- import com.mojang.serialization.Dynamic;
- import com.mojang.serialization.JavaOps;
+@@ -7,6 +_,9 @@
+ import com.google.common.collect.Maps;
+ import com.mojang.datafixers.util.Pair;
+ import com.mojang.logging.LogUtils;
 +import de.erethon.papyrus.CraftPDamageType;
 +import de.erethon.papyrus.events.ItemModifierAddEvent;
 +import io.papermc.paper.event.entity.EntityKnockbackEvent;
  import it.unimi.dsi.fastutil.doubles.DoubleDoubleImmutablePair;
  import it.unimi.dsi.fastutil.objects.Object2LongMap;
  import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
-@@ -139,19 +_,19 @@
+@@ -136,19 +_,19 @@
  import net.minecraft.world.scores.Scoreboard;
  import net.minecraft.world.waypoints.Waypoint;
  import net.minecraft.world.waypoints.WaypointTransmitter;
@@ -34,18 +34,19 @@
  // CraftBukkit end
  
  public abstract class LivingEntity extends Entity implements Attackable, WaypointTransmitter {
-@@ -291,6 +_,10 @@
-     public net.kyori.adventure.util.TriState frictionState = net.kyori.adventure.util.TriState.NOT_SET; // Paper - Friction API
+@@ -293,6 +_,11 @@
      public int invulnerableDuration = LivingEntity.INVULNERABLE_DURATION; // Paper - configurable invulnerable duration
      // CraftBukkit end
+ 
 +    // Papyrus start - Spellbook
 +    public double energy = 0;
 +    public CraftPDamageType attackDamageType = CraftPDamageType.PHYSICAL;
 +    // Papyrus end
- 
-     protected LivingEntity(EntityType<? extends LivingEntity> type, Level level) {
++
+     protected LivingEntity(final EntityType<? extends LivingEntity> type, final Level level) {
          super(type, level);
-@@ -367,9 +_,42 @@
+         this.attributes = new AttributeMap(DefaultAttributes.getSupplier(type));
+@@ -361,9 +_,42 @@
              .add(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE)
              .add(Attributes.WATER_MOVEMENT_EFFICIENCY)
              .add(Attributes.MOVEMENT_EFFICIENCY)
@@ -90,7 +91,7 @@
      }
  
      @Override
-@@ -514,6 +_,7 @@
+@@ -508,6 +_,7 @@
          }
  
          this.tickEffects();
@@ -98,8 +99,8 @@
          this.yHeadRotO = this.yHeadRot;
          this.yBodyRotO = this.yBodyRot;
          this.yRotO = this.getYRot();
-@@ -521,6 +_,18 @@
-         profilerFiller.pop();
+@@ -515,6 +_,19 @@
+         profiler.pop();
      }
  
 +    // Papyrus start
@@ -114,10 +115,11 @@
 +    }
 +    // Papyrus end
 +
++
      protected boolean shouldTakeDrowningDamage() {
          return this.getAirSupply() <= -20;
      }
-@@ -1423,8 +_,94 @@
+@@ -1419,8 +_,95 @@
          return this.getHealth() <= 0.0F;
      }
  
@@ -205,29 +207,30 @@
 +        return true;
 +    }
 +
++
      @Override
-     public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount) {
-+        return this.hurtServer(level, damageSource, amount, CraftPDamageType.PURE);
-+    } /* Papyrus - Remove this method
-         if (this.isInvulnerableTo(level, damageSource)) {
+-    public boolean hurtServer(final ServerLevel level, final DamageSource source, float damage) {
++    public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount) {
++                return this.hurtServer(level, damageSource, amount, CraftPDamageType.PURE);
++    }/*
+         if (this.isInvulnerableTo(level, source)) {
              return false;
          } else if (this.isRemoved() || this.dead || this.getHealth() <= 0.0F) { // CraftBukkit - Don't allow entities that got set to dead/killed elsewhere to get damaged and die
-@@ -1577,7 +_,7 @@
+@@ -1573,7 +_,7 @@
  
-             return flag2;
+             return success;
          }
 -    }
-+    } Papyrus - Remove this method */
++    }*/
  
-     public float applyItemBlocking(ServerLevel level, DamageSource damageSource, float damageAmount) {
+     public float applyItemBlocking(final ServerLevel level, final DamageSource source, final float damage) {
          // Paper start
-@@ -3548,7 +_,13 @@
-                         AttributeInstance instance = this.attributes.getInstance(holder);
+@@ -3614,6 +_,13 @@
                          if (instance != null) {
-                             instance.removeModifier(attributeModifier.id());
--                            instance.addTransientModifier(attributeModifier);
+                             instance.removeModifier(modifier.id());
+                             instance.addTransientModifier(modifier);
 +                            // Papyrus start - Add modifier event
-+                            ItemModifierAddEvent event = new ItemModifierAddEvent(getBukkitLivingEntity(), CraftItemStack.asCraftMirror(itemBySlot), CraftAttributeInstance.convert(attributeModifier));
++                            ItemModifierAddEvent event = new ItemModifierAddEvent(getBukkitLivingEntity(), CraftItemStack.asCraftMirror(current), CraftAttributeInstance.convert(modifier));
 +                            event.callEvent();
 +                            if (!event.isCancelled()) {
 +                                instance.addTransientModifier(CraftAttributeInstance.convert(event.getAttributeModifier()));

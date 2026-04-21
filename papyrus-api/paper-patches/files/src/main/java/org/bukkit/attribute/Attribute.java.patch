@@ -1,6 +1,6 @@
 --- a/src/main/java/org/bukkit/attribute/Attribute.java
 +++ b/src/main/java/org/bukkit/attribute/Attribute.java
-@@ -158,6 +_,42 @@
+@@ -159,6 +_,42 @@
       */
      Attribute WAYPOINT_RECEIVE_RANGE = getAttribute("waypoint_receive_range");
  
@@ -41,5 +41,5 @@
 +    Attribute COMBAT_HURTINVULNERABILITY = getAttribute("combat_hurtinvulnerability");
 +
      @NotNull
-     private static Attribute getAttribute(@NotNull String key) {
-         return Registry.ATTRIBUTE.getOrThrow(NamespacedKey.minecraft(key));
+     private static Attribute getAttribute(@NotNull @KeyPattern.Value String key) {
+         return Registry.ATTRIBUTE.getOrThrow(Key.key(Key.MINECRAFT_NAMESPACE, key));

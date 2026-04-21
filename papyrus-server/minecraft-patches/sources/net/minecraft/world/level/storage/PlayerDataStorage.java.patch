@@ -12,7 +12,7 @@
 @@ -91,6 +_,13 @@
      }
  
-     public Optional<CompoundTag> load(NameAndId nameAndId) {
+     public Optional<CompoundTag> load(final NameAndId nameAndId) {
 +        // Papyrus start - Player database
 +        PlayerDataRequestEvent requestEvent = new PlayerDataRequestEvent(nameAndId.id().toString());
 +        requestEvent.callEvent();
@@ -20,6 +20,6 @@
 +            return requestEvent.getData();
 +        }
 +        // Papyrus end
-         Optional<CompoundTag> optional = this.load(nameAndId, ".dat");
-         if (optional.isEmpty()) {
+         Optional<CompoundTag> optTag = this.load(nameAndId, ".dat");
+         if (optTag.isEmpty()) {
              this.backup(nameAndId, ".dat");

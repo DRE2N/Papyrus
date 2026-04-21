@@ -100,6 +100,6 @@
 +    );
 +    // Papyrus end
 +
-     private static Holder<Attribute> register(String name, Attribute attribute) {
+     private static Holder<Attribute> register(final String name, final Attribute attribute) {
          return Registry.registerForHolder(BuiltInRegistries.ATTRIBUTE, Identifier.withDefaultNamespace(name), attribute);
      }

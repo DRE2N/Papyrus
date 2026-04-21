@@ -8,12 +8,3 @@
  
  public class ContainerHelper {
      public static final String TAG_ITEMS = "Items";
-@@ -43,6 +_,8 @@
-                 items.set(itemStackWithSlot.slot(), itemStackWithSlot.stack());
-             }
-         }
-+        de.erethon.papyrus.events.ContainerLoadEvent event = new de.erethon.papyrus.events.ContainerLoadEvent(items, !Bukkit.isPrimaryThread());
-+        Bukkit.getPluginManager().callEvent(event);
-     }
- 
-     public static int clearOrCountMatchingItems(Container container, Predicate<ItemStack> itemPredicate, int maxItems, boolean simulate) {

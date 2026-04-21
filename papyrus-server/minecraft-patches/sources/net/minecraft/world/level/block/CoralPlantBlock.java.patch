@@ -1,18 +1,18 @@
 --- a/net/minecraft/world/level/block/CoralPlantBlock.java
 +++ b/net/minecraft/world/level/block/CoralPlantBlock.java
-@@ -41,6 +_,7 @@
+@@ -40,6 +_,7 @@
  
      @Override
-     protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-+        if (true) return; // Papyrus - Disable coral plant updates
+     protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
++        if (true) return; // Papyrus - Disable state update
          if (!scanForWater(state, level, pos)) {
              // CraftBukkit start
              if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralPlantBlock.WATERLOGGED, false)).isCancelled()) {
-@@ -62,6 +_,7 @@
-         BlockState neighborState,
-         RandomSource random
+@@ -61,6 +_,7 @@
+         final BlockState neighbourState,
+         final RandomSource random
      ) {
-+        if (true) return state; // Papyrus - Disable coral plant updates
-         if (direction == Direction.DOWN && !state.canSurvive(level, pos)) {
++        if (true) return state; // Papyrus - Disable state update
+         if (directionToNeighbour == Direction.DOWN && !state.canSurvive(level, pos)) {
              return Blocks.AIR.defaultBlockState();
          } else {

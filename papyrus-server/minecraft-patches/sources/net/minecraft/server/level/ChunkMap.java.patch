@@ -1,6 +1,6 @@
 --- a/net/minecraft/server/level/ChunkMap.java
 +++ b/net/minecraft/server/level/ChunkMap.java
-@@ -253,7 +_,16 @@
+@@ -244,7 +_,16 @@
              return;
          }
  

@@ -22,15 +22,15 @@
  import net.kyori.adventure.key.Key;
  import net.minecraft.Optionull;
  import io.papermc.paper.world.damagesource.CombatTracker;
-@@ -23,6 +_,7 @@
- import net.minecraft.sounds.SoundEvents;
+@@ -24,6 +_,7 @@
+ import net.minecraft.util.Mth;
  import net.minecraft.world.InteractionHand;
  import net.minecraft.world.damagesource.DamageSource;
 +import net.minecraft.world.damagesource.DamageSources;
  import net.minecraft.world.effect.MobEffectInstance;
  import net.minecraft.world.entity.EntitySpawnReason;
  import net.minecraft.world.entity.EntityType;
-@@ -61,6 +_,7 @@
+@@ -62,6 +_,7 @@
  import org.bukkit.craftbukkit.inventory.CraftEntityEquipment;
  import org.bukkit.craftbukkit.inventory.CraftItemStack;
  import org.bukkit.craftbukkit.potion.CraftPotionEffectType;
@@ -38,7 +38,7 @@
  import org.bukkit.entity.AbstractArrow;
  import org.bukkit.entity.AbstractWindCharge;
  import org.bukkit.entity.Arrow;
-@@ -102,8 +_,36 @@
+@@ -103,8 +_,36 @@
  
  public class CraftLivingEntity extends CraftEntity implements LivingEntity {
  
@@ -75,7 +75,7 @@
      public CraftLivingEntity(final CraftServer server, final net.minecraft.world.entity.LivingEntity entity) {
          super(server, entity);
  
-@@ -1091,6 +_,121 @@
+@@ -1092,6 +_,121 @@
      public boolean canUseEquipmentSlot(org.bukkit.inventory.EquipmentSlot slot) {
          return this.getHandle().canUseSlot(org.bukkit.craftbukkit.CraftEquipmentSlot.getNMS(slot));
      }

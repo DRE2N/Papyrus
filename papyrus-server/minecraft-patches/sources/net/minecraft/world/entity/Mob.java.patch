@@ -1,10 +1,10 @@
 --- a/net/minecraft/world/entity/Mob.java
 +++ b/net/minecraft/world/entity/Mob.java
-@@ -1578,15 +_,29 @@
+@@ -1594,26 +_,36 @@
  
      @Override
-     public boolean doHurtTarget(ServerLevel level, Entity target) {
--        float f = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
+     public boolean doHurtTarget(final ServerLevel level, final Entity target) {
+-        float dmg = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
 +        /* Papyrus start - Add attack damage type, remove enchantment handling
 +         float f = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
 +         ItemStack weaponItem = this.getWeaponItem();
@@ -16,23 +16,38 @@
 +        float f = 0;
          ItemStack weaponItem = this.getWeaponItem();
          DamageSource damageSource = weaponItem.getDamageSource(this, () -> this.damageSources().mobAttack(this));
--        f = EnchantmentHelper.modifyDamage(level, weaponItem, target, damageSource, f);
--        f += weaponItem.getItem().getAttackDamageBonus(target, f, damageSource);
--        Vec3 deltaMovement = target.getDeltaMovement();
--        boolean flag = target.hurtServer(level, damageSource, f);
+-        dmg = EnchantmentHelper.modifyDamage(level, weaponItem, target, damageSource, dmg);
+-        dmg += weaponItem.getItem().getAttackDamageBonus(target, dmg, damageSource);
+-        Vec3 oldMovement = target.getDeltaMovement();
+-        boolean wasHurt = target.hurtServer(level, damageSource, dmg);
+-        if (wasHurt) {
+-            this.causeExtraKnockback(target, this.getKnockback(target, damageSource), oldMovement);
+-            if (target instanceof LivingEntity livingTarget) {
+-                weaponItem.hurtEnemy(livingTarget, this);
 +        boolean flag;
 +        if (target instanceof LivingEntity livingEntity) {
 +            f = (float) this.getAttributeValue(livingEntity.attackDamageType.advantage);
 +            f = (float) getBukkitLivingEntity().onAttack(livingEntity.getBukkitLivingEntity(), f, attackDamageType.apiType);
 +            flag = livingEntity.hurtServer(level, damageSource, f, attackDamageType);
 +        } else {
-+            f = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
++            f = (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE);
 +            flag = target.hurtServer(level, damageSource, f);
 +        }
-+        // Papyrus end
-         if (flag) {
--            this.causeExtraKnockback(target, this.getKnockback(target, damageSource), deltaMovement);
-+            this.causeExtraKnockback(target, this.getKnockback(target, damageSource), getDeltaMovement());
-             if (target instanceof LivingEntity livingEntity) {
-                 weaponItem.hurtEnemy(livingEntity, this);
++        boolean wasHurt = false;
++        if (flag) {
++            if (target instanceof LivingEntity livingEntity) {
++                wasHurt = weaponItem.hurtEnemy(livingEntity, this);
              }
+ 
+-            EnchantmentHelper.doPostAttackEffects(level, target, damageSource);
+-            this.setLastHurtMob(target);
+-            this.playAttackSound();
++            this.postPiercingAttack();
+         }
+-
+-        this.postPiercingAttack();
+         return wasHurt;
++        // Papyrus end
+     }
+ 
+     @Override

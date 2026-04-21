@@ -1,6 +1,6 @@
 --- a/net/minecraft/server/players/PlayerList.java
 +++ b/net/minecraft/server/players/PlayerList.java
-@@ -21,6 +_,8 @@
+@@ -22,6 +_,8 @@
  import java.util.UUID;
  import java.util.function.Function;
  import java.util.function.Predicate;
@@ -9,8 +9,8 @@
  import net.minecraft.ChatFormatting;
  import net.minecraft.commands.CommandSourceStack;
  import net.minecraft.core.BlockPos;
-@@ -413,7 +_,11 @@
-     protected void save(ServerPlayer player) {
+@@ -419,7 +_,11 @@
+     protected void save(final ServerPlayer player) {
          if (!player.getBukkitEntity().isPersistent()) return; // CraftBukkit
          player.lastSave = MinecraftServer.currentTick; // Paper - Incremental chunk and player saving
 -        this.playerIo.save(player);
@@ -19,6 +19,6 @@
 +        event.callEvent();
 +        //this.playerIo.save(player);
 +        // Papyrus end
-         ServerStatsCounter serverStatsCounter = player.getStats(); // CraftBukkit
-         if (serverStatsCounter != null) {
-             serverStatsCounter.save();
+         ServerStatsCounter stats = player.getStats(); // CraftBukkit
+         if (stats != null) {
+             stats.save();

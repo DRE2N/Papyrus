@@ -1,18 +1,18 @@
 --- a/net/minecraft/world/level/block/BaseCoralWallFanBlock.java
 +++ b/net/minecraft/world/level/block/BaseCoralWallFanBlock.java
 @@ -65,6 +_,7 @@
-         BlockState neighborState,
-         RandomSource random
+         final BlockState neighbourState,
+         final RandomSource random
      ) {
-+        if (true) return state; // Papyrus - Disable state change
++        if (true) return state; // Papyrus - Disable coral plant death
          if (state.getValue(WATERLOGGED)) {
-             scheduledTickAccess.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+             ticks.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
          }
 @@ -74,6 +_,7 @@
  
      @Override
-     protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
-+        if (true) return true; // Papyrus - Disable state change
-         Direction direction = state.getValue(FACING);
-         BlockPos blockPos = pos.relative(direction.getOpposite());
-         BlockState blockState = level.getBlockState(blockPos);
+     protected boolean canSurvive(final BlockState state, final LevelReader level, final BlockPos pos) {
++        if (true) return true; // Papyrus - Disable coral plant death
+         Direction facing = state.getValue(FACING);
+         BlockPos relativePos = pos.relative(facing.getOpposite());
+         BlockState relativeState = level.getBlockState(relativePos);

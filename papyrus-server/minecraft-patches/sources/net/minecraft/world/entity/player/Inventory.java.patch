@@ -16,14 +16,14 @@
  
  public class Inventory implements Container, Nameable {
      public static final int POP_TIME_DURATION = 5;
-@@ -507,6 +_,10 @@
-                 this.setItem(itemStackWithSlot.slot(), itemStackWithSlot.stack());
-             }
-         }
+@@ -501,6 +_,10 @@
+ 
+     public void load(final ValueInput.TypedInputList<ItemStackWithSlot> input) {
+         this.items.clear();
 +        // Papyrus start - Inventory API
 +        de.erethon.papyrus.events.PlayerInventoryLoadEvent loadEvent = new de.erethon.papyrus.events.PlayerInventoryLoadEvent(player, items, equipment);
 +        Bukkit.getPluginManager().callEvent(loadEvent);
 +        // Papyrus end
-     }
  
-     @Override
+         for (ItemStackWithSlot item : input) {
+             if (item.isValidInContainer(this.items.size())) {

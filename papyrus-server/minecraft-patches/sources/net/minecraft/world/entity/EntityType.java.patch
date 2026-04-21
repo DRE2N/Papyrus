@@ -11,15 +11,15 @@
  import java.util.function.Consumer;
  import java.util.function.Supplier;
  import java.util.stream.Stream;
-@@ -186,6 +_,7 @@
+@@ -183,6 +_,7 @@
+ import net.minecraft.world.phys.Vec3;
  import net.minecraft.world.phys.shapes.Shapes;
  import net.minecraft.world.phys.shapes.VoxelShape;
- import org.jspecify.annotations.Nullable;
 +import org.bukkit.plugin.Plugin;
+ import org.jspecify.annotations.Nullable;
  import org.slf4j.Logger;
  
- public class EntityType<T extends Entity> implements FeatureElement, EntityTypeTest<Entity, T> {
-@@ -196,6 +_,7 @@
+@@ -194,6 +_,7 @@
      public static final StreamCodec<RegistryFriendlyByteBuf, EntityType<?>> STREAM_CODEC = ByteBufCodecs.registry(Registries.ENTITY_TYPE);
      private static final float MAGIC_HORSE_WIDTH = 1.3964844F;
      private static final int DISPLAY_TRACKING_RANGE = 10;
@@ -27,45 +27,40 @@
      public static final EntityType<Boat> ACACIA_BOAT = register(
          "acacia_boat",
          EntityType.Builder.of(boatFactory(() -> Items.ACACIA_BOAT), MobCategory.MISC)
-@@ -1518,21 +_,31 @@
-     public static Optional<Entity> create(ValueInput input, Level level, EntitySpawnReason spawnReason, boolean generation) {
+@@ -1545,22 +_,31 @@
+ 
+     public static Optional<Entity> create(final ValueInput input, final Level level, final EntitySpawnReason reason, final boolean generation) {
          // Paper end - Don't fire sync event during generation
-         return Util.ifElse(
--            by(input).map(entityType -> entityType.create(level, spawnReason)),
--            // Paper start - Don't fire sync event during generation
--            entity -> {
--                if (generation) entity.generation = true; // Paper - Don't fire sync event during generation
--                entity.load(input);
--            },
--            // Paper end - Don't fire sync event during generation
+-        return Util.ifElse(
+-            by(input).map(type -> type.create(level, reason)),
++        return Util.ifElse(  EntityType.by(input).map(entitytypes -> {
++                // Papyrus start - Custom entities
++                if (input.getString("papyrus-entity-id").isPresent()) {
++                    Optional<String> customEntityId = input.getString("papyrus-entity-id");
++                    if (customEntityId.isPresent() && customEntities.containsKey(customEntityId.get())) {
++                        Map.Entry<Plugin, Class<? extends Entity>> entityEntry = customEntities.get(customEntityId.get());
++                        if (entitytypes.getBaseClass().isAssignableFrom(entityEntry.getValue())) {
++                            return EntityType.createCustomEntity(entityEntry.getValue(), entitytypes, entityEntry.getKey(), level, reason);
++                        } else {
++                            LOGGER.warn("Entity type {} is not assignable from custom entity class {}", entitytypes, entityEntry.getValue());
++                        }
++                    }
++                }
++                // Papyrus end
++                return entitytypes.create(level, reason);
++            }),
+             // Paper start - Don't fire sync event during generation
+             entity -> {
+                 if (generation) entity.generation = true; // Paper - Don't fire sync event during generation
+                 entity.load(input);
+             },
+             // Paper end - Don't fire sync event during generation
 -            // Paper start - Add logging for debugging entity tags with invalid ids
 -            () -> {
 -                LOGGER.warn("Skipping Entity with id {}", input.getStringOr("id", "[invalid]"));
 -                if ((DEBUG_ENTITIES_WITH_INVALID_IDS || level.getCraftServer().getServer().isDebugging()) && input instanceof TagValueInput tagInput) {
 -                    LOGGER.warn("Skipped entity tag: {}", tagInput.input);
-+                EntityType.by(input).map(entitytypes -> {
-+                    // Papyrus start - Custom entities
-+                    if (input.getString("papyrus-entity-id").isPresent()) {
-+                        Optional<String> customEntityId = input.getString("papyrus-entity-id");
-+                        if (customEntityId.isPresent() && customEntities.containsKey(customEntityId.get())) {
-+                           Map.Entry<Plugin, Class<? extends Entity>> entityEntry = customEntities.get(customEntityId.get());
-+                           if (entitytypes.getBaseClass().isAssignableFrom(entityEntry.getValue())) {
-+                               return EntityType.createCustomEntity(entityEntry.getValue(), entitytypes, entityEntry.getKey(), level, spawnReason);
-+                           } else {
-+                               LOGGER.warn("Entity type {} is not assignable from custom entity class {}", entitytypes, entityEntry.getValue());
-+                           }
-+                        }
-+                    }
-+                    // Papyrus end
-+                    return entitytypes.create(level, spawnReason);
-+                }),
-+                // Paper start - Don't fire sync event during generation
-+                entity -> {
-+                    if (generation) entity.generation = true; // Paper - Don't fire sync event during generation
-+                    entity.load(input);
-+                    },
-+                // Paper end - Don't fire sync event during generation
-+                        () -> {
++                () -> {
 +                    EntityType.LOGGER.warn("Skipping Entity with id {}", input.getString("id"));
                  }
 -            }
@@ -73,7 +68,7 @@
          );
      }
  
-@@ -1732,6 +_,18 @@
+@@ -1756,6 +_,18 @@
      public boolean onlyOpCanSetNbt() {
          return OP_ONLY_CUSTOM_DATA.contains(this);
      }

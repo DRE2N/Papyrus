@@ -1,6 +1,6 @@
 --- a/net/minecraft/core/component/PatchedDataComponentMap.java
 +++ b/net/minecraft/core/component/PatchedDataComponentMap.java
-@@ -213,6 +_,19 @@
+@@ -214,6 +_,19 @@
          }
      }
  

@@ -1,6 +1,6 @@
 --- a/src/main/java/org/bukkit/entity/LivingEntity.java
 +++ b/src/main/java/org/bukkit/entity/LivingEntity.java
-@@ -29,7 +_,7 @@
+@@ -34,7 +_,7 @@
  /**
   * Represents a living entity, such as a monster or player
   */
@@ -9,7 +9,7 @@
  
      /**
       * Gets the height of the living entity's eyes above its Location.
-@@ -1466,6 +_,12 @@
+@@ -1490,6 +_,12 @@
       */
      boolean canUseEquipmentSlot(org.bukkit.inventory.@NotNull EquipmentSlot slot);
      // Paper end - Expose canUseSlot
