@@ -1,0 +1,21 @@
+mspt:
+  # thresholds: list of thresholds (tick time in ms). For the first threshold where server average tick time > threshold, the
+  # corresponding limits will be used. Thresholds are evaluated in descending order.
+  thresholds:
+    - threshold: 50.0
+      maxActiveSpellsPerTick: 64
+      maxSpellsPerTick: 16
+    - threshold: 40.0
+      maxActiveSpellsPerTick: 128
+      maxSpellsPerTick: 32
+    - threshold: 30.0
+      maxActiveSpellsPerTick: 256
+      maxSpellsPerTick: 64
+    - threshold: 20.0
+      maxActiveSpellsPerTick: 512
+      maxSpellsPerTick: 128
+  # default used when no threshold matches
+  default:
+    maxActiveSpellsPerTick: 1024
+    maxSpellsPerTick: 256
+

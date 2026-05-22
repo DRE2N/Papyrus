@@ -1,14 +1,21 @@
 package de.erethon.spellbook.api;
 
-import com.destroystokyo.paper.event.server.ServerTickEndEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
-import org.bukkit.event.EventHandler;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.configuration.file.YamlConfiguration;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 public class SpellQueue {
@@ -26,9 +33,47 @@ public class SpellQueue {
 
     private final Server server;
 
+    // configuration
+    private YamlConfiguration config;
+    private File configFile;
+
     public SpellQueue(SpellbookAPI spellbookAPI) {
         this.spellbookAPI = spellbookAPI;
         this.server = spellbookAPI.getServer();
+        loadOrCreateConfig();
+    }
+
+    private void loadOrCreateConfig() {
+        try {
+            configFile = new File("spellbook.yml");
+            if (!configFile.exists()) {
+                // copy default from resources
+                InputStream in = getClass().getClassLoader().getResourceAsStream("spellbook.yml");
+                if (in != null) {
+                    Files.copy(in, configFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    spellbookAPI.getServer().getLogger().info("Created default spellbook.yml in server root");
+                } else {
+                    // no resource bundled, create an empty file
+                    configFile.createNewFile();
+                    spellbookAPI.getServer().getLogger().info("Created empty spellbook.yml in server root");
+                }
+            }
+            config = YamlConfiguration.loadConfiguration(configFile);
+        } catch (IOException e) {
+            spellbookAPI.getServer().getLogger().log(Level.SEVERE, "Could not load or create spellbook.yml: " + e.getMessage());
+            e.printStackTrace();
+            config = null;
+        }
+    }
+
+    public void reloadConfig() {
+        if (configFile == null) configFile = new File("spellbook.yml");
+        try {
+            config = YamlConfiguration.loadConfiguration(configFile);
+            spellbookAPI.getServer().getLogger().info("Reloaded spellbook.yml");
+        } catch (Exception e) {
+            spellbookAPI.getServer().getLogger().log(Level.WARNING, "Failed to reload spellbook.yml: " + e.getMessage());
+        }
     }
 
     public void run() {
@@ -89,25 +134,92 @@ public class SpellQueue {
 
     private void updateMaxSpellsPerTick() {
         double tickTime = server.getAverageTickTime();
+
+        // Try to read thresholds from config (mspt.thresholds as list of maps)
+        try {
+            if (config != null) {
+                List<Map<String, Object>> thresholds = (List<Map<String, Object>>) (List) config.getMapList("mspt.thresholds");
+                if (thresholds != null && !thresholds.isEmpty()) {
+                    // sort descending by threshold value
+                    Collections.sort(thresholds, new Comparator<Map<String, Object>>() {
+                        @Override
+                        public int compare(Map<String, Object> o1, Map<String, Object> o2) {
+                            double t1 = toDouble(o1.get("threshold"));
+                            double t2 = toDouble(o2.get("threshold"));
+                            return Double.compare(t2, t1);
+                        }
+                    });
+                    for (Map<String, Object> entry : thresholds) {
+                        double thr = toDouble(entry.get("threshold"));
+                        if (tickTime > thr) {
+                            maxActiveSpellsPerTick = toInt(entry.get("maxActiveSpellsPerTick"), fallbackActiveForThreshold(thr));
+                            maxSpellsPerTick = toInt(entry.get("maxSpellsPerTick"), fallbackNewForThreshold(thr));
+                            return;
+                        }
+                    }
+                    // no threshold matched -> use default
+                    maxActiveSpellsPerTick = config.getInt("mspt.default.maxActiveSpellsPerTick", 128);
+                    maxSpellsPerTick = config.getInt("mspt.default.maxSpellsPerTick", 64);
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            spellbookAPI.getServer().getLogger().log(Level.WARNING, "Invalid spellbook.yml thresholds - falling back to defaults: " + e.getMessage());
+        }
+
+        // fallback to hard-coded defaults if config missing or invalid
         if (tickTime > 50.0) {
             maxActiveSpellsPerTick = 8;
             maxSpellsPerTick = 2;
-        }
-        else if (tickTime > 40.0) {
+        } else if (tickTime > 40.0) {
             maxActiveSpellsPerTick = 16;
             maxSpellsPerTick = 4;
-        }
-        else if (tickTime > 30.0) {
+        } else if (tickTime > 30.0) {
             maxActiveSpellsPerTick = 32;
             maxSpellsPerTick = 8;
-        }
-        else if (tickTime > 20.0) {
+        } else if (tickTime > 20.0) {
             maxActiveSpellsPerTick = 64;
             maxSpellsPerTick = 16;
         } else {
             maxActiveSpellsPerTick = 128;
             maxSpellsPerTick = 64;
         }
+    }
+
+    private static double toDouble(Object o) {
+        if (o == null) return Double.NaN;
+        if (o instanceof Number) return ((Number) o).doubleValue();
+        try {
+            return Double.parseDouble(o.toString());
+        } catch (NumberFormatException e) {
+            return Double.NaN;
+        }
+    }
+
+    private static int toInt(Object o, int fallback) {
+        if (o == null) return fallback;
+        if (o instanceof Number) return ((Number) o).intValue();
+        try {
+            return Integer.parseInt(o.toString());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    private static int fallbackActiveForThreshold(double thr) {
+        if (thr >= 50.0) return 8;
+        if (thr >= 40.0) return 16;
+        if (thr >= 30.0) return 32;
+        if (thr >= 20.0) return 64;
+        return 128;
+    }
+
+    private static int fallbackNewForThreshold(double thr) {
+        if (thr >= 50.0) return 2;
+        if (thr >= 40.0) return 4;
+        if (thr >= 30.0) return 8;
+        if (thr >= 20.0) return 16;
+        return 64;
     }
 
     public SpellbookSpell addToQueue(SpellbookSpell spell) {
