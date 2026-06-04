@@ -5,7 +5,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 
@@ -68,9 +68,10 @@ public interface SpellCaster {
     void setChanneling(boolean channeling);
 
     default void tick() {
-        Iterator<SpellEffect> effectIterator = getEffects().iterator();
-        while(effectIterator.hasNext()) {
-            SpellEffect effect = effectIterator.next();
+        for (SpellEffect effect : new ArrayList<>(getEffects())) {
+            if (!getEffects().contains(effect)) {
+                continue;
+            }
             if (effect.shouldRemove()) {
                 SpellEffectRemoveEvent event = new SpellEffectRemoveEvent(effect.caster, effect, effect.data, RemovalReason.EXPIRED);
                 event.callEvent();
@@ -78,14 +79,14 @@ public interface SpellCaster {
                     return;
                 }
                 effect.onRemove();
-                effectIterator.remove();
-                for (SpellEffect eventEffect: getEffects()) {
+                getEffects().remove(effect);
+                for (SpellEffect eventEffect: new ArrayList<>(getEffects())) {
                     eventEffect.onRemoveEffect(effect);
                 }} else {
                 effect.tick();
             }
         }
-        for (SpellTrait trait : getActiveTraits()) {
+        for (SpellTrait trait : new ArrayList<>(getActiveTraits())) {
             if (!trait.active) {
                 continue;
             }
@@ -97,13 +98,13 @@ public interface SpellCaster {
      * Called when this entity takes damage
      */
     default double onDamage(LivingEntity damager, double damage, PDamageType type) {
-        for (SpellbookSpell spell : getActiveSpells()) {
+        for (SpellbookSpell spell : new ArrayList<>(getActiveSpells())) {
             damage = spell.onDamage(damager, damage, type);
         }
-        for (SpellEffect effect : getEffects()) {
+        for (SpellEffect effect : new ArrayList<>(getEffects())) {
             damage = effect.onDamage(damager, damage, type);
         }
-        for (SpellTrait trait : getActiveTraits()) {
+        for (SpellTrait trait : new ArrayList<>(getActiveTraits())) {
             damage = trait.onDamage(damager, damage, type);
         }
         return Math.max(damage, 0);
@@ -114,13 +115,13 @@ public interface SpellCaster {
      * Called when this entity deals damage
      */
     default double onAttack(LivingEntity target, double damage, PDamageType type) {
-        for (SpellbookSpell spell : getActiveSpells()) {
+        for (SpellbookSpell spell : new ArrayList<>(getActiveSpells())) {
             damage = spell.onAttack(target, damage, type);
         }
-        for (SpellEffect effect : getEffects()) {
+        for (SpellEffect effect : new ArrayList<>(getEffects())) {
             damage = effect.onAttack(target, damage, type);
         }
-        for (SpellTrait trait : getActiveTraits()) {
+        for (SpellTrait trait : new ArrayList<>(getActiveTraits())) {
             damage = trait.onAttack(target, damage, type);
         }
         return Math.max(damage, 0);
@@ -182,9 +183,7 @@ public interface SpellCaster {
     }
 
     default void removeEffect(EffectData effect) {
-        Iterator<SpellEffect> iterator = getEffects().iterator();
-        while (iterator.hasNext()) {
-            SpellEffect itr = iterator.next();
+        for (SpellEffect itr : new ArrayList<>(getEffects())) {
             if (itr.data == effect) {
                 SpellEffectRemoveEvent event = new SpellEffectRemoveEvent(this, itr, effect, RemovalReason.CLEANSED);
                 event.callEvent();
@@ -194,7 +193,7 @@ public interface SpellCaster {
                 if (!onEffectRemove(itr)) {
                     continue;
                 }
-                iterator.remove();
+                getEffects().remove(itr);
                 onEffectRemove(itr);
             }
         }
@@ -212,13 +211,11 @@ public interface SpellCaster {
     }
 
     default void removeTrait(TraitData traitData) {
-        Iterator<SpellTrait> iterator = getActiveTraits().iterator();
-        while (iterator.hasNext()) {
-            SpellTrait itr = iterator.next();
+        for (SpellTrait itr : new ArrayList<>(getActiveTraits())) {
             if (itr.data == traitData) {
                 itr.onRemove();
                 onTraitRemove(traitData);
-                iterator.remove();
+                getActiveTraits().remove(itr);
             }
         }
     }
@@ -257,17 +254,17 @@ public interface SpellCaster {
     int removeEnergy(int energy);
     
     private boolean onEffectAdd(SpellEffect effect, boolean isNew) {
-        for (SpellbookSpell eventSpell : getActiveSpells()) {
+        for (SpellbookSpell eventSpell : new ArrayList<>(getActiveSpells())) {
             if (!eventSpell.onAddEffect(effect, isNew)) {
                 return false;
             }
         }
-        for (SpellEffect eventEffect : getEffects()) {
+        for (SpellEffect eventEffect : new ArrayList<>(getEffects())) {
             if (!eventEffect.onAddEffect(effect, isNew)) {
                 return false;
             }
         }
-        for (SpellTrait eventTrait : getActiveTraits()) {
+        for (SpellTrait eventTrait : new ArrayList<>(getActiveTraits())) {
             if (!eventTrait.onAddEffect(effect, isNew)) {
                 if (!eventTrait.active) {
                     continue;
@@ -279,17 +276,17 @@ public interface SpellCaster {
     }
 
     private boolean onEffectRemove(SpellEffect effect) {
-        for (SpellbookSpell eventSpell : getActiveSpells()) {
+        for (SpellbookSpell eventSpell : new ArrayList<>(getActiveSpells())) {
             if (!eventSpell.onRemoveEffect(effect)) {
                 return false;
             }
         }
-        for (SpellEffect eventEffect : getEffects()) {
+        for (SpellEffect eventEffect : new ArrayList<>(getEffects())) {
             if (!eventEffect.onRemoveEffect(effect)) {
                 return false;
             }
         }
-        for (SpellTrait eventTrait : getActiveTraits()) {
+        for (SpellTrait eventTrait : new ArrayList<>(getActiveTraits())) {
             if (!eventTrait.onRemoveEffect(effect)) {
                 if (!eventTrait.active) {
                     continue;
@@ -301,7 +298,7 @@ public interface SpellCaster {
     }
 
     default void onSpellCast(SpellbookSpell spell) {
-        for (SpellTrait trait : getActiveTraits()) {
+        for (SpellTrait trait : new ArrayList<>(getActiveTraits())) {
             if (!trait.active) {
                 continue;
             }
@@ -319,7 +316,7 @@ public interface SpellCaster {
     }
 
     default void triggerTraits(TraitTrigger trigger) {
-        for (SpellTrait trait : getActiveTraits()) {
+        for (SpellTrait trait : new ArrayList<>(getActiveTraits())) {
             if (!trait.active) {
                 continue;
             }
@@ -333,13 +330,13 @@ public interface SpellCaster {
     }
 
     default void onTraitAdd(TraitData traitData) {
-        for (SpellTrait trait : getActiveTraits()) {
+        for (SpellTrait trait : new ArrayList<>(getActiveTraits())) {
            trait.onOtherTraitAdd(traitData);
         }
     }
 
     default void onTraitRemove(TraitData traitData) {
-        for (SpellTrait trait : getActiveTraits()) {
+        for (SpellTrait trait : new ArrayList<>(getActiveTraits())) {
             trait.onOtherTraitRemove(traitData);
         }
     }
@@ -348,7 +345,7 @@ public interface SpellCaster {
      * This will only interrupt channeling spells for now.
      */
     default void interrupt() {
-        for (SpellbookSpell spell : getActiveSpells()) {
+        for (SpellbookSpell spell : new ArrayList<>(getActiveSpells())) {
             if (spell.isChanneling) {
                 spell.interrupt();
                 setChanneling(false);
@@ -357,7 +354,7 @@ public interface SpellCaster {
     }
 
     default void interruptFromMovement() {
-        for (SpellbookSpell spell : getActiveSpells()) {
+        for (SpellbookSpell spell : new ArrayList<>(getActiveSpells())) {
             if (spell.isChanneling && spell.isMovementInterrupted) {
                 spell.interrupt();
                 setChanneling(false);

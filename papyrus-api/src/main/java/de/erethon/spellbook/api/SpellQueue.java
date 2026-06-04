@@ -13,7 +13,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -80,17 +79,19 @@ public class SpellQueue {
         currentSpells = 0;
         currentActiveSpells = 0;
         updateMaxSpellsPerTick();
-        Iterator<SpellbookSpell> activeSpellIterator = activeSpells.iterator();
-        while (activeSpellIterator.hasNext()) {
+        List<SpellbookSpell> activeSpellsToTick = new ArrayList<>(activeSpells);
+        for (SpellbookSpell spell : activeSpellsToTick) {
             currentActiveSpells++;
             if (currentActiveSpells >= maxActiveSpellsPerTick) {
                 spellbookAPI.getServer().getLogger().warning("Active spell queue overflow! " + activeSpells.size() + "/" + maxActiveSpellsPerTick + " | Tick time: " + server.getAverageTickTime());
                 break;
             }
-            SpellbookSpell spell = activeSpellIterator.next();
+            if (!activeSpells.contains(spell)) {
+                continue;
+            }
             try {
                 if (spell.shouldRemove()) {
-                    activeSpellIterator.remove();
+                    activeSpells.remove(spell);
                 } else if (canTickSpell(spell)){
                     spell.tick();
                 }
@@ -101,19 +102,18 @@ public class SpellQueue {
 
         }
 
-        Iterator<SpellbookSpell> queueIterator = queue.iterator();
-        while (queueIterator.hasNext()) {
+        int spellsToProcess = queue.size();
+        while (!queue.isEmpty() && currentSpells < spellsToProcess) {
             currentSpells++;
             if (currentSpells >= maxSpellsPerTick) {
                 spellbookAPI.getServer().getLogger().warning("New spell queue overflow! " + queue.size() + "/" + maxSpellsPerTick + " | Tick time: " + server.getAverageTickTime());
                 break;
             }
-            SpellbookSpell spell = queueIterator.next();
+            SpellbookSpell spell = queue.remove(0);
             try {
                 SpellCastEvent event = new SpellCastEvent(spell.getCaster(), spell, spell.getData());
                 pluginManager.callEvent(event);
                 if (event.isCancelled() || !canCastSpell(spell)) {
-                    queueIterator.remove();
                     continue;
                 }
                 try {
@@ -122,7 +122,6 @@ public class SpellQueue {
                     server.getLogger().log(Level.SEVERE, "An error occurred while readying " + spell.getId() + " for " + spell.getCaster().getName() + ": " + exception.getMessage());
                     exception.printStackTrace();
                 }
-                queueIterator.remove();
                 activeSpells.add(spell);
                 spell.getCaster().addActiveSpell(spell);
             } catch (Exception e) {
@@ -233,12 +232,12 @@ public class SpellQueue {
     }
 
     private boolean canCastSpell(SpellbookSpell spell) {
-        for (SpellbookSpell spellbookSpell : spell.getCaster().getActiveSpells()) {
+        for (SpellbookSpell spellbookSpell : new ArrayList<>(spell.getCaster().getActiveSpells())) {
             if (!spellbookSpell.onCast(spell)) {
                 return false;
             }
         }
-        for (SpellEffect effect : spell.getCaster().getEffects()) {
+        for (SpellEffect effect : new ArrayList<>(spell.getCaster().getEffects())) {
             if (!effect.onCast(spell)) {
                 return false;
             }
@@ -247,12 +246,12 @@ public class SpellQueue {
     }
 
     private boolean canTickSpell(SpellbookSpell spell) {
-        for (SpellbookSpell spellbookSpell : spell.getCaster().getActiveSpells()) {
+        for (SpellbookSpell spellbookSpell : new ArrayList<>(spell.getCaster().getActiveSpells())) {
             if (!spellbookSpell.onSpellTick(spell)) {
                 return false;
             }
         }
-        for (SpellEffect effect : spell.getCaster().getEffects()) {
+        for (SpellEffect effect : new ArrayList<>(spell.getCaster().getEffects())) {
             if (!effect.onSpellTick(spell)) {
                  return false;
             }

@@ -244,7 +244,7 @@ public abstract class SpellbookSpell {
     }
 
     public void ready() {
-        for (SpellTrait trait : caster.getActiveTraits()) {
+        for (SpellTrait trait : new ArrayList<>(caster.getActiveTraits())) {
             trait.onSpellPreCast(this);
         }
         if (onPrecast()) {
