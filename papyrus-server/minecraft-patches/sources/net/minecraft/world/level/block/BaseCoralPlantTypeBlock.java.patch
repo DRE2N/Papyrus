@@ -14,7 +14,7 @@
 +        if (true) return true; // Papyrus - Disable coral plant death
          if (state.getValue(WATERLOGGED)) {
              return true;
-         } else {
+         }
 @@ -76,6 +_,7 @@
          final BlockState neighbourState,
          final RandomSource random

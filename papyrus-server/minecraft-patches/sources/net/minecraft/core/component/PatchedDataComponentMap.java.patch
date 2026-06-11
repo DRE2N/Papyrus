@@ -1,7 +1,7 @@
 --- a/net/minecraft/core/component/PatchedDataComponentMap.java
 +++ b/net/minecraft/core/component/PatchedDataComponentMap.java
-@@ -214,6 +_,19 @@
-         }
+@@ -210,6 +_,19 @@
+         return new DataComponentPatch(this.patch);
      }
  
 +    // Papyrus start - ItemStack filtering

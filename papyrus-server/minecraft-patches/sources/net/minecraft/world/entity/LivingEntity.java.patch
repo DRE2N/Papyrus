@@ -119,7 +119,7 @@
      protected boolean shouldTakeDrowningDamage() {
          return this.getAirSupply() <= -20;
      }
-@@ -1419,8 +_,95 @@
+@@ -1420,8 +_,95 @@
          return this.getHealth() <= 0.0F;
      }
  
@@ -215,17 +215,17 @@
 +    }/*
          if (this.isInvulnerableTo(level, source)) {
              return false;
-         } else if (this.isRemoved() || this.dead || this.getHealth() <= 0.0F) { // CraftBukkit - Don't allow entities that got set to dead/killed elsewhere to get damaged and die
-@@ -1573,7 +_,7 @@
- 
-             return success;
          }
+@@ -1579,7 +_,7 @@
+         }
+ 
+         return success;
 -    }
 +    }*/
  
      public float applyItemBlocking(final ServerLevel level, final DamageSource source, final float damage) {
          // Paper start
-@@ -3613,7 +_,13 @@
+@@ -3614,7 +_,13 @@
                          AttributeInstance instance = this.attributes.getInstance(attribute);
                          if (instance != null) {
                              instance.removeModifier(modifier.id());

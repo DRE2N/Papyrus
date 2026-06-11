@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
-@@ -12,6 +_,8 @@
+@@ -11,6 +_,8 @@
  import java.util.Optional;
  import java.util.OptionalInt;
  import java.util.function.Predicate;
@@ -9,7 +9,7 @@
  import net.minecraft.core.BlockPos;
  import net.minecraft.core.Direction;
  import net.minecraft.core.GlobalPos;
-@@ -711,7 +_,7 @@
+@@ -714,7 +_,7 @@
      }
  
      @Override
@@ -17,17 +17,17 @@
 +    public boolean hurtServer(final ServerLevel level, final DamageSource source, float damage, CraftPDamageType damageType) {
          if (this.isInvulnerableTo(level, source)) {
              return false;
-         } else if (this.abilities.invulnerable && !source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
-@@ -738,7 +_,7 @@
+         }
+@@ -745,7 +_,7 @@
  
-                 // return damage != 0.0F && super.hurtServer(level, source, damage);
-                 // CraftBukkit start - Don't filter out 0 damage
--                boolean damaged = super.hurtServer(level, source, damage);
+         // return damage != 0.0F && super.hurtServer(level, source, damage);
+         // CraftBukkit start - Don't filter out 0 damage
+-        boolean damaged = super.hurtServer(level, source, damage);
 +                boolean damaged = super.hurtServer(level, source, damage, damageType);
-                 if (damaged) {
-                     this.removeEntitiesOnShoulder();
-                 }
-@@ -1020,7 +_,7 @@
+         if (damaged) {
+             this.removeEntitiesOnShoulder();
+         }
+@@ -1028,7 +_,7 @@
  
          if (playerAttackEntityEvent.callEvent() && willAttack) { // Logic moved to willAttack local variable.
          // Paper end - PlayerAttackEntityEvent
@@ -36,7 +36,7 @@
              ItemStack attackingItemStack = this.getWeaponItem();
              DamageSource damageSource = this.createAttackSource(attackingItemStack); final DamageSource dmgSourceFinal = damageSource; // Paper - damage events
              float attackStrengthScale = this.getAttackStrengthScale(0.5F);
-@@ -1055,7 +_,15 @@
+@@ -1063,7 +_,15 @@
                      }
  
                      Vec3 oldMovement = entity.getDeltaMovement();
@@ -53,7 +53,7 @@
                      if (wasHurt) {
                          this.causeExtraKnockback(entity, this.getKnockback(entity, damageSource) + (knockbackAttack ? 0.5F : 0.0F), oldMovement);
                          if (sweepAttack) {
-@@ -1250,7 +_,7 @@
+@@ -1258,7 +_,7 @@
                      float enchantedDamage = this.getEnchantedDamage(nearby, var12, damageSource) * attackStrengthScale;
                      // Paper start - Only apply knockback if the event is not canceled
                      nearby.lastDamageCancelled = false;

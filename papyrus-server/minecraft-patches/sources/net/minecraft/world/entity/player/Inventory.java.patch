@@ -16,7 +16,7 @@
  
  public class Inventory implements Container, Nameable {
      public static final int POP_TIME_DURATION = 5;
-@@ -501,6 +_,10 @@
+@@ -503,6 +_,10 @@
  
      public void load(final ValueInput.TypedInputList<ItemStackWithSlot> input) {
          this.items.clear();

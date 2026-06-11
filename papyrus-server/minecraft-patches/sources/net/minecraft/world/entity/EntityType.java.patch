@@ -68,7 +68,7 @@
          );
      }
  
-@@ -1756,6 +_,18 @@
+@@ -1750,6 +_,18 @@
      public boolean onlyOpCanSetNbt() {
          return OP_ONLY_CUSTOM_DATA.contains(this);
      }

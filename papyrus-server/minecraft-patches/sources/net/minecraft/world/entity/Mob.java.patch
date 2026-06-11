@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/Mob.java
 +++ b/net/minecraft/world/entity/Mob.java
-@@ -1594,26 +_,36 @@
+@@ -1595,26 +_,36 @@
  
      @Override
      public boolean doHurtTarget(final ServerLevel level, final Entity target) {

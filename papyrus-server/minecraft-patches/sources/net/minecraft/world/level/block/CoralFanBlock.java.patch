@@ -15,4 +15,4 @@
 +        if (true) return state; // Papyrus - Disable state update
          if (directionToNeighbour == Direction.DOWN && !state.canSurvive(level, pos)) {
              return Blocks.AIR.defaultBlockState();
-         } else {
+         }
