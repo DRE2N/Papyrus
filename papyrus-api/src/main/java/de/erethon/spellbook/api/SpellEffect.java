@@ -1,7 +1,10 @@
 package de.erethon.spellbook.api;
 
 import de.erethon.papyrus.PDamageType;
+import de.erethon.papyrus.combat.CombatContext;
+import de.erethon.papyrus.combat.CombatSource;
 import org.bukkit.entity.LivingEntity;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,6 +15,7 @@ public class SpellEffect {
     protected LivingEntity target;
     protected final LivingEntity caster;
     public final EffectData data;
+    private @Nullable CombatSource originSource;
 
     protected int ticksLeft;
     protected int stacks;
@@ -22,6 +26,7 @@ public class SpellEffect {
         this.caster = caster;
         this.target = target;
         this.stacks = stacks;
+        this.originSource = CombatContext.current();
 
         for (int i = 0; i < stacks; i++) {
             this.stackDurations.add(duration);
@@ -30,38 +35,46 @@ public class SpellEffect {
     }
 
     public void tick() {
-        if (!stackDurations.isEmpty()) {
-            stackDurations.replaceAll(t -> t - 1);
-            stackDurations.removeIf(t -> t <= 0);
-            this.stacks = stackDurations.size();
-            this.ticksLeft = stackDurations.isEmpty() ? 0 : Collections.max(stackDurations);
-        } else {
-            ticksLeft--;
-            stacks = 0;
-        }
+        try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.effect(this))) {
+            if (!stackDurations.isEmpty()) {
+                stackDurations.replaceAll(t -> t - 1);
+                stackDurations.removeIf(t -> t <= 0);
+                this.stacks = stackDurations.size();
+                this.ticksLeft = stackDurations.isEmpty() ? 0 : Collections.max(stackDurations);
+            } else {
+                ticksLeft--;
+                stacks = 0;
+            }
 
-        onTick();
+            onTick();
+        }
     }
 
     public void add(int duration, int stacksToAdd) {
-        if (data.getStackMode() == EffectData.StackMode.PROLONG) {
-            stackDurations.replaceAll(t -> t + duration);
-            if (stackDurations.isEmpty()) {
-                stackDurations.add(duration);
-            }
+        CombatSource applyingSource = CombatContext.current();
+        if (applyingSource != null && applyingSource.type() != CombatSource.Type.EFFECT) {
+            originSource = applyingSource;
+        }
+        try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.effect(this))) {
+            if (data.getStackMode() == EffectData.StackMode.PROLONG) {
+                stackDurations.replaceAll(t -> t + duration);
+                if (stackDurations.isEmpty()) {
+                    stackDurations.add(duration);
+                }
 
-        } else if (data.getStackMode() == EffectData.StackMode.INTENSIFY) {
-            for (int i = 0; i < stacksToAdd; i++) {
-                if (this.stackDurations.size() < data.getMaxStacks()) {
-                    this.stackDurations.add(duration);
+            } else if (data.getStackMode() == EffectData.StackMode.INTENSIFY) {
+                for (int i = 0; i < stacksToAdd; i++) {
+                    if (this.stackDurations.size() < data.getMaxStacks()) {
+                        this.stackDurations.add(duration);
+                    }
                 }
             }
+
+            this.stacks = stackDurations.size();
+            this.ticksLeft = stackDurations.isEmpty() ? 0 : Collections.max(stackDurations);
+
+            onApply();
         }
-
-        this.stacks = stackDurations.size();
-        this.ticksLeft = stackDurations.isEmpty() ? 0 : Collections.max(stackDurations);
-
-        onApply();
     }
 
     public boolean canAdd(int duration, int newStacks) {
@@ -151,6 +164,10 @@ public class SpellEffect {
 
     public LivingEntity getTarget() {
         return target;
+    }
+
+    public @Nullable CombatSource getOriginSource() {
+        return originSource;
     }
 
     public void setTarget(LivingEntity target) {

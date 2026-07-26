@@ -1,6 +1,6 @@
 --- a/src/main/java/org/bukkit/entity/Damageable.java
 +++ b/src/main/java/org/bukkit/entity/Damageable.java
-@@ -118,4 +_,9 @@
+@@ -138,4 +_,9 @@
       */
      @Deprecated(since = "1.11")
      void resetMaxHealth();

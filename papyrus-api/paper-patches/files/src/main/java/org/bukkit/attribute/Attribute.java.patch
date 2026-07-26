@@ -1,6 +1,6 @@
 --- a/src/main/java/org/bukkit/attribute/Attribute.java
 +++ b/src/main/java/org/bukkit/attribute/Attribute.java
-@@ -159,6 +_,42 @@
+@@ -160,6 +_,42 @@
       */
      Attribute WAYPOINT_RECEIVE_RANGE = getAttribute("waypoint_receive_range");
  

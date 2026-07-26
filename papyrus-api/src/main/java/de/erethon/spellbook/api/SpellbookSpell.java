@@ -1,6 +1,8 @@
 package de.erethon.spellbook.api;
 
 import de.erethon.papyrus.PDamageType;
+import de.erethon.papyrus.combat.CombatContext;
+import de.erethon.papyrus.combat.CombatSource;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.LivingEntity;
@@ -244,55 +246,59 @@ public abstract class SpellbookSpell {
     }
 
     public void ready() {
-        for (SpellTrait trait : new ArrayList<>(caster.getActiveTraits())) {
-            trait.onSpellPreCast(this);
-        }
-        if (onPrecast()) {
-            caster.onSpellCast(this);
-            if (onCast()) {
-                onAfterCast();
+        try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.spell(this))) {
+            for (SpellTrait trait : new ArrayList<>(caster.getActiveTraits())) {
+                trait.onSpellPreCast(this);
+            }
+            if (onPrecast()) {
+                caster.onSpellCast(this);
+                if (onCast()) {
+                    onAfterCast();
+                } else {
+                    failed = true;
+                }
             } else {
                 failed = true;
             }
-        } else {
-            failed = true;
         }
     }
 
     public void tick() {
-        if (failed) {
-            return;
-        }
-        if (interrupted) {
-            cleanup();
-            return;
-        }
-        if (channelDuration > 0) {
-            currentChannelTicks++;
-            if (!isChanneling && currentChannelTicks < channelDuration) {
-                isChanneling = true;
-                caster.setChanneling(true);
-                SpellChannelStartEvent startEvent = new SpellChannelStartEvent(caster, this);
-                Bukkit.getPluginManager().callEvent(startEvent);
+        try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.spell(this))) {
+            if (failed) {
+                return;
             }
-            if (currentChannelTicks == channelDuration) {
-                SpellChannelFinishEvent finishEvent = new SpellChannelFinishEvent(caster, this, false);
-                Bukkit.getPluginManager().callEvent(finishEvent);
-                onChannelFinish();
-                isChanneling = false;
-                caster.setChanneling(false);
+            if (interrupted) {
+                cleanup();
+                return;
             }
-        }
-        currentTicks++;
-        if (currentTickInterval >= tickInterval) {
-            currentTickInterval = 0;
-            onTick();
-        } else {
-            currentTickInterval++;
-        }
-        if (shouldRemove()) {
-            onTickFinish();
-            caster.getActiveSpells().remove(this);
+            if (channelDuration > 0) {
+                currentChannelTicks++;
+                if (!isChanneling && currentChannelTicks < channelDuration) {
+                    isChanneling = true;
+                    caster.setChanneling(true);
+                    SpellChannelStartEvent startEvent = new SpellChannelStartEvent(caster, this);
+                    Bukkit.getPluginManager().callEvent(startEvent);
+                }
+                if (currentChannelTicks == channelDuration) {
+                    SpellChannelFinishEvent finishEvent = new SpellChannelFinishEvent(caster, this, false);
+                    Bukkit.getPluginManager().callEvent(finishEvent);
+                    onChannelFinish();
+                    isChanneling = false;
+                    caster.setChanneling(false);
+                }
+            }
+            currentTicks++;
+            if (currentTickInterval >= tickInterval) {
+                currentTickInterval = 0;
+                onTick();
+            } else {
+                currentTickInterval++;
+            }
+            if (shouldRemove()) {
+                onTickFinish();
+                caster.getActiveSpells().remove(this);
+            }
         }
     }
 

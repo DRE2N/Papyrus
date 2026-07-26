@@ -1,40 +1,56 @@
 --- a/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
 +++ b/src/main/java/org/bukkit/event/entity/EntityDamageByEntityEvent.java
-@@ -2,6 +_,8 @@
+@@ -2,11 +_,16 @@
  
  import com.google.common.base.Function;
  import java.util.Map;
 +
 +import de.erethon.papyrus.PDamageType;
++import de.erethon.papyrus.combat.CombatDamageBreakdown;
++import de.erethon.papyrus.combat.CombatSource;
  import org.bukkit.damage.DamageSource;
  import org.bukkit.damage.DamageType;
  import org.bukkit.entity.Entity;
-@@ -16,6 +_,8 @@
+ import org.jetbrains.annotations.ApiStatus;
+ import org.jetbrains.annotations.NotNull;
++import org.jetbrains.annotations.Nullable;
+ 
+ /**
+  * Called when an entity is damaged by an entity
+@@ -16,6 +_,10 @@
      private final Entity damager;
      private final boolean critical;
  
 +    private PDamageType damageType; // Papyrus
++    private @Nullable CombatSource combatSource; // Papyrus
++    private @Nullable CombatDamageBreakdown combatBreakdown; // Papyrus
 +
      @ApiStatus.Internal
      @Deprecated(since = "1.20.4", forRemoval = true)
      public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, final double damage) {
-@@ -51,6 +_,15 @@
+@@ -51,6 +_,21 @@
          this.critical = critical;
      }
  
 +    // Papyrus start - add damage type
 +    public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final DamageSource damageSource, final double damage, PDamageType type) {
++        this(damager, damagee, cause, damageSource, damage, type, false, null, null);
++    }
++
++    public EntityDamageByEntityEvent(@NotNull final Entity damager, @NotNull final Entity damagee, @NotNull final DamageCause cause, @NotNull final DamageSource damageSource, final double damage, PDamageType type, boolean critical, @Nullable CombatSource combatSource, @Nullable CombatDamageBreakdown combatBreakdown) {
 +        super(damagee, cause, damageSource, damage);
 +        this.damager = damager;
-+        this.critical = false; // Paper - add critical damage API
++        this.critical = critical;
 +        this.damageType = type;
++        this.combatSource = combatSource;
++        this.combatBreakdown = combatBreakdown;
 +    }
 +    // Papyrus end
 +
      /**
       * Returns the entity that damaged the defender.
       *
-@@ -84,4 +_,14 @@
+@@ -84,4 +_,30 @@
      public @NotNull DamageSource getDamageSource() {
          return super.getDamageSource();
      }
@@ -46,6 +62,22 @@
 +
 +    public void setDamageType(PDamageType type) {
 +        damageType = type;
++    }
++
++    public @Nullable CombatSource getCombatSource() {
++        return combatSource;
++    }
++
++    public @Nullable CombatDamageBreakdown getCombatBreakdown() {
++        return combatBreakdown;
++    }
++
++    @Override
++    public void setDamage(double damage) {
++        super.setDamage(damage);
++        if (combatBreakdown != null) {
++            combatBreakdown = combatBreakdown.withFinalDamage(damage);
++        }
 +    }
 +    // Papyrus end
  }

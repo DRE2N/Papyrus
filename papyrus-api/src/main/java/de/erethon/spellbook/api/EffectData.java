@@ -42,6 +42,10 @@ public class EffectData extends YamlConfiguration {
         return getString("icon", "<red>E");
     }
 
+    public String getId() {
+        return id;
+    }
+
     public int getMaxDuration() {
         return maxDuration;
     }

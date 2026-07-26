@@ -119,7 +119,7 @@
      protected boolean shouldTakeDrowningDamage() {
          return this.getAirSupply() <= -20;
      }
-@@ -1420,8 +_,95 @@
+@@ -1420,8 +_,124 @@
          return this.getHealth() <= 0.0F;
      }
  
@@ -131,13 +131,16 @@
 +            return false;
 +        }
 +        Entity attacker = damageSource.getEntity();
++        double requestedDamage = amount;
 +        double finalDmg = amount;
 +        double resistance = getAttributeValue(damageType.resistance);
++        double penetration = 0;
++        boolean critical = false;
 +        if (attacker != null) {
 +            if (attacker instanceof LivingEntity living) {
 +                // Remove the value of the attackers penetration attribute from the victims resistance
 +                // This can result in negative resistance values, which is intended
-+                resistance = resistance - living.getAttributeValue(damageType.penetration);
++                penetration = living.getAttributeValue(damageType.penetration);
 +
 +                double critChance = living.getAttributeValue(Attributes.STAT_CRIT_CHANCE);
 +                double critDamage = living.getAttributeValue(Attributes.STAT_CRIT_DAMAGE);
@@ -145,11 +148,14 @@
 +                boolean isCrit = Math.random() < (critChance / 100.0);
 +                if (isCrit && damageType == CraftPDamageType.PHYSICAL) {
 +                    amount *= (float) (critDamage / 100.0);
++                    critical = true;
 +                    damageSource.critical();
 +                }
 +            }
 +            // Now remove the resistance from the damage
-+            finalDmg = amount - resistance;
++            double effectiveResistance = resistance - penetration;
++            finalDmg = amount - effectiveResistance;
++            double damageAfterResistance = finalDmg;
 +
 +            // Spells or traits may modify damage, but take effect after resistances
 +            if (attacker instanceof LivingEntity living) {
@@ -157,8 +163,31 @@
 +                finalDmg = getBukkitLivingEntity().onDamage(attackerBukkit, finalDmg, damageType.apiType);
 +            }
 +
++            de.erethon.papyrus.combat.CombatSource combatSource = de.erethon.papyrus.combat.CombatContext.capture();
++            Entity directEntity = damageSource.getDirectEntity();
++            if (combatSource == null && directEntity != null) {
++                combatSource = directEntity.papyrusCombatSource;
++            }
++            if (combatSource == null) {
++                combatSource = attacker.papyrusCombatSource;
++            }
++            if (combatSource == null) {
++                combatSource = de.erethon.papyrus.combat.CombatSource.basicAttack();
++            }
++            de.erethon.papyrus.combat.CombatDamageBreakdown breakdown = new de.erethon.papyrus.combat.CombatDamageBreakdown(
++                    requestedDamage,
++                    amount,
++                    resistance,
++                    penetration,
++                    effectiveResistance,
++                    damageAfterResistance,
++                    finalDmg,
++                    finalDmg,
++                    critical
++            );
++
 +            // Call the bukkit event
-+            EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(attacker.getBukkitEntity(), getBukkitEntity(),EntityDamageEvent.DamageCause.ENTITY_ATTACK, new CraftDamageSource(damageSource), finalDmg, damageType.apiType);
++            EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(attacker.getBukkitEntity(), getBukkitEntity(), EntityDamageEvent.DamageCause.ENTITY_ATTACK, new CraftDamageSource(damageSource), finalDmg, damageType.apiType, critical, combatSource, breakdown);
 +            Bukkit.getServer().getPluginManager().callEvent(event);
 +            if (event.isCancelled()) {
 +                return false;

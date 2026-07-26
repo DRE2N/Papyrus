@@ -1,6 +1,8 @@
 package de.erethon.spellbook.api;
 
 import de.erethon.papyrus.PDamageType;
+import de.erethon.papyrus.combat.CombatContext;
+import de.erethon.papyrus.combat.CombatSource;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
@@ -78,10 +80,14 @@ public interface SpellCaster {
                 if (event.isCancelled()) {
                     return;
                 }
-                effect.onRemove();
+                try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.effect(effect))) {
+                    effect.onRemove();
+                }
                 getEffects().remove(effect);
                 for (SpellEffect eventEffect: new ArrayList<>(getEffects())) {
-                    eventEffect.onRemoveEffect(effect);
+                    try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.effect(eventEffect))) {
+                        eventEffect.onRemoveEffect(effect);
+                    }
                 }} else {
                 effect.tick();
             }
@@ -90,7 +96,9 @@ public interface SpellCaster {
             if (!trait.active) {
                 continue;
             }
-            trait.onTick();
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.trait(trait))) {
+                trait.onTick();
+            }
         }
     }
 
@@ -99,13 +107,19 @@ public interface SpellCaster {
      */
     default double onDamage(LivingEntity damager, double damage, PDamageType type) {
         for (SpellbookSpell spell : new ArrayList<>(getActiveSpells())) {
-            damage = spell.onDamage(damager, damage, type);
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.spell(spell))) {
+                damage = spell.onDamage(damager, damage, type);
+            }
         }
         for (SpellEffect effect : new ArrayList<>(getEffects())) {
-            damage = effect.onDamage(damager, damage, type);
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.effect(effect))) {
+                damage = effect.onDamage(damager, damage, type);
+            }
         }
         for (SpellTrait trait : new ArrayList<>(getActiveTraits())) {
-            damage = trait.onDamage(damager, damage, type);
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.trait(trait))) {
+                damage = trait.onDamage(damager, damage, type);
+            }
         }
         return Math.max(damage, 0);
     }
@@ -116,13 +130,19 @@ public interface SpellCaster {
      */
     default double onAttack(LivingEntity target, double damage, PDamageType type) {
         for (SpellbookSpell spell : new ArrayList<>(getActiveSpells())) {
-            damage = spell.onAttack(target, damage, type);
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.spell(spell))) {
+                damage = spell.onAttack(target, damage, type);
+            }
         }
         for (SpellEffect effect : new ArrayList<>(getEffects())) {
-            damage = effect.onAttack(target, damage, type);
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.effect(effect))) {
+                damage = effect.onAttack(target, damage, type);
+            }
         }
         for (SpellTrait trait : new ArrayList<>(getActiveTraits())) {
-            damage = trait.onAttack(target, damage, type);
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.trait(trait))) {
+                damage = trait.onAttack(target, damage, type);
+            }
         }
         return Math.max(damage, 0);
     }
@@ -179,7 +199,9 @@ public interface SpellCaster {
                 return;
             }
             getEffects().add(effect);
-            effect.onApply();}
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.effect(effect))) {
+                effect.onApply();
+            }}
     }
 
     default void removeEffect(EffectData effect) {
@@ -206,14 +228,18 @@ public interface SpellCaster {
     default void addTrait(TraitData traitData) {
         SpellTrait trait = traitData.getActiveTrait((LivingEntity) this);
         getActiveTraits().add(trait);
-        trait.onAdd();
+        try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.trait(trait))) {
+            trait.onAdd();
+        }
         onTraitAdd(traitData);
     }
 
     default void removeTrait(TraitData traitData) {
         for (SpellTrait itr : new ArrayList<>(getActiveTraits())) {
             if (itr.data == traitData) {
-                itr.onRemove();
+                try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.trait(itr))) {
+                    itr.onRemove();
+                }
                 onTraitRemove(traitData);
                 getActiveTraits().remove(itr);
             }
@@ -255,21 +281,27 @@ public interface SpellCaster {
     
     private boolean onEffectAdd(SpellEffect effect, boolean isNew) {
         for (SpellbookSpell eventSpell : new ArrayList<>(getActiveSpells())) {
-            if (!eventSpell.onAddEffect(effect, isNew)) {
-                return false;
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.spell(eventSpell))) {
+                if (!eventSpell.onAddEffect(effect, isNew)) {
+                    return false;
+                }
             }
         }
         for (SpellEffect eventEffect : new ArrayList<>(getEffects())) {
-            if (!eventEffect.onAddEffect(effect, isNew)) {
-                return false;
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.effect(eventEffect))) {
+                if (!eventEffect.onAddEffect(effect, isNew)) {
+                    return false;
+                }
             }
         }
         for (SpellTrait eventTrait : new ArrayList<>(getActiveTraits())) {
-            if (!eventTrait.onAddEffect(effect, isNew)) {
-                if (!eventTrait.active) {
-                    continue;
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.trait(eventTrait))) {
+                if (!eventTrait.onAddEffect(effect, isNew)) {
+                    if (!eventTrait.active) {
+                        continue;
+                    }
+                    return false;
                 }
-                return false;
             }
         }
         return true;
@@ -277,21 +309,27 @@ public interface SpellCaster {
 
     private boolean onEffectRemove(SpellEffect effect) {
         for (SpellbookSpell eventSpell : new ArrayList<>(getActiveSpells())) {
-            if (!eventSpell.onRemoveEffect(effect)) {
-                return false;
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.spell(eventSpell))) {
+                if (!eventSpell.onRemoveEffect(effect)) {
+                    return false;
+                }
             }
         }
         for (SpellEffect eventEffect : new ArrayList<>(getEffects())) {
-            if (!eventEffect.onRemoveEffect(effect)) {
-                return false;
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.effect(eventEffect))) {
+                if (!eventEffect.onRemoveEffect(effect)) {
+                    return false;
+                }
             }
         }
         for (SpellTrait eventTrait : new ArrayList<>(getActiveTraits())) {
-            if (!eventTrait.onRemoveEffect(effect)) {
-                if (!eventTrait.active) {
-                    continue;
+            try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.trait(eventTrait))) {
+                if (!eventTrait.onRemoveEffect(effect)) {
+                    if (!eventTrait.active) {
+                        continue;
+                    }
+                    return false;
                 }
-                return false;
             }
         }
         return true;
@@ -303,13 +341,15 @@ public interface SpellCaster {
                 continue;
             }
             if (trait.data.affectedBySpell(spell.data)) {
-                if (trait.onSpellCast(spell) == null) {
-                    spell.cancel();
-                }
-                SpellData afterTraitData = trait.onSpellCast(spell).data;
-                if (afterTraitData != spell.data) {
-                    spell.cancel();
-                    cast(afterTraitData);
+                try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.trait(trait))) {
+                    if (trait.onSpellCast(spell) == null) {
+                        spell.cancel();
+                    }
+                    SpellData afterTraitData = trait.onSpellCast(spell).data;
+                    if (afterTraitData != spell.data) {
+                        spell.cancel();
+                        cast(afterTraitData);
+                    }
                 }
             }
         }
@@ -321,10 +361,14 @@ public interface SpellCaster {
                 continue;
             }
             if (trigger.getSpell() != null && trait.data.affectedBySpell(trigger.getSpell().data)) {
-                trait.onTrigger(trigger);
+                try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.trait(trait))) {
+                    trait.onTrigger(trigger);
+                }
             }
             if (trigger.getTrait() != null && trait.data.affectedByTrait(trigger.getTrait().data)) {
-                trait.onTrigger(trigger);
+                try (CombatContext.Scope ignored = CombatContext.enter(CombatSource.trait(trait))) {
+                    trait.onTrigger(trigger);
+                }
             }
         }
     }
