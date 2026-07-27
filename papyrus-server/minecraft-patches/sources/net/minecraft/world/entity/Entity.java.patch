@@ -1,12 +1,260 @@
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -306,7 +_,8 @@
+@@ -306,7 +_,12 @@
      protected boolean wasEyeInWater;
      public int invulnerableTime;
      protected boolean firstTick = true;
 -    protected final SynchedEntityData entityData;
 +    protected SynchedEntityData entityData; // Papyrus - Not final for Aether
 +    public final de.erethon.papyrus.combat.@Nullable CombatSource papyrusCombatSource = de.erethon.papyrus.combat.CombatContext.capture(); // Papyrus - retain spell source on projectiles and summons
++    // Papyrus start - Entity-scoped virtual terrain
++    private de.erethon.papyrus.world.@Nullable VirtualTerrainProvider virtualTerrainProvider;
++    private de.erethon.papyrus.world.@Nullable VirtualTerrainCollisionView virtualTerrainCollisionView;
++    // Papyrus end - Entity-scoped virtual terrain
      protected static final EntityDataAccessor<Byte> DATA_SHARED_FLAGS_ID = SynchedEntityData.defineId(Entity.class, EntityDataSerializers.BYTE);
      protected static final int FLAG_ONFIRE = 0;
      private static final int FLAG_SHIFT_KEY_DOWN = 1;
+@@ -1072,8 +_,36 @@
+     }
+ 
+     private boolean isFree(final AABB box) {
+-        return this.level().noCollision(this, box) && !this.level().containsAnyLiquid(box);
+-    }
++        return this.getVirtualTerrainCollisionGetter().noCollision(this, box) && !this.level().containsAnyLiquid(box); // Papyrus - Entity-scoped virtual terrain
++    }
++
++    // Papyrus start - Entity-scoped virtual terrain
++    public final void setVirtualTerrainProvider(final de.erethon.papyrus.world.@Nullable VirtualTerrainProvider provider) {
++        if (this.virtualTerrainProvider == provider) {
++            return;
++        }
++        this.virtualTerrainProvider = provider;
++        this.virtualTerrainCollisionView = provider == null ? null : new de.erethon.papyrus.world.VirtualTerrainCollisionView(this.level(), provider);
++    }
++
++    public final de.erethon.papyrus.world.@Nullable VirtualTerrainProvider getVirtualTerrainProvider() {
++        return this.virtualTerrainProvider;
++    }
++
++    public final net.minecraft.world.level.CollisionGetter getVirtualTerrainCollisionGetter() {
++        return this.virtualTerrainProvider != null && this.virtualTerrainProvider.isValid()
++            ? this.virtualTerrainCollisionView
++            : this.level();
++    }
++
++    public final BlockState getVirtualTerrainBlockState(final BlockPos position) {
++        return this.getVirtualTerrainCollisionGetter().getBlockState(position);
++    }
++
++    public final BlockHitResult clipVirtualTerrain(final ClipContext context) {
++        return this.getVirtualTerrainCollisionGetter().clip(context);
++    }
++    // Papyrus end - Entity-scoped virtual terrain
+ 
+     public void setOnGround(final boolean onGround) {
+         this.onGround = onGround;
+@@ -1098,12 +_,12 @@
+         if (onGround) {
+             AABB boundingBox = this.getBoundingBox();
+             AABB testArea = new AABB(boundingBox.minX, boundingBox.minY - 1.0E-6, boundingBox.minZ, boundingBox.maxX, boundingBox.minY, boundingBox.maxZ);
+-            Optional<BlockPos> supportingBlock = this.level.findSupportingBlock(this, testArea);
++            Optional<BlockPos> supportingBlock = this.getVirtualTerrainCollisionGetter().findSupportingBlock(this, testArea); // Papyrus - Entity-scoped virtual terrain
+             if (supportingBlock.isPresent() || this.onGroundNoBlocks) {
+                 this.mainSupportingBlockPos = supportingBlock;
+             } else if (movement != null) {
+                 AABB onGroundCollisionTestArea = testArea.move(-movement.x, 0.0, -movement.z);
+-                supportingBlock = this.level.findSupportingBlock(this, onGroundCollisionTestArea);
++                supportingBlock = this.getVirtualTerrainCollisionGetter().findSupportingBlock(this, onGroundCollisionTestArea); // Papyrus - Entity-scoped virtual terrain
+                 this.mainSupportingBlockPos = supportingBlock;
+             }
+ 
+@@ -1185,8 +_,9 @@
+                 if (this.fallDistance != 0.0 && movementLength >= 1.0) {
+                     double checkDistance = Math.min(movement.length(), 8.0);
+                     Vec3 checkTo = this.position().add(movement.normalize().scale(checkDistance));
+-                    BlockHitResult hitResult = this.level()
+-                        .clip(new ClipContext(this.position(), checkTo, ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this));
++                    BlockHitResult hitResult = this.clipVirtualTerrain(
++                        new ClipContext(this.position(), checkTo, ClipContext.Block.FALLDAMAGE_RESETTING, ClipContext.Fluid.WATER, this)
++                    ); // Papyrus - Entity-scoped virtual terrain
+                     if (hitResult.getType() != HitResult.Type.MISS) {
+                         this.resetFallDistance();
+                     }
+@@ -1216,7 +_,7 @@
+             }
+ 
+             BlockPos effectPos = this.getOnPosLegacy();
+-            BlockState effectState = this.level().getBlockState(effectPos);
++            BlockState effectState = this.getVirtualTerrainBlockState(effectPos); // Papyrus - Entity-scoped virtual terrain
+             if (this.isLocalInstanceAuthoritative()) {
+                 this.checkFallDamage(movement.y, this.onGround(), effectState, effectPos);
+             }
+@@ -1285,7 +_,7 @@
+         float movedDistance = (float)(clippedMovement.length() * 0.6F);
+         float horizontalMovedDistance = (float)(clippedMovement.horizontalDistance() * 0.6F);
+         BlockPos supportingPos = this.getOnPos();
+-        BlockState supportingState = this.level().getBlockState(supportingPos);
++        BlockState supportingState = this.getVirtualTerrainBlockState(supportingPos); // Papyrus - Entity-scoped virtual terrain
+         boolean climbing = this.isStateClimbable(supportingState);
+         this.moveDist += climbing ? movedDistance : horizontalMovedDistance;
+         this.flyDist += movedDistance;
+@@ -1365,7 +_,7 @@
+         if (this.isAffectedByBlocks()) {
+             if (this.onGround()) {
+                 BlockPos effectPos = this.getOnPosLegacy();
+-                BlockState effectState = this.level().getBlockState(effectPos);
++                BlockState effectState = this.getVirtualTerrainBlockState(effectPos); // Papyrus - Entity-scoped virtual terrain
+                 effectState.getBlock().stepOn(this.level(), effectPos, effectState, this);
+             }
+ 
+@@ -1471,13 +_,14 @@
+     }
+ 
+     protected BlockPos getOnPos(final float offset) {
+-        if (this.mainSupportingBlockPos.isPresent() && this.level().getChunkIfLoadedImmediately(this.mainSupportingBlockPos.get()) != null) { // Paper - ensure no loads
++        if (this.mainSupportingBlockPos.isPresent()
++            && (this.virtualTerrainProvider != null || this.level().getChunkIfLoadedImmediately(this.mainSupportingBlockPos.get()) != null)) { // Paper - ensure no loads // Papyrus - Entity-scoped virtual terrain
+             BlockPos getOnPos = this.mainSupportingBlockPos.get();
+             if (!(offset > 1.0E-5F)) {
+                 return getOnPos;
+             }
+ 
+-            BlockState belowState = this.level().getBlockState(getOnPos);
++            BlockState belowState = this.getVirtualTerrainBlockState(getOnPos); // Papyrus - Entity-scoped virtual terrain
+             return (!(offset <= 0.5) || !belowState.is(BlockTags.FENCES))
+                     && !belowState.is(BlockTags.WALLS)
+                     && !(belowState.getBlock() instanceof FenceGateBlock)
+@@ -1492,17 +_,17 @@
+     }
+ 
+     protected float getBlockJumpFactor() {
+-        float jumpFactorHere = this.level().getBlockState(this.blockPosition()).getBlock().getJumpFactor();
+-        float jumpFactorBelow = this.level().getBlockState(this.getBlockPosBelowThatAffectsMyMovement()).getBlock().getJumpFactor();
++        float jumpFactorHere = this.getVirtualTerrainBlockState(this.blockPosition()).getBlock().getJumpFactor(); // Papyrus - Entity-scoped virtual terrain
++        float jumpFactorBelow = this.getVirtualTerrainBlockState(this.getBlockPosBelowThatAffectsMyMovement()).getBlock().getJumpFactor(); // Papyrus - Entity-scoped virtual terrain
+         return jumpFactorHere == 1.0 ? jumpFactorBelow : jumpFactorHere;
+     }
+ 
+     protected float getBlockSpeedFactor() {
+-        BlockState state = this.level().getBlockState(this.blockPosition());
++        BlockState state = this.getVirtualTerrainBlockState(this.blockPosition()); // Papyrus - Entity-scoped virtual terrain
+         float speedFactorHere = state.getBlock().getSpeedFactor();
+         if (!state.is(Blocks.WATER) && !state.is(Blocks.BUBBLE_COLUMN)) {
+             return speedFactorHere == 1.0
+-                ? this.level().getBlockState(this.getBlockPosBelowThatAffectsMyMovement()).getBlock().getSpeedFactor()
++                ? this.getVirtualTerrainBlockState(this.getBlockPosBelowThatAffectsMyMovement()).getBlock().getSpeedFactor() // Papyrus - Entity-scoped virtual terrain
+                 : speedFactorHere;
+         } else {
+             return speedFactorHere;
+@@ -1582,10 +_,7 @@
+             this.level, (Entity)(Object)this, initialCollisionBox, entityAABBs, 0, null
+         );
+ 
+-        ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.getCollisionsForBlocksOrWorldBorder(
+-            this.level, (Entity)(Object)this, initialCollisionBox, potentialCollisionsVoxel, potentialCollisionsBB,
+-            ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.COLLISION_FLAG_CHECK_BORDER, null
+-        );
++        this.collectVirtualTerrainCollisions(initialCollisionBox, potentialCollisionsVoxel, potentialCollisionsBB); // Papyrus - Entity-scoped virtual terrain
+         potentialCollisionsBB.addAll(entityAABBs);
+         final Vec3 collided = ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.performCollisions(movement, currentBox, potentialCollisionsVoxel, potentialCollisionsBB);
+ 
+@@ -1610,10 +_,7 @@
+         final List<VoxelShape> stepVoxels = new ArrayList<>();
+         final List<AABB> stepAABBs = entityAABBs;
+ 
+-        ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.getCollisionsForBlocksOrWorldBorder(
+-            this.level, (Entity)(Object)this, stepRetrievalBox, stepVoxels, stepAABBs,
+-            ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.COLLISION_FLAG_CHECK_BORDER, null
+-        );
++        this.collectVirtualTerrainCollisions(stepRetrievalBox, stepVoxels, stepAABBs); // Papyrus - Entity-scoped virtual terrain
+ 
+         for (final float step : calculateStepHeights(collidedYBox, stepVoxels, stepAABBs, (float)stepHeight, (float)collided.y)) {
+             final Vec3 stepResult = ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.performCollisions(new Vec3(movement.x, (double)step, movement.z), collidedYBox, stepVoxels, stepAABBs);
+@@ -1626,6 +_,26 @@
+         // Paper end - optimise collisions
+     }
+ 
++    // Papyrus start - Entity-scoped virtual terrain
++    private void collectVirtualTerrainCollisions(final AABB box, final List<VoxelShape> voxelCollisions, final List<AABB> aabbCollisions) {
++        if (this.virtualTerrainProvider == null || !this.virtualTerrainProvider.isValid()) {
++            ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.getCollisionsForBlocksOrWorldBorder(
++                this.level, (Entity)(Object)this, box, voxelCollisions, aabbCollisions,
++                ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.COLLISION_FLAG_CHECK_BORDER, null
++            );
++            return;
++        }
++
++        for (VoxelShape blockCollision : this.virtualTerrainCollisionView.getBlockCollisions(this, box)) {
++            voxelCollisions.add(blockCollision);
++        }
++        WorldBorder worldBorder = this.level().getWorldBorder();
++        if (worldBorder.isInsideCloseToBorder(this, box)) {
++            voxelCollisions.add(worldBorder.getCollisionShape());
++        }
++    }
++    // Papyrus end - Entity-scoped virtual terrain
++
+     private static float[] collectCandidateStepUpHeights(
+         final AABB boundingBox, final List<VoxelShape> colliders, final float maxStepHeight, final float stepHeightToSkip
+     ) {
+@@ -1675,7 +_,9 @@
+             colliders.add(worldBorder.getCollisionShape());
+         }
+ 
+-        colliders.addAll(level.getBlockCollisions(source, boundingBox));
++        colliders.addAll(
++            source == null ? level.getBlockCollisions(null, boundingBox) : source.getVirtualTerrainCollisionGetter().getBlockCollisions(source, boundingBox)
++        ); // Papyrus - Entity-scoped virtual terrain
+         return colliders.build();
+     }
+ 
+@@ -1769,7 +_,7 @@
+                 }
+ 
+                 iterations.set(iteration);
+-                BlockState state = this.level().getBlockState(blockIntersection);
++                BlockState state = this.getVirtualTerrainBlockState(blockIntersection); // Papyrus - Entity-scoped virtual terrain
+                 if (state.isAir()) {
+                     if (debugEntityBlockIntersections) {
+                         this.debugBlockIntersection((ServerLevel)this.level(), blockIntersection.immutable(), false, false);
+@@ -1979,7 +_,7 @@
+         if (!this.touchingUnloadedChunk()) {
+             this.checkSupportingBlock(onGround, new Vec3(xa, ya, za));
+             BlockPos pos = this.getOnPosLegacy();
+-            BlockState state = this.level().getBlockState(pos);
++            BlockState state = this.getVirtualTerrainBlockState(pos); // Papyrus - Entity-scoped virtual terrain
+             this.checkFallDamage(ya, onGround, state, pos);
+         }
+     }
+@@ -1997,7 +_,7 @@
+                         GameEvent.HIT_GROUND,
+                         this.position,
+                         GameEvent.Context.of(
+-                            this, this.mainSupportingBlockPos.<BlockState>map(blockPos -> this.level().getBlockState(blockPos)).orElse(onState)
++                            this, this.mainSupportingBlockPos.<BlockState>map(this::getVirtualTerrainBlockState).orElse(onState)
+                         )
+                     );
+             }
+@@ -2137,11 +_,11 @@
+ 
+     @Deprecated
+     protected BlockState getBlockStateOnLegacy() {
+-        return this.level().getBlockState(this.getOnPosLegacy());
++        return this.getVirtualTerrainBlockState(this.getOnPosLegacy()); // Papyrus - Entity-scoped virtual terrain
+     }
+ 
+     public BlockState getBlockStateOn() {
+-        return this.level().getBlockState(this.getOnPos());
++        return this.getVirtualTerrainBlockState(this.getOnPos()); // Papyrus - Entity-scoped virtual terrain
+     }
+ 
+     public boolean canSpawnSprintParticle() {
+@@ -2150,7 +_,7 @@
+ 
+     protected void spawnSprintParticle() {
+         BlockPos pos = this.getOnPosLegacy();
+-        BlockState blockState = this.level().getBlockState(pos);
++        BlockState blockState = this.getVirtualTerrainBlockState(pos); // Papyrus - Entity-scoped virtual terrain
+         if (blockState.getRenderShape() != RenderShape.INVISIBLE) {
+             Vec3 movement = this.getDeltaMovement();
+             BlockPos entityPosition = this.blockPosition();

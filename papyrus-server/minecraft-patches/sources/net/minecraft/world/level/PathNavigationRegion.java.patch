@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/PathNavigationRegion.java
 +++ b/net/minecraft/world/level/PathNavigationRegion.java
-@@ -1,115 +_,161 @@
+@@ -1,115 +_,201 @@
  package net.minecraft.world.level;
  
 -import com.google.common.base.Suppliers;
@@ -48,6 +48,9 @@
 +    private final WorldBorder worldBorder;
 +    private final int minY;
 +    private final int height;
++    // Papyrus start - Entity-scoped virtual terrain
++    private final de.erethon.papyrus.world.@Nullable VirtualTerrainProvider virtualTerrainProvider;
++    // Papyrus end - Entity-scoped virtual terrain
  
      public PathNavigationRegion(final Level level, final BlockPos start, final BlockPos end) {
 -        this.level = level;
@@ -58,6 +61,18 @@
 -        int zc2 = SectionPos.blockToSectionCoord(end.getZ());
 -        this.chunks = new ChunkAccess[xc2 - this.centerX + 1][zc2 - this.centerZ + 1];
 -        ChunkSource chunkSource = level.getChunkSource();
++        this(level, start, end, null);
++    }
++
++    // Papyrus start - Entity-scoped virtual terrain
++    public PathNavigationRegion(
++        final Level level,
++        final BlockPos start,
++        final BlockPos end,
++        final de.erethon.papyrus.world.@Nullable VirtualTerrainProvider virtualTerrainProvider
++    ) {
++        this.virtualTerrainProvider = virtualTerrainProvider;
++    // Papyrus end - Entity-scoped virtual terrain
 +        this.serverLevel = level instanceof ServerLevel serverLevel ? serverLevel : null;
 +        this.worldBorder = copyWorldBorder(level.getWorldBorder());
 +        this.minY = level.getMinY();
@@ -145,13 +160,23 @@
 +                int relativeZ = sectionZ - this.centerZ;
 +                this.loadedChunks[relativeX][relativeZ] = true;
 +                for (int sectionY = this.minSectionY; sectionY <= maxSectionY; sectionY++) {
-+                    NavigationSection section = this.serverLevel == null
++                    NavigationSection physicalSection = this.serverLevel == null ? null : this.serverLevel.getPathNavigationSection(chunk, sectionY);
++                    NavigationSection section = physicalSection == null
 +                        ? NavigationSection.copyOf(
 +                            SectionPos.asLong(sectionX, sectionY, sectionZ),
 +                            0L,
-+                            chunk.getSection(chunk.getSectionIndexFromSectionY(sectionY))
++                            chunk.getSection(chunk.getSectionIndexFromSectionY(sectionY)),
++                            virtualTerrainProvider
 +                        )
-+                        : this.serverLevel.getPathNavigationSection(chunk, sectionY);
++                        : virtualTerrainProvider == null
++                            ? physicalSection
++                            : NavigationSection.copyOf(
++                                SectionPos.asLong(sectionX, sectionY, sectionZ),
++                                physicalSection.revision(),
++                                chunk.getSection(chunk.getSectionIndexFromSectionY(sectionY)),
++                                virtualTerrainProvider,
++                                physicalSection
++                            );
 +                    this.sections[relativeX][relativeZ][sectionY - this.minSectionY] = section;
 +                    if (!section.hasOnlyAir()) {
 +                        this.allEmpty = false;
@@ -194,14 +219,28 @@
 +     * produced from this region by a future asynchronous pathfinding task.
 +     */
 +    public boolean isStillValid() {
++        return this.isStillValid(this.virtualTerrainProvider);
++    }
++
++    // Papyrus start - Entity-scoped virtual terrain
++    public boolean isStillValid(final de.erethon.papyrus.world.@Nullable VirtualTerrainProvider currentVirtualTerrainProvider) {
 +        if (this.serverLevel == null) {
++            return false;
++        }
++        if (this.virtualTerrainProvider != currentVirtualTerrainProvider
++            || this.virtualTerrainProvider != null && !this.virtualTerrainProvider.isValid()) {
 +            return false;
 +        }
 +
 +        for (NavigationSection[][] sectionColumns : this.sections) {
 +            for (NavigationSection[] sectionColumn : sectionColumns) {
 +                for (NavigationSection section : sectionColumn) {
-+                    if (section != null && !this.serverLevel.isPathNavigationSectionCurrent(section)) {
++                    if (section != null && !this.serverLevel.isPathNavigationSectionCurrent(section.validationSection())) {
++                        return false;
++                    }
++                    if (section != null
++                        && this.virtualTerrainProvider != null
++                        && this.virtualTerrainProvider.getSectionRevision(section.key()) != section.virtualRevision()) {
 +                        return false;
 +                    }
 +                }
@@ -209,6 +248,7 @@
 +        }
 +        return true;
 +    }
++    // Papyrus end - Entity-scoped virtual terrain
 +
 +    @Nullable
 +    @Override
@@ -256,7 +296,7 @@
      }
  
      @Override
-@@ -129,27 +_,80 @@
+@@ -129,27 +_,137 @@
              return Blocks.AIR.defaultBlockState();
          }
  
@@ -296,34 +336,81 @@
 +        private final PalettedContainer<BlockState> states;
 +        private final byte[] pathTypes;
 +        private final boolean hasOnlyAir;
++        private final long virtualRevision; // Papyrus - Entity-scoped virtual terrain
++        private final @Nullable NavigationSection physicalSection; // Papyrus - Entity-scoped virtual terrain
 +
 +        private NavigationSection(
 +            final long key,
 +            final long revision,
 +            final PalettedContainer<BlockState> states,
 +            final byte[] pathTypes,
-+            final boolean hasOnlyAir
++            final boolean hasOnlyAir,
++            final long virtualRevision, // Papyrus - Entity-scoped virtual terrain
++            final @Nullable NavigationSection physicalSection // Papyrus - Entity-scoped virtual terrain
 +        ) {
 +            this.key = key;
 +            this.revision = revision;
 +            this.states = states;
 +            this.pathTypes = pathTypes;
 +            this.hasOnlyAir = hasOnlyAir;
++            this.virtualRevision = virtualRevision; // Papyrus - Entity-scoped virtual terrain
++            this.physicalSection = physicalSection; // Papyrus - Entity-scoped virtual terrain
 +        }
 +
 +        public static NavigationSection copyOf(final long key, final long revision, final LevelChunkSection source) {
++            return copyOf(key, revision, source, null, null);
++        }
++
++        // Papyrus start - Entity-scoped virtual terrain
++        public static NavigationSection copyOf(
++            final long key,
++            final long revision,
++            final LevelChunkSection source,
++            final de.erethon.papyrus.world.@Nullable VirtualTerrainProvider virtualTerrainProvider
++        ) {
++            return copyOf(key, revision, source, virtualTerrainProvider, null);
++        }
++
++        public static NavigationSection copyOf(
++            final long key,
++            final long revision,
++            final LevelChunkSection source,
++            final de.erethon.papyrus.world.@Nullable VirtualTerrainProvider virtualTerrainProvider,
++            final @Nullable NavigationSection physicalSection
++        ) {
 +            PalettedContainer<BlockState> states = source.states.copy();
-+            byte[] pathTypes = new byte[LevelChunkSection.SECTION_SIZE];
-+            boolean hasOnlyAir = source.hasOnlyAir();
-+            if (hasOnlyAir) {
-+                Arrays.fill(pathTypes, (byte)PathType.OPEN.ordinal());
-+            } else {
-+                for (int index = 0; index < pathTypes.length; index++) {
-+                    pathTypes[index] = (byte)WalkNodeEvaluator.getPathTypeFromState(states.get(index)).ordinal();
++            long virtualRevision = virtualTerrainProvider == null ? 0L : virtualTerrainProvider.getSectionRevision(key);
++            if (virtualTerrainProvider != null && virtualTerrainProvider.isValid()) {
++                int sectionX = SectionPos.x(key);
++                int sectionY = SectionPos.y(key);
++                int sectionZ = SectionPos.z(key);
++                BlockPos.MutableBlockPos position = new BlockPos.MutableBlockPos();
++                for (int y = 0; y < 16; y++) {
++                    for (int z = 0; z < 16; z++) {
++                        for (int x = 0; x < 16; x++) {
++                            position.set(SectionPos.sectionToBlockCoord(sectionX, x), SectionPos.sectionToBlockCoord(sectionY, y),
++                                SectionPos.sectionToBlockCoord(sectionZ, z));
++                            BlockState virtualState = virtualTerrainProvider.getBlockState(position);
++                            if (virtualState != null) {
++                                states.set(x, y, z, virtualState);
++                            }
++                        }
++                    }
 +                }
 +            }
-+            return new NavigationSection(key, revision, states, pathTypes, hasOnlyAir);
++            byte[] pathTypes = new byte[LevelChunkSection.SECTION_SIZE];
++            boolean hasOnlyAir = true;
++            for (int index = 0; index < pathTypes.length; index++) {
++                BlockState state = states.get(index);
++                pathTypes[index] = (byte)WalkNodeEvaluator.getPathTypeFromState(state).ordinal();
++                hasOnlyAir &= state.isAir();
++            }
++            if (hasOnlyAir) {
++                Arrays.fill(pathTypes, (byte)PathType.OPEN.ordinal());
++            }
++            return new NavigationSection(key, revision, states, pathTypes, hasOnlyAir, virtualRevision, physicalSection);
 +        }
++        // Papyrus end - Entity-scoped virtual terrain
 +
 +        public long key() {
 +            return this.key;
@@ -332,6 +419,16 @@
 +        public long revision() {
 +            return this.revision;
 +        }
++
++        // Papyrus start - Entity-scoped virtual terrain
++        public long virtualRevision() {
++            return this.virtualRevision;
++        }
++
++        public NavigationSection validationSection() {
++            return this.physicalSection == null ? this : this.physicalSection;
++        }
++        // Papyrus end - Entity-scoped virtual terrain
 +
 +        public boolean hasOnlyAir() {
 +            return this.hasOnlyAir;

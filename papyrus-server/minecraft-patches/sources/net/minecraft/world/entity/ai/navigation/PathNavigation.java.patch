@@ -34,10 +34,17 @@
          if (this.path != null && !this.path.isDone() && targets.contains(this.targetPos)) {
              return this.path;
          }
-@@ -193,6 +_,36 @@
+@@ -192,7 +_,42 @@
+         profiler.push("pathfind");
          BlockPos fromPos = above ? this.mob.blockPosition().above() : this.mob.blockPosition();
          int radius = (int)(maxPathLength + radiusOffset);
-         PathNavigationRegion region = new PathNavigationRegion(this.level, fromPos.offset(-radius, -radius, -radius), fromPos.offset(radius, radius, radius));
+-        PathNavigationRegion region = new PathNavigationRegion(this.level, fromPos.offset(-radius, -radius, -radius), fromPos.offset(radius, radius, radius));
++        PathNavigationRegion region = new PathNavigationRegion(
++            this.level,
++            fromPos.offset(-radius, -radius, -radius),
++            fromPos.offset(radius, radius, radius),
++            this.mob.getVirtualTerrainProvider()
++        ); // Papyrus - Entity-scoped virtual terrain
 +
 +        // Papyrus start - Async pathfinding from immutable world and mob snapshots
 +        if (this.supportsAsyncPathfinding()) {
@@ -123,7 +130,7 @@
          if (this.hasDelayedRecomputation) {
              this.recomputePath();
          }
-@@ -291,6 +_,43 @@
+@@ -291,9 +_,50 @@
          }
      }
  
@@ -140,7 +147,9 @@
 +        if (this.path != asyncPath) {
 +            return true;
 +        }
-+        if (processed == null || !asyncPath.isRegionStillValid() || !asyncPath.isStartStillValid(this.mob.position())) {
++        if (processed == null
++            || !asyncPath.isRegionStillValid(this.mob.getVirtualTerrainProvider())
++            || !asyncPath.isStartStillValid(this.mob.position())) { // Papyrus - Entity-scoped virtual terrain
 +            this.path = null;
 +            this.hasDelayedRecomputation = this.targetPos != null;
 +            return true;
@@ -166,7 +175,13 @@
 +
      protected double getGroundY(final Vec3 target) {
          BlockPos blockPos = BlockPos.containing(target);
-         return this.level.getBlockState(blockPos.below()).isAir() ? target.y : WalkNodeEvaluator.getFloorLevel(this.level, blockPos);
+-        return this.level.getBlockState(blockPos.below()).isAir() ? target.y : WalkNodeEvaluator.getFloorLevel(this.level, blockPos);
++        return this.mob.getVirtualTerrainBlockState(blockPos.below()).isAir()
++            ? target.y
++            : WalkNodeEvaluator.getFloorLevel(this.mob.getVirtualTerrainCollisionGetter(), blockPos); // Papyrus - Entity-scoped virtual terrain
+     }
+ 
+     protected void followThePath() {
 @@ -396,7 +_,7 @@
      }
  
@@ -176,3 +191,31 @@
      }
  
      protected abstract Vec3 getTempMobPos();
+@@ -408,7 +_,7 @@
+             for (int i = 0; i < this.path.getNodeCount(); i++) {
+                 Node node = this.path.getNode(i);
+                 Node nextNode = i + 1 < this.path.getNodeCount() ? this.path.getNode(i + 1) : null;
+-                BlockState state = this.level.getBlockState(new BlockPos(node.x, node.y, node.z));
++                BlockState state = this.mob.getVirtualTerrainBlockState(new BlockPos(node.x, node.y, node.z)); // Papyrus - Entity-scoped virtual terrain
+                 if (state.is(BlockTags.CAULDRONS)) {
+                     this.path.replaceNode(i, node.cloneAndMove(node.x, node.y + 1, node.z));
+                     if (nextNode != null && node.y >= nextNode.y) {
+@@ -429,15 +_,15 @@
+ 
+     protected static boolean isClearForMovementBetween(final Mob mob, final Vec3 startPos, final Vec3 stopPos, final boolean blockedByFluids) {
+         Vec3 to = new Vec3(stopPos.x, stopPos.y + mob.getBbHeight() * 0.5, stopPos.z);
+-        return mob.level()
+-                .clip(new ClipContext(startPos, to, ClipContext.Block.COLLIDER, blockedByFluids ? ClipContext.Fluid.ANY : ClipContext.Fluid.NONE, mob))
++        return mob
++                .clipVirtualTerrain(new ClipContext(startPos, to, ClipContext.Block.COLLIDER, blockedByFluids ? ClipContext.Fluid.ANY : ClipContext.Fluid.NONE, mob))
+                 .getType()
+             == HitResult.Type.MISS;
+     }
+ 
+     public boolean isStableDestination(final BlockPos pos) {
+         BlockPos below = pos.below();
+-        return this.level.getBlockState(below).isSolidRender();
++        return this.mob.getVirtualTerrainBlockState(below).isSolidRender(); // Papyrus - Entity-scoped virtual terrain
+     }
+ 
+     public NodeEvaluator getNodeEvaluator() {

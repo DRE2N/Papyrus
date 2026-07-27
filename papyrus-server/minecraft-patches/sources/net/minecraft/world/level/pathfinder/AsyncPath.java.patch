@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/net/minecraft/world/level/pathfinder/AsyncPath.java
-@@ -1,0 +_,91 @@
+@@ -1,0 +_,97 @@
 +package net.minecraft.world.level.pathfinder;
 +
 +import java.util.List;
@@ -64,6 +64,12 @@
 +    public boolean isRegionStillValid() {
 +        return this.region.isStillValid();
 +    }
++
++    // Papyrus start - Entity-scoped virtual terrain
++    public boolean isRegionStillValid(final de.erethon.papyrus.world.@Nullable VirtualTerrainProvider virtualTerrainProvider) {
++        return this.region.isStillValid(virtualTerrainProvider);
++    }
++    // Papyrus end - Entity-scoped virtual terrain
 +
 +    public boolean isStartStillValid(final Vec3 currentPosition) {
 +        return this.startPosition.distanceToSqr(currentPosition) <= 4.0;

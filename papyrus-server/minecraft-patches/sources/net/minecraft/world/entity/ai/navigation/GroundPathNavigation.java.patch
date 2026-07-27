@@ -1,0 +1,39 @@
+--- a/net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java
++++ b/net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java
+@@ -56,10 +_,10 @@
+     }
+ 
+     final BlockPos findSurfacePosition(final LevelChunk chunk, BlockPos pos, final int reachRange) {
+-        if (chunk.getBlockState(pos).isAir()) {
++        if (this.mob.getVirtualTerrainBlockState(pos).isAir()) { // Papyrus - Entity-scoped virtual terrain
+             BlockPos.MutableBlockPos columnPos = pos.mutable().move(Direction.DOWN);
+ 
+-            while (columnPos.getY() >= this.level.getMinY() && chunk.getBlockState(columnPos).isAir()) {
++            while (columnPos.getY() >= this.level.getMinY() && this.mob.getVirtualTerrainBlockState(columnPos).isAir()) { // Papyrus - Entity-scoped virtual terrain
+                 columnPos.move(Direction.DOWN);
+             }
+ 
+@@ -69,20 +_,20 @@
+ 
+             columnPos.setY(pos.getY() + 1);
+ 
+-            while (columnPos.getY() <= this.level.getMaxY() && chunk.getBlockState(columnPos).isAir()) {
++            while (columnPos.getY() <= this.level.getMaxY() && this.mob.getVirtualTerrainBlockState(columnPos).isAir()) { // Papyrus - Entity-scoped virtual terrain
+                 columnPos.move(Direction.UP);
+             }
+ 
+             pos = columnPos;
+         }
+ 
+-        if (!chunk.getBlockState(pos).isSolid()) {
++        if (!this.mob.getVirtualTerrainBlockState(pos).isSolid()) { // Papyrus - Entity-scoped virtual terrain
+             return pos;
+         }
+ 
+         BlockPos.MutableBlockPos columnPos = pos.mutable().move(Direction.UP);
+ 
+-        while (columnPos.getY() <= this.level.getMaxY() && chunk.getBlockState(columnPos).isSolid()) {
++        while (columnPos.getY() <= this.level.getMaxY() && this.mob.getVirtualTerrainBlockState(columnPos).isSolid()) { // Papyrus - Entity-scoped virtual terrain
+             columnPos.move(Direction.UP);
+         }
+ 
