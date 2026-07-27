@@ -1,0 +1,178 @@
+--- a/net/minecraft/world/entity/ai/navigation/PathNavigation.java
++++ b/net/minecraft/world/entity/ai/navigation/PathNavigation.java
+@@ -20,10 +_,13 @@
+ import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.PathNavigationRegion;
+ import net.minecraft.world.level.block.state.BlockState;
++import net.minecraft.world.level.pathfinder.AsyncPath;
++import net.minecraft.world.level.pathfinder.AsyncPathfinding;
+ import net.minecraft.world.level.pathfinder.Node;
+ import net.minecraft.world.level.pathfinder.NodeEvaluator;
+ import net.minecraft.world.level.pathfinder.Path;
+ import net.minecraft.world.level.pathfinder.PathFinder;
++import net.minecraft.world.level.pathfinder.PathfindingMobSnapshot;
+ import net.minecraft.world.level.pathfinder.PathType;
+ import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
+ import net.minecraft.world.phys.HitResult;
+@@ -102,7 +_,7 @@
+         if (this.level.getGameTime() - this.timeLastRecompute <= 20L || !this.canUpdatePath()) {
+             this.hasDelayedRecomputation = true;
+         } else if (this.targetPos != null) {
+-            this.path = null;
++            this.cancelPendingPath();
+             this.path = this.createPath(this.targetPos, this.reachRange);
+             this.timeLastRecompute = this.level.getGameTime();
+             this.hasDelayedRecomputation = false;
+@@ -167,6 +_,10 @@
+             return null;
+         }
+ 
++        if (this.path instanceof AsyncPath asyncPath && asyncPath.matches(targets, reachRange)) {
++            return asyncPath; // Papyrus - Coalesce repeated requests while the same path is pending
++        }
++
+         if (this.path != null && !this.path.isDone() && targets.contains(this.targetPos)) {
+             return this.path;
+         }
+@@ -193,6 +_,36 @@
+         BlockPos fromPos = above ? this.mob.blockPosition().above() : this.mob.blockPosition();
+         int radius = (int)(maxPathLength + radiusOffset);
+         PathNavigationRegion region = new PathNavigationRegion(this.level, fromPos.offset(-radius, -radius, -radius), fromPos.offset(radius, radius, radius));
++
++        // Papyrus start - Async pathfinding from immutable world and mob snapshots
++        if (this.supportsAsyncPathfinding()) {
++            PathfindingMobSnapshot mobSnapshot;
++            this.mob.onPathfindingStart();
++            try {
++                mobSnapshot = PathfindingMobSnapshot.capture(this.mob);
++            } finally {
++                this.mob.onPathfindingDone();
++            }
++            AsyncPath asyncPath = AsyncPathfinding.submit(
++                region,
++                mobSnapshot,
++                targets,
++                maxPathLength,
++                reachRange,
++                this.maxVisitedNodesMultiplier,
++                this.pathFinder.getMaxVisitedNodes(),
++                this.nodeEvaluator.canPassDoors(),
++                this.nodeEvaluator.canOpenDoors(),
++                this.nodeEvaluator.canFloat(),
++                this.nodeEvaluator.canWalkOverFences()
++            );
++            if (asyncPath != null) {
++                profiler.pop();
++                return asyncPath;
++            }
++        }
++        // Papyrus end - Async pathfinding from immutable world and mob snapshots
++
+         Path path = this.pathFinder.findPath(region, this.mob, targets, maxPathLength, reachRange, this.maxVisitedNodesMultiplier);
+         profiler.pop();
+         if (path != null && path.getTarget() != null) {
+@@ -204,6 +_,13 @@
+         return path;
+     }
+ 
++    // Only the unmodified common ground implementation is snapshot-compatible.
++    // Specialized evaluators/pathfinders retain their synchronous semantics.
++    public boolean supportsAsyncPathfinding() {
++        return this.level instanceof ServerLevel && this.getClass() == GroundPathNavigation.class
++            && this.nodeEvaluator.getClass() == WalkNodeEvaluator.class && this.pathFinder.getClass() == PathFinder.class;
++    }
++
+     // Paper start - Perf: Optimise pathfinding
+     private int lastFailure = 0;
+     private int pathfindFailures = 0;
+@@ -239,9 +_,25 @@
+ 
+     public boolean moveTo(final @Nullable Path newPath, final double speedModifier) {
+         if (newPath == null) {
+-            this.path = null;
++            this.cancelPendingPath();
+             return false;
+         }
++
++        // Papyrus start - Keep goals active while a worker calculates their path
++        if (newPath instanceof AsyncPath asyncPath) {
++            if (this.path != asyncPath) {
++                this.cancelPendingPath();
++                this.path = asyncPath;
++            }
++            this.targetPos = asyncPath.getTarget();
++            this.reachRange = asyncPath.reachRange();
++            this.speedModifier = speedModifier;
++            this.timeLastRecompute = this.level.getGameTime();
++            this.lastStuckCheck = this.tick;
++            this.lastStuckCheckPos = this.getTempMobPos();
++            return true;
++        }
++        // Papyrus end - Keep goals active while a worker calculates their path
+ 
+         if (!newPath.sameAs(this.path)) {
+             this.path = newPath;
+@@ -269,6 +_,10 @@
+ 
+     public void tick() {
+         this.tick++;
++        if (this.processPendingPath()) {
++            return;
++        }
++
+         if (this.hasDelayedRecomputation) {
+             this.recomputePath();
+         }
+@@ -291,6 +_,43 @@
+         }
+     }
+ 
++    // Papyrus start - Tick-thread publication and stale-result rejection
++    private boolean processPendingPath() {
++        if (!(this.path instanceof AsyncPath asyncPath)) {
++            return false;
++        }
++        if (!asyncPath.isProcessed()) {
++            return true;
++        }
++
++        Path processed = asyncPath.getProcessedPath();
++        if (this.path != asyncPath) {
++            return true;
++        }
++        if (processed == null || !asyncPath.isRegionStillValid() || !asyncPath.isStartStillValid(this.mob.position())) {
++            this.path = null;
++            this.hasDelayedRecomputation = this.targetPos != null;
++            return true;
++        }
++
++        this.path = processed;
++        this.targetPos = processed.getTarget();
++        this.resetStuckTimeout();
++        if (!this.moveTo(processed, this.speedModifier)) {
++            this.path = null;
++            return true;
++        }
++        return false;
++    }
++
++    private void cancelPendingPath() {
++        if (this.path instanceof AsyncPath asyncPath) {
++            asyncPath.cancel();
++        }
++        this.path = null;
++    }
++    // Papyrus end - Tick-thread publication and stale-result rejection
++
+     protected double getGroundY(final Vec3 target) {
+         BlockPos blockPos = BlockPos.containing(target);
+         return this.level.getBlockState(blockPos.below()).isAir() ? target.y : WalkNodeEvaluator.getFloorLevel(this.level, blockPos);
+@@ -396,7 +_,7 @@
+     }
+ 
+     public void stop() {
+-        this.path = null;
++        this.cancelPendingPath(); // Papyrus - Cancel superseded worker searches
+     }
+ 
+     protected abstract Vec3 getTempMobPos();

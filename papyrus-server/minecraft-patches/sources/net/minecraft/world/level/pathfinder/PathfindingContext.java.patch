@@ -1,0 +1,68 @@
+--- a/net/minecraft/world/level/pathfinder/PathfindingContext.java
++++ b/net/minecraft/world/level/pathfinder/PathfindingContext.java
+@@ -3,8 +_,12 @@
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.world.entity.Mob;
++import net.minecraft.world.level.BlockCollisions;
+ import net.minecraft.world.level.CollisionGetter;
+ import net.minecraft.world.level.block.state.BlockState;
++import net.minecraft.world.phys.AABB;
++import net.minecraft.world.phys.shapes.CollisionContext;
++import net.minecraft.world.phys.shapes.VoxelShape;
+ import org.jspecify.annotations.Nullable;
+ 
+ public class PathfindingContext {
+@@ -12,6 +_,7 @@
+     private final @Nullable PathTypeCache cache;
+     private final BlockPos mobPosition;
+     private final BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
++    private final CollisionContext collisionContext; // Papyrus - Worker-safe pathfinding collisions
+ 
+     public PathfindingContext(final CollisionGetter level, final Mob mob) {
+         this.level = level;
+@@ -22,9 +_,24 @@
+         }
+ 
+         this.mobPosition = mob.blockPosition();
+-    }
++        this.collisionContext = CollisionContext.of(mob);
++    }
++
++    // Papyrus start - Worker-safe pathfinding collisions
++    public PathfindingContext(final CollisionGetter level, final PathfindingMobSnapshot mob) {
++        this.level = level;
++        this.cache = null;
++        this.mobPosition = mob.blockPosition();
++        this.collisionContext = mob.collisionContext();
++    }
++    // Papyrus end - Worker-safe pathfinding collisions
+ 
+     public PathType getPathTypeFromState(final int x, final int y, final int z) {
++        // Papyrus start - Consume immutable navigation section classifications
++        if (this.level instanceof net.minecraft.world.level.PathNavigationRegion region) {
++            return region.getPathType(x, y, z);
++        }
++        // Papyrus end - Consume immutable navigation section classifications
+         BlockPos pos = this.mutablePos.set(x, y, z);
+         return this.cache == null ? WalkNodeEvaluator.getPathTypeFromState(this.level, pos) : this.cache.getOrCompute(this.level, pos);
+     }
+@@ -36,6 +_,18 @@
+     public CollisionGetter level() {
+         return this.level;
+     }
++
++    // Papyrus start - Worker-safe pathfinding collisions
++    public boolean hasCollisions(final AABB box) {
++        BlockCollisions<VoxelShape> collisions = new BlockCollisions<>(this.level, this.collisionContext, box, false, (pos, shape) -> shape);
++        while (collisions.hasNext()) {
++            if (!collisions.next().isEmpty()) {
++                return true;
++            }
++        }
++        return false;
++    }
++    // Papyrus end - Worker-safe pathfinding collisions
+ 
+     public BlockPos mobPosition() {
+         return this.mobPosition;

@@ -1,0 +1,92 @@
+--- a/net/minecraft/server/level/ServerLevel.java
++++ b/net/minecraft/server/level/ServerLevel.java
+@@ -207,6 +_,12 @@
+     private final LevelTicks<Block> blockTicks = new LevelTicks<>(this::isPositionTickingWithEntitiesLoaded);
+     private final LevelTicks<Fluid> fluidTicks = new LevelTicks<>(this::isPositionTickingWithEntitiesLoaded);
+     private final PathTypeCache pathTypesByPosCache = new PathTypeCache();
++    // Papyrus start - Share immutable navigation sections
++    private static final int MAX_CACHED_PATH_NAVIGATION_SECTIONS = 8192;
++    private final it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap<CachedPathNavigationSection> pathNavigationSections = new it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap<>();
++    private final it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap pathNavigationSectionRevisions = new it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap();
++    private long pathNavigationGeometryRevision;
++    // Papyrus end - Share immutable navigation sections
+     private final Set<Mob> navigatingMobs = new ObjectOpenHashSet<>();
+     private volatile boolean isUpdatingNavigations;
+     protected final Raids raids;
+@@ -1845,6 +_,7 @@
+ 
+         this.getChunkSource().blockChanged(pos);
+         this.pathTypesByPosCache.invalidate(pos);
++        this.invalidatePathNavigationSection(pos); // Papyrus - Share immutable navigation sections
+         if (this.paperConfig().misc.updatePathfindingOnBlockUpdate) { // Paper - option to disable pathfinding updates
+         VoxelShape oldShape = old.getCollisionShape(this, pos);
+         VoxelShape newShape = current.getCollisionShape(this, pos);
+@@ -2631,6 +_,68 @@
+     public PathTypeCache getPathTypeCache() {
+         return this.pathTypesByPosCache;
+     }
++
++    // Papyrus start - Share immutable navigation sections
++    public net.minecraft.world.level.PathNavigationRegion.NavigationSection getPathNavigationSection(
++        final ChunkAccess chunk,
++        final int sectionY
++    ) {
++        ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread("Cannot create a navigation snapshot off-main");
++        long key = SectionPos.asLong(chunk.getPos().x(), sectionY, chunk.getPos().z());
++        CachedPathNavigationSection cached = this.pathNavigationSections.getAndMoveToLast(key);
++        if (cached != null && cached.owner == chunk) {
++            return cached.section;
++        }
++
++        if (cached != null) {
++            this.advancePathNavigationSectionRevision(key);
++        }
++
++        long revision = this.pathNavigationSectionRevisions.get(key);
++        net.minecraft.world.level.PathNavigationRegion.NavigationSection section =
++            net.minecraft.world.level.PathNavigationRegion.NavigationSection.copyOf(
++                key,
++                revision,
++                chunk.getSection(chunk.getSectionIndexFromSectionY(sectionY))
++            );
++        this.pathNavigationSections.putAndMoveToLast(key, new CachedPathNavigationSection(chunk, section));
++        if (this.pathNavigationSections.size() > MAX_CACHED_PATH_NAVIGATION_SECTIONS) {
++            this.pathNavigationSections.removeFirst();
++        }
++        return section;
++    }
++
++    public boolean isPathNavigationSectionCurrent(final net.minecraft.world.level.PathNavigationRegion.NavigationSection section) {
++        ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread("Cannot validate a navigation snapshot off-main");
++        long key = section.key();
++        CachedPathNavigationSection cached = this.pathNavigationSections.get(key);
++        return cached != null
++            && cached.section == section
++            && cached.owner == this.chunkSource.getChunkNow(SectionPos.x(key), SectionPos.z(key))
++            && section.revision() == this.pathNavigationSectionRevisions.get(key);
++    }
++
++    public long getPathNavigationGeometryRevision() {
++        return this.pathNavigationGeometryRevision;
++    }
++
++    private void invalidatePathNavigationSection(final BlockPos pos) {
++        long key = SectionPos.asLong(pos);
++        this.pathNavigationSections.remove(key);
++        this.advancePathNavigationSectionRevision(key);
++    }
++
++    private void advancePathNavigationSectionRevision(final long key) {
++        this.pathNavigationSectionRevisions.put(key, this.pathNavigationSectionRevisions.get(key) + 1L);
++        this.pathNavigationGeometryRevision++;
++    }
++
++    private record CachedPathNavigationSection(
++        ChunkAccess owner,
++        net.minecraft.world.level.PathNavigationRegion.NavigationSection section
++    ) {
++    }
++    // Papyrus end - Share immutable navigation sections
+ 
+     public void waitForEntities(final ChunkPos centerChunk, final int radius) {
+         List<ChunkPos> chunks = ChunkPos.rangeClosed(centerChunk, radius).toList();

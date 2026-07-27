@@ -1,0 +1,264 @@
+--- a/net/minecraft/world/level/pathfinder/WalkNodeEvaluator.java
++++ b/net/minecraft/world/level/pathfinder/WalkNodeEvaluator.java
+@@ -37,13 +_,15 @@
+ 
+     @Override
+     public void prepare(final PathNavigationRegion level, final Mob entity) {
+-        super.prepare(level, entity);
+         entity.onPathfindingStart();
++        super.prepare(level, entity); // Papyrus - Capture any temporary pathfinding malus changes
+     }
+ 
+     @Override
+     public void done() {
+-        this.mob.onPathfindingDone();
++        if (this.mob != null) { // Papyrus - Async workers have no live Mob
++            this.mob.onPathfindingDone();
++        }
+         this.pathTypesByPosCacheByMob.clear();
+         this.collisionCache.clear();
+         super.done();
+@@ -52,22 +_,22 @@
+     @Override
+     public Node getStart() {
+         BlockPos.MutableBlockPos reusablePos = new BlockPos.MutableBlockPos();
+-        int startY = this.mob.getBlockY();
+-        BlockState blockState = this.currentContext.getBlockState(reusablePos.set(this.mob.getX(), startY, this.mob.getZ()));
+-        if (!this.mob.canStandOnFluid(blockState.getFluidState())) {
+-            if (this.canFloat() && this.mob.isInWater()) {
++        int startY = this.mobContext.blockY();
++        BlockState blockState = this.currentContext.getBlockState(reusablePos.set(this.mobContext.x(), startY, this.mobContext.z()));
++        if (!this.mobContext.canStandOnFluid(blockState.getFluidState())) {
++            if (this.canFloat() && this.mobContext.inWater()) {
+                 while (true) {
+                     if (!blockState.is(Blocks.WATER) && blockState.getFluidState() != Fluids.WATER.getSource(false)) {
+                         startY--;
+                         break;
+                     }
+ 
+-                    blockState = this.currentContext.getBlockState(reusablePos.set(this.mob.getX(), ++startY, this.mob.getZ()));
++                    blockState = this.currentContext.getBlockState(reusablePos.set(this.mobContext.x(), ++startY, this.mobContext.z()));
+                 }
+-            } else if (this.mob.onGround()) {
+-                startY = Mth.floor(this.mob.getY() + 0.5);
++            } else if (this.mobContext.onGround()) {
++                startY = Mth.floor(this.mobContext.y() + 0.5);
+             } else {
+-                reusablePos.set(this.mob.getX(), this.mob.getY() + 1.0, this.mob.getZ());
++                reusablePos.set(this.mobContext.x(), this.mobContext.y() + 1.0, this.mobContext.z());
+ 
+                 while (reusablePos.getY() > this.currentContext.level().getMinY()) {
+                     startY = reusablePos.getY();
+@@ -79,16 +_,16 @@
+                 }
+             }
+         } else {
+-            while (this.mob.canStandOnFluid(blockState.getFluidState())) {
+-                blockState = this.currentContext.getBlockState(reusablePos.set(this.mob.getX(), ++startY, this.mob.getZ()));
++            while (this.mobContext.canStandOnFluid(blockState.getFluidState())) {
++                blockState = this.currentContext.getBlockState(reusablePos.set(this.mobContext.x(), ++startY, this.mobContext.z()));
+             }
+ 
+             startY--;
+         }
+ 
+-        BlockPos startPos = this.mob.blockPosition();
++        BlockPos startPos = this.mobContext.blockPosition();
+         if (!this.canStartAt(reusablePos.set(startPos.getX(), startY, startPos.getZ()))) {
+-            AABB mobBB = this.mob.getBoundingBox();
++            AABB mobBB = this.mobContext.boundingBox();
+             if (this.canStartAt(reusablePos.set(mobBB.minX, startY, mobBB.minZ))
+                 || this.canStartAt(reusablePos.set(mobBB.minX, startY, mobBB.maxZ))
+                 || this.canStartAt(reusablePos.set(mobBB.maxX, startY, mobBB.minZ))
+@@ -103,13 +_,13 @@
+     protected Node getStartNode(final BlockPos pos) {
+         Node node = this.getNode(pos);
+         node.type = this.getCachedPathType(node.x, node.y, node.z);
+-        node.costMalus = this.mob.getPathfindingMalus(node.type);
++        node.costMalus = this.mobContext.getPathfindingMalus(node.type);
+         return node;
+     }
+ 
+     protected boolean canStartAt(final BlockPos pos) {
+         PathType blockPathType = this.getCachedPathType(pos.getX(), pos.getY(), pos.getZ());
+-        return blockPathType != PathType.OPEN && this.mob.getPathfindingMalus(blockPathType) >= 0.0F;
++        return blockPathType != PathType.OPEN && this.mobContext.getPathfindingMalus(blockPathType) >= 0.0F;
+     }
+ 
+     @Override
+@@ -123,8 +_,8 @@
+         int jumpSize = 0;
+         PathType blockPathTypeAbove = this.getCachedPathType(pos.x, pos.y + 1, pos.z);
+         PathType blockPathTypeCurrent = this.getCachedPathType(pos.x, pos.y, pos.z);
+-        if (this.mob.getPathfindingMalus(blockPathTypeAbove) >= 0.0F && blockPathTypeCurrent != PathType.STICKY_HONEY) {
+-            jumpSize = Mth.floor(Math.max(1.0F, this.mob.maxUpStep()));
++        if (this.mobContext.getPathfindingMalus(blockPathTypeAbove) >= 0.0F && blockPathTypeCurrent != PathType.STICKY_HONEY) {
++            jumpSize = Mth.floor(Math.max(1.0F, this.mobContext.maxUpStep()));
+         }
+ 
+         double posHeight = this.getFloorLevel(new BlockPos(pos.x, pos.y, pos.z));
+@@ -170,8 +_,8 @@
+         }
+ 
+         if (ew.type != PathType.WALKABLE_DOOR && ns.type != PathType.WALKABLE_DOOR) {
+-            if (!(this.mob.getBbWidth() > 1.0F) || !(ew.costMalus > 0.0F) && !(ns.costMalus > 0.0F)) {
+-                boolean canPassBetweenPosts = ns.type == PathType.FENCE && ew.type == PathType.FENCE && this.mob.getBbWidth() < 0.5;
++            if (!(this.mobContext.bbWidth() > 1.0F) || !(ew.costMalus > 0.0F) && !(ns.costMalus > 0.0F)) {
++                boolean canPassBetweenPosts = ns.type == PathType.FENCE && ew.type == PathType.FENCE && this.mobContext.bbWidth() < 0.5;
+                 return (ns.y < pos.y || ns.costMalus >= 0.0F || canPassBetweenPosts) && (ew.y < pos.y || ew.costMalus >= 0.0F || canPassBetweenPosts);
+             } else {
+                 return false;
+@@ -190,9 +_,9 @@
+     }
+ 
+     private boolean canReachWithoutCollision(final Node posTo) {
+-        AABB bb = this.mob.getBoundingBox();
++        AABB bb = this.mobContext.boundingBox();
+         Vec3 delta = new Vec3(
+-            posTo.x - this.mob.getX() + bb.getXsize() / 2.0, posTo.y - this.mob.getY() + bb.getYsize() / 2.0, posTo.z - this.mob.getZ() + bb.getZsize() / 2.0
++            posTo.x - this.mobContext.x() + bb.getXsize() / 2.0, posTo.y - this.mobContext.y() + bb.getYsize() / 2.0, posTo.z - this.mobContext.z() + bb.getZsize() / 2.0
+         );
+         int steps = Mth.ceil(delta.length() / bb.getSize());
+         delta = delta.scale(1.0F / steps);
+@@ -239,7 +_,7 @@
+         }
+ 
+         PathType pathType = this.getCachedPathType(x, y, z);
+-        float pathCost = this.mob.getPathfindingMalus(pathType);
++        float pathCost = this.mobContext.getPathfindingMalus(pathType);
+         if (pathCost >= 0.0F) {
+             best = this.getNodeAndUpdateCostToMax(x, y, z, pathType, pathCost);
+         }
+@@ -271,7 +_,7 @@
+     }
+ 
+     private double getMobJumpHeight() {
+-        return Math.max(1.125, this.mob.maxUpStep());
++        return Math.max(1.125, this.mobContext.maxUpStep());
+     }
+ 
+     private Node getNodeAndUpdateCostToMax(final int x, final int y, final int z, final PathType pathType, final float cost) {
+@@ -311,7 +_,7 @@
+             return null;
+         }
+ 
+-        if (this.mob.getBbWidth() >= 1.0F) {
++        if (this.mobContext.bbWidth() >= 1.0F) {
+             return nodeAbove;
+         }
+ 
+@@ -321,13 +_,13 @@
+ 
+         double centerX = x - travelDirection.getStepX() + 0.5;
+         double centerZ = z - travelDirection.getStepZ() + 0.5;
+-        double halfWidth = this.mob.getBbWidth() / 2.0;
++        double halfWidth = this.mobContext.bbWidth() / 2.0;
+         AABB grow = new AABB(
+             centerX - halfWidth,
+             this.getFloorLevel(reusablePos.set(centerX, y + 1, centerZ)) + 0.001,
+             centerZ - halfWidth,
+             centerX + halfWidth,
+-            this.mob.getBbHeight() + this.getFloorLevel(reusablePos.set((double)nodeAbove.x, (double)nodeAbove.y, (double)nodeAbove.z)) - 0.002,
++            this.mobContext.bbHeight() + this.getFloorLevel(reusablePos.set((double)nodeAbove.x, (double)nodeAbove.y, (double)nodeAbove.z)) - 0.002,
+             centerZ + halfWidth
+         );
+         return this.hasCollisions(grow) ? null : nodeAbove;
+@@ -336,13 +_,13 @@
+     private @Nullable Node tryFindFirstNonWaterBelow(final int x, int y, final int z, @Nullable Node best) {
+         y--;
+ 
+-        while (y > this.mob.level().getMinY()) {
++        while (y > this.currentContext.level().getMinY()) {
+             PathType pathTypeLocal = this.getCachedPathType(x, y, z);
+             if (pathTypeLocal != PathType.WATER) {
+                 return best;
+             }
+ 
+-            best = this.getNodeAndUpdateCostToMax(x, y, z, pathTypeLocal, this.mob.getPathfindingMalus(pathTypeLocal));
++            best = this.getNodeAndUpdateCostToMax(x, y, z, pathTypeLocal, this.mobContext.getPathfindingMalus(pathTypeLocal));
+             y--;
+         }
+ 
+@@ -350,13 +_,13 @@
+     }
+ 
+     private Node tryFindFirstGroundNodeBelow(final int x, final int y, final int z) {
+-        for (int currentY = y - 1; currentY >= this.mob.level().getMinY(); currentY--) {
+-            if (y - currentY > this.mob.getMaxFallDistance()) {
++        for (int currentY = y - 1; currentY >= this.currentContext.level().getMinY(); currentY--) {
++            if (y - currentY > this.mobContext.maxFallDistance()) {
+                 return this.getBlockedNode(x, currentY, z);
+             }
+ 
+             PathType pathType = this.getCachedPathType(x, currentY, z);
+-            float pathCost = this.mob.getPathfindingMalus(pathType);
++            float pathCost = this.mobContext.getPathfindingMalus(pathType);
+             if (pathType != PathType.OPEN) {
+                 if (pathCost >= 0.0F) {
+                     return this.getNodeAndUpdateCostToMax(x, currentY, z, pathType, pathCost);
+@@ -370,15 +_,20 @@
+     }
+ 
+     private boolean hasCollisions(final AABB aabb) {
+-        return this.collisionCache.computeIfAbsent(aabb, bb -> !this.currentContext.level().noCollision(this.mob, aabb));
++        return this.collisionCache.computeIfAbsent(aabb, bb -> this.currentContext.hasCollisions(aabb));
+     }
+ 
+     protected PathType getCachedPathType(final int x, final int y, final int z) {
+-        return this.pathTypesByPosCacheByMob.computeIfAbsent(BlockPos.asLong(x, y, z), k -> this.getPathTypeOfMob(this.currentContext, x, y, z, this.mob));
++        return this.pathTypesByPosCacheByMob.computeIfAbsent(BlockPos.asLong(x, y, z), k -> this.getPathTypeOfMob(this.currentContext, x, y, z, this.mobContext));
+     }
+ 
+     @Override
+     public PathType getPathTypeOfMob(final PathfindingContext context, final int x, final int y, final int z, final Mob mob) {
++        return this.getPathTypeOfMob(context, x, y, z, PathfindingMobSnapshot.capture(mob));
++    }
++
++    // Papyrus start - Worker-safe immutable mob inputs
++    private PathType getPathTypeOfMob(final PathfindingContext context, final int x, final int y, final int z, final PathfindingMobSnapshot mob) {
+         Set<PathType> blockTypes = this.getPathTypeWithinMobBB(context, x, y, z);
+         if (blockTypes.size() == 1) {
+             return blockTypes.iterator().next();
+@@ -419,6 +_,7 @@
+                 : highestMalusPathTypeWithinBB;
+         }
+     }
++    // Papyrus end - Worker-safe immutable mob inputs
+ 
+     public Set<PathType> getPathTypeWithinMobBB(final PathfindingContext context, final int x, final int y, final int z) {
+         EnumSet<PathType> blockTypes = EnumSet.noneOf(PathType.class);
+@@ -430,7 +_,7 @@
+                     int yy = dy + y;
+                     int zz = dz + z;
+                     PathType blockType = this.getPathType(context, xx, yy, zz);
+-                    BlockPos mobPosition = this.mob.blockPosition();
++                    BlockPos mobPosition = this.mobContext.blockPosition();
+                     boolean canPassDoors = this.canPassDoors();
+                     if (blockType == PathType.DOOR_WOOD_CLOSED && this.canOpenDoors() && canPassDoors) {
+                         blockType = PathType.WALKABLE_DOOR;
+@@ -513,13 +_,18 @@
+         return blockPathType;
+     }
+ 
+-    protected static PathType getPathTypeFromState(final BlockGetter level, final BlockPos pos) {
++    public static PathType getPathTypeFromState(final BlockGetter level, final BlockPos pos) { // Papyrus - Expose immutable navigation classification
+         // Paper start - Do not load chunks during pathfinding
+         BlockState blockState = level.getBlockStateIfLoaded(pos);
+         if (blockState == null) {
+             return PathType.BLOCKED;
+         }
+         // Paper end
++        return getPathTypeFromState(blockState); // Papyrus - Classify immutable section snapshots without a live level
++    }
++
++    // Papyrus start - Classify immutable section snapshots without a live level
++    public static PathType getPathTypeFromState(final BlockState blockState) {
+         Block block = blockState.getBlock();
+         if (blockState.isAir()) {
+             return PathType.OPEN;
+@@ -586,4 +_,5 @@
+             return PathType.DAMAGE_CAUTIOUS;
+         }
+     }
++    // Papyrus end - Classify immutable section snapshots without a live level
+ }

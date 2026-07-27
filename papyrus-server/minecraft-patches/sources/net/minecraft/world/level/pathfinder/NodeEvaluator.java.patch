@@ -1,0 +1,44 @@
+--- a/net/minecraft/world/level/pathfinder/NodeEvaluator.java
++++ b/net/minecraft/world/level/pathfinder/NodeEvaluator.java
+@@ -14,6 +_,7 @@
+ public abstract class NodeEvaluator {
+     protected PathfindingContext currentContext;
+     protected Mob mob;
++    protected PathfindingMobSnapshot mobContext; // Papyrus - Worker-safe immutable mob inputs
+     protected final Int2ObjectMap<Node> nodes = new Int2ObjectOpenHashMap<>();
+     protected int entityWidth;
+     protected int entityHeight;
+@@ -26,15 +_,30 @@
+     public void prepare(final PathNavigationRegion level, final Mob entity) {
+         this.currentContext = new PathfindingContext(level, entity);
+         this.mob = entity;
++        this.mobContext = PathfindingMobSnapshot.capture(entity);
++        this.prepareDimensions();
++    }
++
++    // Papyrus start - Worker-safe immutable mob inputs
++    public void prepare(final PathNavigationRegion level, final PathfindingMobSnapshot entity) {
++        this.currentContext = new PathfindingContext(level, entity);
++        this.mob = null;
++        this.mobContext = entity;
++        this.prepareDimensions();
++    }
++
++    private void prepareDimensions() {
+         this.nodes.clear();
+-        this.entityWidth = Mth.floor(entity.getBbWidth() + 1.0F);
+-        this.entityHeight = Mth.floor(entity.getBbHeight() + 1.0F);
+-        this.entityDepth = Mth.floor(entity.getBbWidth() + 1.0F);
++        this.entityWidth = Mth.floor(this.mobContext.bbWidth() + 1.0F);
++        this.entityHeight = Mth.floor(this.mobContext.bbHeight() + 1.0F);
++        this.entityDepth = Mth.floor(this.mobContext.bbWidth() + 1.0F);
+     }
++    // Papyrus end - Worker-safe immutable mob inputs
+ 
+     public void done() {
+         this.currentContext = null;
+         this.mob = null;
++        this.mobContext = null;
+     }
+ 
+     protected Node getNode(final BlockPos pos) {

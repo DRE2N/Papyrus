@@ -1,0 +1,15 @@
+--- a/net/minecraft/world/entity/ai/goal/target/TargetGoal.java
++++ b/net/minecraft/world/entity/ai/goal/target/TargetGoal.java
+@@ -120,6 +_,12 @@
+ 
+     private boolean canReach(final LivingEntity target) {
+         this.reachCacheTime = reducedTickDelay(10 + this.mob.getRandom().nextInt(5));
++        // Papyrus start - Async pathfinding cannot synchronously gate target acquisition.
++        // Ground navigation will reject stale/failed movement paths without blocking this goal.
++        if (this.mob.getNavigation().supportsAsyncPathfinding()) {
++            return true;
++        }
++        // Papyrus end - Async pathfinding cannot synchronously gate target acquisition
+         Path path = this.mob.getNavigation().createPath(target, 0);
+         if (path == null) {
+             return false;

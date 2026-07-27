@@ -1,5 +1,20 @@
 --- a/net/minecraft/world/entity/Mob.java
 +++ b/net/minecraft/world/entity/Mob.java
+@@ -215,13 +_,7 @@
+     @Override
+     public void inactiveTick() {
+         super.inactiveTick();
+-        if (!this.aware) return; // Paper - Do not tick AI for inactive unaware mobs
+-        if (this.goalSelector.inactiveTick()) {
+-            this.goalSelector.tick();
+-        }
+-        if (this.targetSelector.inactiveTick()) {
+-            this.targetSelector.tick();
+-        }
++        // Papyrus - Inactive mobs are explicitly woken by activation or combat state; do not poll their goals
+     }
+     // Paper end
+ 
 @@ -1595,26 +_,36 @@
  
      @Override

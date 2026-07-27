@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/level/pathfinder/Path.java
++++ b/net/minecraft/world/level/pathfinder/Path.java
+@@ -11,7 +_,7 @@
+ import net.minecraft.world.phys.Vec3;
+ import org.jspecify.annotations.Nullable;
+ 
+-public final class Path {
++public class Path { // Papyrus - Allow pending asynchronous paths
+     public static final StreamCodec<FriendlyByteBuf, Path> STREAM_CODEC = StreamCodec.of((output, value) -> value.writeToStream(output), Path::createFromStream);
+     public final List<Node> nodes;
+     private Path.@Nullable DebugData debugData;

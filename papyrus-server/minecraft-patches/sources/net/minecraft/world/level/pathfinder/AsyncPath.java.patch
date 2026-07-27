@@ -1,0 +1,94 @@
+--- /dev/null
++++ b/net/minecraft/world/level/pathfinder/AsyncPath.java
+@@ -1,0 +_,91 @@
++package net.minecraft.world.level.pathfinder;
++
++import java.util.List;
++import java.util.Set;
++import java.util.concurrent.CancellationException;
++import java.util.concurrent.CompletableFuture;
++import java.util.concurrent.CompletionException;
++import net.minecraft.core.BlockPos;
++import net.minecraft.world.level.PathNavigationRegion;
++import net.minecraft.world.phys.Vec3;
++import org.jspecify.annotations.Nullable;
++
++/**
++ * A main-thread-owned handle for a path being calculated from immutable inputs.
++ */
++public final class AsyncPath extends Path {
++    private final Set<BlockPos> targets;
++    private final int reachRange;
++    private final PathNavigationRegion region;
++    private final Vec3 startPosition;
++    private final CompletableFuture<@Nullable Path> future;
++
++    AsyncPath(
++        final Set<BlockPos> targets,
++        final int reachRange,
++        final PathNavigationRegion region,
++        final Vec3 startPosition,
++        final CompletableFuture<@Nullable Path> future
++    ) {
++        super(List.of(), targets.iterator().next(), false);
++        this.targets = Set.copyOf(targets);
++        this.reachRange = reachRange;
++        this.region = region;
++        this.startPosition = startPosition;
++        this.future = future;
++    }
++
++    public int reachRange() {
++        return this.reachRange;
++    }
++
++    public boolean matches(final Set<BlockPos> targets, final int reachRange) {
++        return this.reachRange == reachRange && this.targets.equals(targets);
++    }
++
++    public boolean isProcessed() {
++        return this.future.isDone();
++    }
++
++    public @Nullable Path getProcessedPath() {
++        if (!this.future.isDone()) {
++            throw new IllegalStateException("Asynchronous path is not complete");
++        }
++        try {
++            return this.future.join();
++        } catch (CancellationException | CompletionException ignored) {
++            return null;
++        }
++    }
++
++    public boolean isRegionStillValid() {
++        return this.region.isStillValid();
++    }
++
++    public boolean isStartStillValid(final Vec3 currentPosition) {
++        return this.startPosition.distanceToSqr(currentPosition) <= 4.0;
++    }
++
++    public void cancel() {
++        this.future.cancel(true);
++    }
++
++    @Override
++    public boolean isDone() {
++        return false;
++    }
++
++    @Override
++    public boolean canReach() {
++        if (!this.isProcessed()) {
++            return true;
++        }
++        Path processed = this.getProcessedPath();
++        return processed != null && processed.canReach();
++    }
++
++    @Override
++    public String toString() {
++        return "AsyncPath(targets=" + this.targets.size() + ", processed=" + this.isProcessed() + ")";
++    }
++}

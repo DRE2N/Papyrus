@@ -1,0 +1,33 @@
+--- a/net/minecraft/world/level/block/PowderSnowBlock.java
++++ b/net/minecraft/world/level/block/PowderSnowBlock.java
+@@ -132,17 +_,21 @@
+ 
+     @Override
+     protected VoxelShape getCollisionShape(final BlockState state, final BlockGetter level, final BlockPos pos, final CollisionContext context) {
+-        if (!context.isPlacement() && context instanceof EntityCollisionContext entityCollisionContext) {
+-            Entity entity = entityCollisionContext.getEntity();
+-            if (entity != null) {
+-                if (entity.fallDistance > 2.5) {
+-                    return FALLING_COLLISION_SHAPE;
+-                }
++        if (!context.isPlacement()) {
++            if (context instanceof EntityCollisionContext entityCollisionContext) {
++                Entity entity = entityCollisionContext.getEntity();
++                if (entity != null) {
++                    if (entity.fallDistance > 2.5) {
++                        return FALLING_COLLISION_SHAPE;
++                    }
+ 
+-                boolean isFallingBlock = entity instanceof FallingBlockEntity;
+-                if (isFallingBlock || canEntityWalkOnPowderSnow(entity) && context.isAbove(Shapes.block(), pos, false) && !context.isDescending()) {
+-                    return super.getCollisionShape(state, level, pos, context);
++                    if (entity instanceof FallingBlockEntity) {
++                        return super.getCollisionShape(state, level, pos, context);
++                    }
+                 }
++            }
++            if (context.canWalkOnPowderSnow() && context.isAbove(Shapes.block(), pos, false) && !context.isDescending()) { // Papyrus - Snapshot-safe collision context
++                return super.getCollisionShape(state, level, pos, context);
+             }
+         }
+ 

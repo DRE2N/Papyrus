@@ -1,0 +1,146 @@
+--- /dev/null
++++ b/net/minecraft/world/level/pathfinder/PathfindingMobSnapshot.java
+@@ -1,0 +_,143 @@
++package net.minecraft.world.level.pathfinder;
++
++import net.minecraft.core.BlockPos;
++import net.minecraft.core.Direction;
++import net.minecraft.tags.FluidTags;
++import net.minecraft.util.Mth;
++import net.minecraft.world.entity.Mob;
++import net.minecraft.world.item.Item;
++import net.minecraft.world.item.ItemStack;
++import net.minecraft.world.level.CollisionGetter;
++import net.minecraft.world.level.block.PowderSnowBlock;
++import net.minecraft.world.level.block.state.BlockState;
++import net.minecraft.world.level.material.FluidState;
++import net.minecraft.world.level.material.Fluids;
++import net.minecraft.world.phys.AABB;
++import net.minecraft.world.phys.Vec3;
++import net.minecraft.world.phys.shapes.CollisionContext;
++import net.minecraft.world.phys.shapes.VoxelShape;
++
++/**
++ * Immutable movement and collision inputs captured on the owning tick thread.
++ * Worker pathfinding must use this instead of retaining a live Mob.
++ */
++public record PathfindingMobSnapshot(
++    double x,
++    double y,
++    double z,
++    BlockPos blockPosition,
++    AABB boundingBox,
++    float bbWidth,
++    float bbHeight,
++    float maxUpStep,
++    int maxFallDistance,
++    boolean onGround,
++    boolean inWater,
++    boolean descending,
++    boolean canStandOnWater,
++    boolean canStandOnLava,
++    boolean canWalkOnPowderSnow,
++    ItemStack mainHandItem,
++    float[] pathfindingMalus
++) {
++    public static PathfindingMobSnapshot capture(final Mob mob) {
++        float[] malus = new float[PathType.values().length];
++        for (PathType pathType : PathType.values()) {
++            malus[pathType.ordinal()] = mob.getPathfindingMalus(pathType);
++        }
++
++        return new PathfindingMobSnapshot(
++            mob.getX(),
++            mob.getY(),
++            mob.getZ(),
++            mob.blockPosition().immutable(),
++            mob.getBoundingBox(),
++            mob.getBbWidth(),
++            mob.getBbHeight(),
++            mob.maxUpStep(),
++            mob.getMaxFallDistance(),
++            mob.onGround(),
++            mob.isInWater(),
++            mob.isDescending(),
++            mob.canStandOnFluid(Fluids.WATER.getSource(false)),
++            mob.canStandOnFluid(Fluids.LAVA.getSource(false)),
++            PowderSnowBlock.canEntityWalkOnPowderSnow(mob),
++            mob.getMainHandItem().copy(),
++            malus
++        );
++    }
++
++    public PathfindingMobSnapshot {
++        blockPosition = blockPosition.immutable();
++        mainHandItem = mainHandItem.copy();
++        pathfindingMalus = pathfindingMalus.clone();
++    }
++
++    @Override
++    public float[] pathfindingMalus() {
++        return this.pathfindingMalus.clone();
++    }
++
++    public int blockY() {
++        return Mth.floor(this.y);
++    }
++
++    public Vec3 position() {
++        return new Vec3(this.x, this.y, this.z);
++    }
++
++    public float getPathfindingMalus(final PathType pathType) {
++        return this.pathfindingMalus[pathType.ordinal()];
++    }
++
++    public boolean canStandOnFluid(final FluidState fluidState) {
++        return fluidState.is(FluidTags.WATER) ? this.canStandOnWater : fluidState.is(FluidTags.LAVA) && this.canStandOnLava;
++    }
++
++    public CollisionContext collisionContext() {
++        return new SnapshotCollisionContext(this);
++    }
++
++    private static final class SnapshotCollisionContext implements CollisionContext {
++        private final PathfindingMobSnapshot snapshot;
++
++        private SnapshotCollisionContext(final PathfindingMobSnapshot snapshot) {
++            this.snapshot = snapshot;
++        }
++
++        @Override
++        public boolean isDescending() {
++            return this.snapshot.descending;
++        }
++
++        @Override
++        public boolean isAbove(final VoxelShape shape, final BlockPos pos, final boolean defaultValue) {
++            return this.snapshot.y > pos.getY() + shape.max(Direction.Axis.Y) - 1.0E-5F;
++        }
++
++        @Override
++        public boolean isHoldingItem(final Item item) {
++            return this.snapshot.mainHandItem.is(item);
++        }
++
++        @Override
++        public boolean alwaysCollideWithFluid() {
++            return false;
++        }
++
++        @Override
++        public boolean canStandOnFluid(final FluidState fluidStateAbove, final FluidState fluid) {
++            return this.snapshot.canStandOnFluid(fluid) && !fluidStateAbove.getType().isSame(fluid.getType());
++        }
++
++        @Override
++        public VoxelShape getCollisionShape(final BlockState state, final CollisionGetter collisionGetter, final BlockPos pos) {
++            return state.getCollisionShape(collisionGetter, pos, this);
++        }
++
++        @Override
++        public boolean canWalkOnPowderSnow() {
++            return this.snapshot.canWalkOnPowderSnow;
++        }
++    }
++}

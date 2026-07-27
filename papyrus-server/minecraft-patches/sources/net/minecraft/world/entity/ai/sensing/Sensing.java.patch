@@ -1,0 +1,131 @@
+--- a/net/minecraft/world/entity/ai/sensing/Sensing.java
++++ b/net/minecraft/world/entity/ai/sensing/Sensing.java
+@@ -1,46 +_,110 @@
+ package net.minecraft.world.entity.ai.sensing;
+ 
+-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+-import it.unimi.dsi.fastutil.ints.IntSet;
++import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
++import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
++import java.util.Iterator;
+ import net.minecraft.util.profiling.Profiler;
+ import net.minecraft.util.profiling.ProfilerFiller;
+ import net.minecraft.world.entity.Entity;
+ import net.minecraft.world.entity.Mob;
+ 
+ public class Sensing {
++    private static final int POSITIVE_CACHE_TICKS = 4;
++    private static final int NEGATIVE_CACHE_TICKS = 2;
++    private static final int MAX_CACHE_ENTRIES = 32;
++    private static final int CACHE_PRUNE_INTERVAL = 20;
++    private static final double MAX_REUSE_MOVEMENT_SQUARED = 0.0625;
+     private final Mob mob;
+-    private final IntSet seen = new IntOpenHashSet();
+-    private final IntSet unseen = new IntOpenHashSet();
++    private final Int2ObjectMap<LineOfSightCacheEntry> lineOfSightCache = new Int2ObjectOpenHashMap<>();
+ 
+     public Sensing(final Mob mob) {
+         this.mob = mob;
+     }
+ 
+     public void tick() {
+-        this.seen.clear();
+-        this.unseen.clear();
++        // Papyrus start - Cache line of sight across ticks
++        if (this.mob.tickCount % CACHE_PRUNE_INTERVAL == 0 && !this.lineOfSightCache.isEmpty()) {
++            Iterator<LineOfSightCacheEntry> iterator = this.lineOfSightCache.values().iterator();
++            while (iterator.hasNext()) {
++                if (iterator.next().expiresAtTick <= this.mob.tickCount) {
++                    iterator.remove();
++                }
++            }
++        }
++        // Papyrus end - Cache line of sight across ticks
+     }
+ 
+     public boolean hasLineOfSight(final Entity target) {
++        // Papyrus start - Cache line of sight across ticks
+         int targetId = target.getId();
+-        if (this.seen.contains(targetId)) {
+-            return true;
+-        }
+-
+-        if (this.unseen.contains(targetId)) {
+-            return false;
++        long geometryRevision = this.mob.level() instanceof net.minecraft.server.level.ServerLevel serverLevel
++            ? serverLevel.getPathNavigationGeometryRevision()
++            : 0L;
++        LineOfSightCacheEntry cached = this.lineOfSightCache.get(targetId);
++        if (cached != null && cached.canReuse(this.mob, target, geometryRevision)) {
++            return cached.visible;
+         }
+ 
+         ProfilerFiller profiler = Profiler.get();
+         profiler.push("hasLineOfSight");
+         boolean hasLineOfSight = this.mob.hasLineOfSight(target);
+         profiler.pop();
+-        if (hasLineOfSight) {
+-            this.seen.add(targetId);
+-        } else {
+-            this.unseen.add(targetId);
++        if (this.lineOfSightCache.size() >= MAX_CACHE_ENTRIES && cached == null) {
++            this.lineOfSightCache.clear();
+         }
+-
++        this.lineOfSightCache.put(
++            targetId,
++            new LineOfSightCacheEntry(
++                target,
++                this.mob.getX(),
++                this.mob.getEyeY(),
++                this.mob.getZ(),
++                target.getX(),
++                target.getEyeY(),
++                target.getZ(),
++                this.mob.tickCount + (hasLineOfSight ? POSITIVE_CACHE_TICKS : NEGATIVE_CACHE_TICKS),
++                geometryRevision,
++                hasLineOfSight
++            )
++        );
+         return hasLineOfSight;
+-    }
++        // Papyrus end - Cache line of sight across ticks
++    }
++
++    // Papyrus start - Cache line of sight across ticks
++    private record LineOfSightCacheEntry(
++        Entity target,
++        double sourceX,
++        double sourceY,
++        double sourceZ,
++        double targetX,
++        double targetY,
++        double targetZ,
++        int expiresAtTick,
++        long geometryRevision,
++        boolean visible
++    ) {
++        private boolean canReuse(final Mob source, final Entity target, final long geometryRevision) {
++            return this.target == target
++                && source.tickCount < this.expiresAtTick
++                && this.geometryRevision == geometryRevision
++                && distanceToSqr(this.sourceX, this.sourceY, this.sourceZ, source.getX(), source.getEyeY(), source.getZ()) <= MAX_REUSE_MOVEMENT_SQUARED
++                && distanceToSqr(this.targetX, this.targetY, this.targetZ, target.getX(), target.getEyeY(), target.getZ()) <= MAX_REUSE_MOVEMENT_SQUARED;
++        }
++
++        private static double distanceToSqr(
++            final double firstX,
++            final double firstY,
++            final double firstZ,
++            final double secondX,
++            final double secondY,
++            final double secondZ
++        ) {
++            double deltaX = firstX - secondX;
++            double deltaY = firstY - secondY;
++            double deltaZ = firstZ - secondZ;
++            return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
++        }
++    }
++    // Papyrus end - Cache line of sight across ticks
+ }

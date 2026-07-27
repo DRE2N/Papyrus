@@ -1,0 +1,15 @@
+--- a/net/minecraft/world/phys/shapes/CollisionContext.java
++++ b/net/minecraft/world/phys/shapes/CollisionContext.java
+@@ -68,6 +_,12 @@
+ 
+     VoxelShape getCollisionShape(BlockState state, CollisionGetter collisionGetter, BlockPos pos);
+ 
++    // Papyrus start - Worker-safe pathfinding collision snapshots
++    default boolean canWalkOnPowderSnow() {
++        return false;
++    }
++    // Papyrus end - Worker-safe pathfinding collision snapshots
++
+     default boolean isPlacement() {
+         return false;
+     }

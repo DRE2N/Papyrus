@@ -1,0 +1,86 @@
+--- /dev/null
++++ b/net/minecraft/world/level/pathfinder/AsyncPathfinding.java
+@@ -1,0 +_,83 @@
++package net.minecraft.world.level.pathfinder;
++
++import java.util.Set;
++import java.util.concurrent.ArrayBlockingQueue;
++import java.util.concurrent.CompletableFuture;
++import java.util.concurrent.RejectedExecutionException;
++import java.util.concurrent.ThreadFactory;
++import java.util.concurrent.ThreadPoolExecutor;
++import java.util.concurrent.TimeUnit;
++import java.util.concurrent.atomic.AtomicInteger;
++import net.minecraft.core.BlockPos;
++import net.minecraft.world.level.PathNavigationRegion;
++import org.jspecify.annotations.Nullable;
++
++public final class AsyncPathfinding {
++    private static final int THREADS = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 4));
++    private static final int MAX_QUEUED_PATHS = 4096;
++    private static final AtomicInteger THREAD_ID = new AtomicInteger();
++    private static final ThreadPoolExecutor EXECUTOR = createExecutor();
++
++    private AsyncPathfinding() {
++    }
++
++    private static ThreadPoolExecutor createExecutor() {
++        ThreadFactory threadFactory = task -> {
++            Thread thread = new Thread(task, "Papyrus Async Pathfinding #" + THREAD_ID.incrementAndGet());
++            thread.setDaemon(true);
++            thread.setPriority(Math.max(Thread.MIN_PRIORITY, Thread.NORM_PRIORITY - 1));
++            return thread;
++        };
++        ThreadPoolExecutor executor = new ThreadPoolExecutor(
++            THREADS,
++            THREADS,
++            30L,
++            TimeUnit.SECONDS,
++            new ArrayBlockingQueue<>(MAX_QUEUED_PATHS),
++            threadFactory,
++            new ThreadPoolExecutor.AbortPolicy()
++        );
++        executor.allowCoreThreadTimeOut(true);
++        return executor;
++    }
++
++    public static @Nullable AsyncPath submit(
++        final PathNavigationRegion region,
++        final PathfindingMobSnapshot mob,
++        final Set<BlockPos> targets,
++        final float maxPathLength,
++        final int reachRange,
++        final float maxVisitedNodesMultiplier,
++        final int maxVisitedNodes,
++        final boolean canPassDoors,
++        final boolean canOpenDoors,
++        final boolean canFloat,
++        final boolean canWalkOverFences
++    ) {
++        CompletableFuture<@Nullable Path> future = new CompletableFuture<>();
++        Set<BlockPos> immutableTargets = Set.copyOf(targets);
++        try {
++            EXECUTOR.execute(() -> {
++                if (future.isCancelled()) {
++                    return;
++                }
++                try {
++                    WalkNodeEvaluator evaluator = new WalkNodeEvaluator();
++                    evaluator.setCanPassDoors(canPassDoors);
++                    evaluator.setCanOpenDoors(canOpenDoors);
++                    evaluator.setCanFloat(canFloat);
++                    evaluator.setCanWalkOverFences(canWalkOverFences);
++                    PathFinder pathFinder = new PathFinder(evaluator, maxVisitedNodes);
++                    Path path = pathFinder.findPath(region, mob, immutableTargets, maxPathLength, reachRange, maxVisitedNodesMultiplier);
++                    future.complete(path);
++                } catch (Throwable throwable) {
++                    future.completeExceptionally(throwable);
++                }
++            });
++        } catch (RejectedExecutionException rejected) {
++            return null;
++        }
++
++        return new AsyncPath(immutableTargets, reachRange, region, mob.position(), future);
++    }
++}

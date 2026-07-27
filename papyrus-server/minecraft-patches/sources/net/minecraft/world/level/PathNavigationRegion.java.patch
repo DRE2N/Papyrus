@@ -1,0 +1,349 @@
+--- a/net/minecraft/world/level/PathNavigationRegion.java
++++ b/net/minecraft/world/level/PathNavigationRegion.java
+@@ -1,115 +_,161 @@
+ package net.minecraft.world.level;
+ 
+-import com.google.common.base.Suppliers;
++import java.util.Arrays;
+ import java.util.List;
+-import java.util.function.Supplier;
+ import net.minecraft.core.BlockPos;
+-import net.minecraft.core.Holder;
+ import net.minecraft.core.SectionPos;
+-import net.minecraft.core.registries.Registries;
++import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.world.entity.Entity;
+-import net.minecraft.world.level.biome.Biome;
+-import net.minecraft.world.level.biome.Biomes;
+ import net.minecraft.world.level.block.Blocks;
+ import net.minecraft.world.level.block.entity.BlockEntity;
+ import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.border.WorldBorder;
+ import net.minecraft.world.level.chunk.ChunkAccess;
+ import net.minecraft.world.level.chunk.ChunkSource;
+-import net.minecraft.world.level.chunk.EmptyLevelChunk;
++import net.minecraft.world.level.chunk.LevelChunkSection;
++import net.minecraft.world.level.chunk.PalettedContainer;
+ import net.minecraft.world.level.material.FluidState;
+-import net.minecraft.world.level.material.Fluids;
++import net.minecraft.world.level.pathfinder.PathType;
++import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
+ import net.minecraft.world.phys.AABB;
+ import net.minecraft.world.phys.shapes.VoxelShape;
+ import org.jspecify.annotations.Nullable;
+ 
+ public class PathNavigationRegion implements CollisionGetter {
+-    protected final int centerX;
+-    protected final int centerZ;
+-    protected final ChunkAccess[][] chunks;
++    private final int centerX;
++    private final int centerZ;
++    private final int minSectionY;
++    private final NavigationSection[][][] sections;
++    private final boolean[][] loadedChunks;
+     protected boolean allEmpty;
+-    protected final Level level;
+-    private final Supplier<Holder<Biome>> plains;
++    private final @Nullable ServerLevel serverLevel;
++    private final WorldBorder worldBorder;
++    private final int minY;
++    private final int height;
+ 
+     public PathNavigationRegion(final Level level, final BlockPos start, final BlockPos end) {
+-        this.level = level;
+-        this.plains = Suppliers.memoize(() -> level.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS));
+-        this.centerX = SectionPos.blockToSectionCoord(start.getX());
+-        this.centerZ = SectionPos.blockToSectionCoord(start.getZ());
+-        int xc2 = SectionPos.blockToSectionCoord(end.getX());
+-        int zc2 = SectionPos.blockToSectionCoord(end.getZ());
+-        this.chunks = new ChunkAccess[xc2 - this.centerX + 1][zc2 - this.centerZ + 1];
+-        ChunkSource chunkSource = level.getChunkSource();
++        this.serverLevel = level instanceof ServerLevel serverLevel ? serverLevel : null;
++        this.worldBorder = copyWorldBorder(level.getWorldBorder());
++        this.minY = level.getMinY();
++        this.height = level.getHeight();
++        this.centerX = SectionPos.blockToSectionCoord(Math.min(start.getX(), end.getX()));
++        this.centerZ = SectionPos.blockToSectionCoord(Math.min(start.getZ(), end.getZ()));
++        int maxSectionX = SectionPos.blockToSectionCoord(Math.max(start.getX(), end.getX()));
++        int maxSectionZ = SectionPos.blockToSectionCoord(Math.max(start.getZ(), end.getZ()));
++        this.minSectionY = Math.max(level.getMinSectionY(), SectionPos.blockToSectionCoord(Math.min(start.getY(), end.getY()) - 1));
++        int maxSectionY = Math.min(level.getMaxSectionY(), SectionPos.blockToSectionCoord(Math.max(start.getY(), end.getY()) + 1));
++        int sectionCountY = Math.max(0, maxSectionY - this.minSectionY + 1);
++        this.sections = new NavigationSection[maxSectionX - this.centerX + 1][maxSectionZ - this.centerZ + 1][sectionCountY];
++        this.loadedChunks = new boolean[this.sections.length][this.sections[0].length];
+         this.allEmpty = true;
+-
+-        for (int xc = this.centerX; xc <= xc2; xc++) {
+-            for (int zc = this.centerZ; zc <= zc2; zc++) {
+-                this.chunks[xc - this.centerX][zc - this.centerZ] = chunkSource.getChunkNow(xc, zc);
+-            }
+-        }
+-
+-        for (int xc = SectionPos.blockToSectionCoord(start.getX()); xc <= SectionPos.blockToSectionCoord(end.getX()); xc++) {
+-            for (int zc = SectionPos.blockToSectionCoord(start.getZ()); zc <= SectionPos.blockToSectionCoord(end.getZ()); zc++) {
+-                ChunkAccess chunk = this.chunks[xc - this.centerX][zc - this.centerZ];
+-                if (chunk != null && !chunk.isYSpaceEmpty(start.getY(), end.getY())) {
+-                    this.allEmpty = false;
+-                    return;
+-                }
+-            }
+-        }
+-    }
+-
+-    private ChunkAccess getChunk(final BlockPos pos) {
+-        return this.getChunk(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getZ()));
+-    }
+-
+-    private ChunkAccess getChunk(final int chunkX, final int chunkZ) {
+-        int xc = chunkX - this.centerX;
+-        int zc = chunkZ - this.centerZ;
+-        if (xc >= 0 && xc < this.chunks.length && zc >= 0 && zc < this.chunks[xc].length) { // Paper - if this changes, update getChunkIfLoaded below
+-            ChunkAccess chunk = this.chunks[xc][zc];
+-            return chunk != null ? chunk : new EmptyLevelChunk(this.level, new ChunkPos(chunkX, chunkZ), this.plains.get());
+-        } else {
+-            return new EmptyLevelChunk(this.level, new ChunkPos(chunkX, chunkZ), this.plains.get());
+-        }
+-    }
+-
+-    // Paper start - if loaded util
+-    @Nullable
+-    private ChunkAccess getChunkIfLoaded(int x, int z) {
+-        // Based on getChunk(int, int)
+-        int xx = x - this.centerX;
+-        int zz = z - this.centerZ;
+-
+-        if (xx >= 0 && xx < this.chunks.length && zz >= 0 && zz < this.chunks[xx].length) {
+-            return this.chunks[xx][zz];
+-        }
+-        return null;
+-    }
+-
+-    @Nullable
+-    @Override
+-    public final FluidState getFluidIfLoaded(BlockPos pos) {
+-        ChunkAccess chunk = getChunkIfLoaded(pos.getX() >> 4, pos.getZ() >> 4);
+-        return chunk == null ? null : chunk.getFluidState(pos);
+-    }
+-
+-    @Nullable
+-    @Override
+-    public final BlockState getBlockStateIfLoaded(BlockPos pos) {
+-        ChunkAccess chunk = getChunkIfLoaded(pos.getX() >> 4, pos.getZ() >> 4);
+-        return chunk == null ? null : chunk.getBlockState(pos);
+-    }
+-    // Paper end
++        ChunkSource chunkSource = level.getChunkSource();
++
++        for (int sectionX = this.centerX; sectionX <= maxSectionX; sectionX++) {
++            for (int sectionZ = this.centerZ; sectionZ <= maxSectionZ; sectionZ++) {
++                ChunkAccess chunk = chunkSource.getChunkNow(sectionX, sectionZ);
++                if (chunk == null) {
++                    continue;
++                }
++
++                int relativeX = sectionX - this.centerX;
++                int relativeZ = sectionZ - this.centerZ;
++                this.loadedChunks[relativeX][relativeZ] = true;
++                for (int sectionY = this.minSectionY; sectionY <= maxSectionY; sectionY++) {
++                    NavigationSection section = this.serverLevel == null
++                        ? NavigationSection.copyOf(
++                            SectionPos.asLong(sectionX, sectionY, sectionZ),
++                            0L,
++                            chunk.getSection(chunk.getSectionIndexFromSectionY(sectionY))
++                        )
++                        : this.serverLevel.getPathNavigationSection(chunk, sectionY);
++                    this.sections[relativeX][relativeZ][sectionY - this.minSectionY] = section;
++                    if (!section.hasOnlyAir()) {
++                        this.allEmpty = false;
++                    }
++                }
++            }
++        }
++    }
++
++    private static WorldBorder copyWorldBorder(final WorldBorder source) {
++        WorldBorder copy = new WorldBorder();
++        copy.setAbsoluteMaxSize(source.getAbsoluteMaxSize());
++        copy.setCenter(source.getCenterX(), source.getCenterZ());
++        copy.setSize(source.getSize());
++        return copy;
++    }
++
++    private @Nullable NavigationSection getSection(final int blockX, final int blockY, final int blockZ) {
++        int relativeX = SectionPos.blockToSectionCoord(blockX) - this.centerX;
++        int relativeZ = SectionPos.blockToSectionCoord(blockZ) - this.centerZ;
++        int relativeY = SectionPos.blockToSectionCoord(blockY) - this.minSectionY;
++        if (relativeX < 0
++            || relativeX >= this.sections.length
++            || relativeZ < 0
++            || relativeZ >= this.sections[relativeX].length
++            || relativeY < 0
++            || relativeY >= this.sections[relativeX][relativeZ].length) {
++            return null;
++        }
++        return this.sections[relativeX][relativeZ][relativeY];
++    }
++
++    public PathType getPathType(final int x, final int y, final int z) {
++        NavigationSection section = this.getSection(x, y, z);
++        return section == null ? PathType.BLOCKED : section.getPathType(x, y, z);
++    }
++
++    /**
++     * Must be called on the owning level's tick thread before publishing a path
++     * produced from this region by a future asynchronous pathfinding task.
++     */
++    public boolean isStillValid() {
++        if (this.serverLevel == null) {
++            return false;
++        }
++
++        for (NavigationSection[][] sectionColumns : this.sections) {
++            for (NavigationSection[] sectionColumn : sectionColumns) {
++                for (NavigationSection section : sectionColumn) {
++                    if (section != null && !this.serverLevel.isPathNavigationSectionCurrent(section)) {
++                        return false;
++                    }
++                }
++            }
++        }
++        return true;
++    }
++
++    @Nullable
++    @Override
++    public final FluidState getFluidIfLoaded(final BlockPos pos) {
++        NavigationSection section = this.getSection(pos.getX(), pos.getY(), pos.getZ());
++        return section == null ? null : section.getBlockState(pos.getX(), pos.getY(), pos.getZ()).getFluidState();
++    }
++
++    @Nullable
++    @Override
++    public final BlockState getBlockStateIfLoaded(final BlockPos pos) {
++        NavigationSection section = this.getSection(pos.getX(), pos.getY(), pos.getZ());
++        return section == null ? null : section.getBlockState(pos.getX(), pos.getY(), pos.getZ());
++    }
+ 
+     @Override
+     public WorldBorder getWorldBorder() {
+-        return this.level.getWorldBorder();
++        return this.worldBorder;
+     }
+ 
+     @Override
+-    public BlockGetter getChunkForCollisions(final int chunkX, final int chunkZ) {
+-        return this.getChunk(chunkX, chunkZ);
++    public @Nullable BlockGetter getChunkForCollisions(final int chunkX, final int chunkZ) {
++        int relativeX = chunkX - this.centerX;
++        int relativeZ = chunkZ - this.centerZ;
++        return relativeX >= 0
++                && relativeX < this.loadedChunks.length
++                && relativeZ >= 0
++                && relativeZ < this.loadedChunks[relativeX].length
++                && this.loadedChunks[relativeX][relativeZ]
++            ? this
++            : null;
+     }
+ 
+     @Override
+@@ -119,8 +_,7 @@
+ 
+     @Override
+     public @Nullable BlockEntity getBlockEntity(final BlockPos pos) {
+-        ChunkAccess chunk = this.getChunk(pos);
+-        return chunk.getBlockEntity(pos);
++        return null;
+     }
+ 
+     @Override
+@@ -129,27 +_,80 @@
+             return Blocks.AIR.defaultBlockState();
+         }
+ 
+-        ChunkAccess chunk = this.getChunk(pos);
+-        return chunk.getBlockState(pos);
++        NavigationSection section = this.getSection(pos.getX(), pos.getY(), pos.getZ());
++        return section == null ? Blocks.AIR.defaultBlockState() : section.getBlockState(pos.getX(), pos.getY(), pos.getZ());
+     }
+ 
+     @Override
+     public FluidState getFluidState(final BlockPos pos) {
+-        if (this.isOutsideBuildHeight(pos)) {
+-            return Fluids.EMPTY.defaultFluidState();
+-        }
+-
+-        ChunkAccess chunk = this.getChunk(pos);
+-        return chunk.getFluidState(pos);
++        return this.getBlockState(pos).getFluidState();
+     }
+ 
+     @Override
+     public int getMinY() {
+-        return this.level.getMinY();
++        return this.minY;
+     }
+ 
+     @Override
+     public int getHeight() {
+-        return this.level.getHeight();
++        return this.height;
++    }
++
++    public static final class NavigationSection {
++        private static final PathType[] PATH_TYPES = PathType.values();
++        private final long key;
++        private final long revision;
++        private final PalettedContainer<BlockState> states;
++        private final byte[] pathTypes;
++        private final boolean hasOnlyAir;
++
++        private NavigationSection(
++            final long key,
++            final long revision,
++            final PalettedContainer<BlockState> states,
++            final byte[] pathTypes,
++            final boolean hasOnlyAir
++        ) {
++            this.key = key;
++            this.revision = revision;
++            this.states = states;
++            this.pathTypes = pathTypes;
++            this.hasOnlyAir = hasOnlyAir;
++        }
++
++        public static NavigationSection copyOf(final long key, final long revision, final LevelChunkSection source) {
++            PalettedContainer<BlockState> states = source.states.copy();
++            byte[] pathTypes = new byte[LevelChunkSection.SECTION_SIZE];
++            boolean hasOnlyAir = source.hasOnlyAir();
++            if (hasOnlyAir) {
++                Arrays.fill(pathTypes, (byte)PathType.OPEN.ordinal());
++            } else {
++                for (int index = 0; index < pathTypes.length; index++) {
++                    pathTypes[index] = (byte)WalkNodeEvaluator.getPathTypeFromState(states.get(index)).ordinal();
++                }
++            }
++            return new NavigationSection(key, revision, states, pathTypes, hasOnlyAir);
++        }
++
++        public long key() {
++            return this.key;
++        }
++
++        public long revision() {
++            return this.revision;
++        }
++
++        public boolean hasOnlyAir() {
++            return this.hasOnlyAir;
++        }
++
++        public BlockState getBlockState(final int x, final int y, final int z) {
++            return this.states.get(SectionPos.sectionRelative(x), SectionPos.sectionRelative(y), SectionPos.sectionRelative(z));
++        }
++
++        public PathType getPathType(final int x, final int y, final int z) {
++            int index = SectionPos.sectionRelative(y) << 8 | SectionPos.sectionRelative(z) << 4 | SectionPos.sectionRelative(x);
++            return PATH_TYPES[Byte.toUnsignedInt(this.pathTypes[index])];
++        }
+     }
+ }
