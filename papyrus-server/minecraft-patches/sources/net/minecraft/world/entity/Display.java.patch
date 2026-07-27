@@ -1,0 +1,54 @@
+--- a/net/minecraft/world/entity/Display.java
++++ b/net/minecraft/world/entity/Display.java
+@@ -99,6 +_,8 @@
+     private int interpolationDuration;
+     private float lastProgress;
+     private AABB cullingBoundingBox;
++    private float cullingWidth; // Papyrus - Avoid synchronized data reads for every passenger movement
++    private float cullingHeight;
+     private boolean noCulling = true;
+     protected boolean updateRenderState;
+     private boolean updateStartTick;
+@@ -115,9 +_,20 @@
+     @Override
+     public void onSyncedDataUpdated(final EntityDataAccessor<?> accessor) {
+         super.onSyncedDataUpdated(accessor);
+-        if (DATA_HEIGHT_ID.equals(accessor) || DATA_WIDTH_ID.equals(accessor)) {
++        // Papyrus start - Cache culling dimensions outside the passenger-position hot path
++        boolean updateCulling = false;
++        if (DATA_WIDTH_ID.equals(accessor)) {
++            this.cullingWidth = this.getWidth();
++            updateCulling = true;
++        }
++        if (DATA_HEIGHT_ID.equals(accessor)) {
++            this.cullingHeight = this.getHeight();
++            updateCulling = true;
++        }
++        if (updateCulling) {
+             this.updateCulling();
+         }
++        // Papyrus end - Cache culling dimensions outside the passenger-position hot path
+ 
+         if (DATA_TRANSFORMATION_INTERPOLATION_START_DELTA_TICKS_ID.equals(accessor)) {
+             this.updateStartTick = true;
+@@ -379,13 +_,17 @@
+ 
+     @Override
+     public void setPos(final double x, final double y, final double z) {
++        // Passenger positioning invokes this every tick even when both entities are stationary.
++        boolean positionChanged = this.getX() != x || this.getY() != y || this.getZ() != z; // Papyrus - Skip redundant culling updates
+         super.setPos(x, y, z);
+-        this.updateCulling();
++        if (positionChanged) {
++            this.updateCulling();
++        }
+     }
+ 
+     private void updateCulling() {
+-        float width = this.getWidth();
+-        float height = this.getHeight();
++        float width = this.cullingWidth; // Papyrus - Cached synchronized data
++        float height = this.cullingHeight;
+         this.noCulling = width == 0.0F || height == 0.0F;
+         float w = width / 2.0F;
+         double x = this.getX();
