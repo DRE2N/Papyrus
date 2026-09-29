@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/block/CoralPlantBlock.java
 +++ b/net/minecraft/world/level/block/CoralPlantBlock.java
-@@ -40,6 +_,7 @@
+@@ -30,6 +_,7 @@
  
      @Override
      protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
@@ -8,7 +8,7 @@
          if (!scanForWater(state, level, pos)) {
              // CraftBukkit start
              if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralPlantBlock.WATERLOGGED, false)).isCancelled()) {
-@@ -61,6 +_,7 @@
+@@ -51,6 +_,7 @@
          final BlockState neighbourState,
          final RandomSource random
      ) {

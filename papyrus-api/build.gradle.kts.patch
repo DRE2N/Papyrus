@@ -1,7 +1,7 @@
 --- a/paper-api/build.gradle.kts
 +++ b/paper-api/build.gradle.kts
-@@ -91,7 +_,7 @@
-     testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.0.3")
+@@ -106,7 +106,7 @@
+     checkstyle(project(":paper-checkstyle"))
  }
  
 -val generatedDir: java.nio.file.Path = layout.projectDirectory.dir("src/generated/java").asFile.toPath()
@@ -9,13 +9,10 @@
  idea {
      module {
          generatedSourceDirs.add(generatedDir.toFile())
-@@ -101,9 +_,21 @@
+@@ -116,6 +116,18 @@
      main {
          java {
              srcDir(generatedDir)
--        }
--    }
--}
 +            srcDir(file("../paper-api/src/main/java"))
 +        }
 +        resources {
@@ -28,13 +25,10 @@
 +        }
 +        resources {
 +            srcDir(file("../paper-api/src/test/resources"))
-+        }
-+    }
-+    }
- 
- val outgoingVariants = arrayOf("runtimeElements", "apiElements", "sourcesElements", "javadocElements")
- val mainCapability = "${project.group}:${project.name}:${project.version}"
-@@ -183,7 +_,7 @@
+         }
+     }
+ }
+@@ -198,7 +210,7 @@
  
  tasks.withType<Javadoc>().configureEach {
      val options = options as StandardJavadocDocletOptions
@@ -43,7 +37,7 @@
      options.use()
      options.isDocFilesSubDirs = true
      options.links(
-@@ -217,11 +_,11 @@
+@@ -225,11 +237,11 @@
      }
  
      // workaround for https://github.com/gradle/gradle/issues/4046

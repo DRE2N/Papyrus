@@ -92,7 +92,7 @@
      // Paper start - Perf: Optimise pathfinding
      private int lastFailure = 0;
      private int pathfindFailures = 0;
-@@ -239,9 +_,25 @@
+@@ -243,9 +_,25 @@
  
      public boolean moveTo(final @Nullable Path newPath, final double speedModifier) {
          if (newPath == null) {
@@ -119,7 +119,7 @@
  
          if (!newPath.sameAs(this.path)) {
              this.path = newPath;
-@@ -269,6 +_,10 @@
+@@ -273,6 +_,10 @@
  
      public void tick() {
          this.tick++;
@@ -130,7 +130,7 @@
          if (this.hasDelayedRecomputation) {
              this.recomputePath();
          }
-@@ -291,9 +_,50 @@
+@@ -295,9 +_,50 @@
          }
      }
  
@@ -182,7 +182,7 @@
      }
  
      protected void followThePath() {
-@@ -396,7 +_,7 @@
+@@ -402,7 +_,7 @@
      }
  
      public void stop() {
@@ -191,7 +191,7 @@
      }
  
      protected abstract Vec3 getTempMobPos();
-@@ -408,7 +_,7 @@
+@@ -414,7 +_,7 @@
              for (int i = 0; i < this.path.getNodeCount(); i++) {
                  Node node = this.path.getNode(i);
                  Node nextNode = i + 1 < this.path.getNodeCount() ? this.path.getNode(i + 1) : null;
@@ -200,7 +200,7 @@
                  if (state.is(BlockTags.CAULDRONS)) {
                      this.path.replaceNode(i, node.cloneAndMove(node.x, node.y + 1, node.z));
                      if (nextNode != null && node.y >= nextNode.y) {
-@@ -429,15 +_,15 @@
+@@ -435,15 +_,15 @@
  
      protected static boolean isClearForMovementBetween(final Mob mob, final Vec3 startPos, final Vec3 stopPos, final boolean blockedByFluids) {
          Vec3 to = new Vec3(stopPos.x, stopPos.y + mob.getBbHeight() * 0.5, stopPos.z);

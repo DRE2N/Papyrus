@@ -1,80 +1,52 @@
 --- a/paper-server/build.gradle.kts
 +++ b/paper-server/build.gradle.kts
-@@ -22,11 +_,44 @@
+@@ -21,6 +21,16 @@
+ paperweight {
      minecraftVersion = providers.gradleProperty("mcVersion")
      gitFilePatches = false
- 
++
 +    val papyrus = forks.register("papyrus") {
 +        upstream.patchDir("paperServer") {
-+        upstreamPath = "paper-server"
-+        excludes = setOf("src/minecraft", "patches", "build.gradle.kts")
-+        patchesDir = rootDirectory.dir("papyrus-server/paper-patches")
-+        outputDir = rootDirectory.dir("paper-server")
++            upstreamPath = "paper-server"
++            excludes = setOf("src/minecraft", "patches", "build.gradle.kts")
++            patchesDir = rootDirectory.dir("papyrus-server/paper-patches")
++            outputDir = rootDirectory.dir("paper-server")
 +        }
 +    }
 +    activeFork = papyrus
-+
-     updatingMinecraft {
-         // oldPaperCommit = "711c5de2b05df39b72c44ff54e9f9381f8d153cb"
-     }
- }
  
-+val generatedDir: java.nio.file.Path = layout.projectDirectory.dir("../paper-server/src/generated/java").asFile.toPath()
-+sourceSets {
-+    main {
-+        java {
-+            srcDir(generatedDir)
-+            srcDir("../paper-server/src/main/java")
-+        }
-+        resources { srcDir("../paper-server/src/main/resources") }
-+    }
-+    test {
-+        java { srcDir("../paper-server/src/test/java") }
-+        resources { srcDir("../paper-server/src/test/resources") }
-+    }
-+}
-+
-+val log4jPlugins = sourceSets.create("log4jPlugins") {
-+    java { srcDir("../paper-server/src/log4jPlugins/java") }
-+}
-+
-+configurations.named(log4jPlugins.compileClasspathConfigurationName) {
-+    extendsFrom(configurations.compileClasspath.get())
-+}
-+
- tasks.generateDevelopmentBundle {
-     libraryRepositories.addAll(
-         "https://repo.maven.apache.org/maven2/",
-@@ -86,10 +_,6 @@
+     updatingMinecraft {
+         //oldPaperCommit = "e5fe71723e2ffde7cc9fafc085ac3bb73e63175e"
+@@ -86,7 +96,9 @@
      }
  }
  
 -val log4jPlugins = sourceSets.create("log4jPlugins")
--configurations.named(log4jPlugins.compileClasspathConfigurationName) {
--    extendsFrom(configurations.compileClasspath.get())
--}
- val alsoShade: Configuration by configurations.creating
- 
- val runtimeConfiguration by configurations.consumable("runtimeConfiguration") {
-@@ -109,7 +_,7 @@
++val log4jPlugins = sourceSets.create("log4jPlugins") {
++    java { srcDir("../paper-server/src/log4jPlugins/java") }
++}
+ configurations.named(log4jPlugins.compileClasspathConfigurationName) {
+     extendsFrom(configurations.compileClasspath.get())
+ }
+@@ -109,7 +121,7 @@
  }
  
  dependencies {
 -    implementation(project(":paper-api"))
 +    implementation(project(":papyrus-api"))
-     implementation("ca.spottedleaf:concurrentutil:0.0.10")
+     implementation("ca.spottedleaf:leafpile:1.2.2")
      implementation("org.jline:jline-terminal-ffm:3.27.1") // use ffm on java 22+
      implementation("org.jline:jline-terminal-jni:3.27.1") // fall back to jni on java 21
-@@ -157,6 +_,8 @@
+@@ -157,6 +169,8 @@
      // Spark
      implementation("me.lucko:spark-api:0.1-20240720.200737-2")
-     implementation("me.lucko:spark-paper:1.10.152")
+     implementation("me.lucko:spark-paper:1.10.180")
 +
 +    implementation("de.erethon:bedrock:1.5.18") // Erethon
  }
  
  tasks.jar {
-@@ -171,14 +_,14 @@
+@@ -171,14 +185,14 @@
          val gitBranch = git.exec(providers, "rev-parse", "--abbrev-ref", "HEAD").get().trim()
          attributes(
              "Main-Class" to "org.bukkit.craftbukkit.Main",
@@ -94,21 +66,27 @@
              "Build-Number" to (build ?: ""),
              "Build-Time" to buildTime.toString(),
              "Git-Branch" to gitBranch,
-@@ -237,17 +_,9 @@
+@@ -246,7 +260,7 @@
      jvmArgumentProviders.add(provider)
  }
  
 -val generatedDir: java.nio.file.Path = layout.projectDirectory.dir("src/generated/java").asFile.toPath()
++val generatedDir: java.nio.file.Path = layout.projectDirectory.dir("../paper-server/src/generated/java").asFile.toPath()
  idea {
      module {
          generatedSourceDirs.add(generatedDir.toFile())
--    }
--}
--sourceSets {
--    main {
--        java {
--            srcDir(generatedDir)
+@@ -256,7 +270,13 @@
+     main {
+         java {
+             srcDir(generatedDir)
 -        }
++            srcDir("../paper-server/src/main/java")
++        }
++        resources { srcDir("../paper-server/src/main/resources") }
++    }
++    test {
++        java { srcDir("../paper-server/src/test/java") }
++        resources { srcDir("../paper-server/src/test/resources") }
      }
  }
  

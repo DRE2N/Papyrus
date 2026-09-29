@@ -1,9 +1,9 @@
 --- a/net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java
 +++ b/net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java
-@@ -56,10 +_,10 @@
+@@ -55,10 +_,10 @@
      }
  
-     final BlockPos findSurfacePosition(final LevelChunk chunk, BlockPos pos, final int reachRange) {
+     private BlockPos findSurfacePosition(final LevelChunk chunk, BlockPos pos, final int reachRange) {
 -        if (chunk.getBlockState(pos).isAir()) {
 +        if (this.mob.getVirtualTerrainBlockState(pos).isAir()) { // Papyrus - Entity-scoped virtual terrain
              BlockPos.MutableBlockPos columnPos = pos.mutable().move(Direction.DOWN);
@@ -13,7 +13,7 @@
                  columnPos.move(Direction.DOWN);
              }
  
-@@ -69,20 +_,20 @@
+@@ -68,20 +_,20 @@
  
              columnPos.setY(pos.getY() + 1);
  

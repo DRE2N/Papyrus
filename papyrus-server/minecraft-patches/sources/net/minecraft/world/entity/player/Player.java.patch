@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/entity/player/Player.java
 +++ b/net/minecraft/world/entity/player/Player.java
-@@ -11,6 +_,8 @@
+@@ -12,6 +_,8 @@
  import java.util.Optional;
  import java.util.OptionalInt;
  import java.util.function.Predicate;
@@ -9,7 +9,7 @@
  import net.minecraft.core.BlockPos;
  import net.minecraft.core.Direction;
  import net.minecraft.core.GlobalPos;
-@@ -714,7 +_,7 @@
+@@ -707,7 +_,7 @@
      }
  
      @Override
@@ -18,7 +18,7 @@
          if (this.isInvulnerableTo(level, source)) {
              return false;
          }
-@@ -745,7 +_,7 @@
+@@ -738,7 +_,7 @@
  
          // return damage != 0.0F && super.hurtServer(level, source, damage);
          // CraftBukkit start - Don't filter out 0 damage
@@ -44,21 +44,21 @@
 +                    // Papyrus start - Add attributes
 +                    boolean wasHurt;
 +                    if (entity instanceof LivingEntity livingEntity) {
-+                        totalDamage = (float) getBukkitEntity().onAttack(livingEntity.getBukkitLivingEntity(), totalDamage, attackDamageType.apiType);
++                        totalDamage = (float) getBukkitEntity().onAttack(livingEntity.getBukkitEntity(), totalDamage, attackDamageType.apiType);
 +                        wasHurt = livingEntity.hurtServer((ServerLevel) level(), damageSource, totalDamage, attackDamageType);
 +                    } else {
 +                        wasHurt = entity.hurtOrSimulate(damageSource, totalDamage);
 +                    }
 +                    // Papyrus end
                      if (wasHurt) {
-                         this.causeExtraKnockback(entity, this.getKnockback(entity, damageSource) + (knockbackAttack ? 0.5F : 0.0F), oldMovement);
-                         if (sweepAttack) {
-@@ -1258,7 +_,7 @@
+                         this.causeExtraKnockback(
+                             entity, this.getKnockback(entity, damageSource) + (knockbackAttack ? 0.5F : 0.0F), oldMovement, damageSource, totalDamage, true
+@@ -1269,7 +_,7 @@
                      float enchantedDamage = this.getEnchantedDamage(nearby, var12, damageSource) * attackStrengthScale;
                      // Paper start - Only apply knockback if the event is not canceled
                      nearby.lastDamageCancelled = false;
 -                    if (nearby.hurtServer(serverLevel, damageSource.knownCause(org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK), enchantedDamage) && !nearby.lastDamageCancelled) {
 +                    if (nearby.hurtServer(serverLevel, damageSource.knownCause(org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK), enchantedDamage, attackDamageType) && !nearby.lastDamageCancelled) {
                          // Paper end - Only apply knockback if the event is not canceled
-                         nearby.knockback(0.4F, Mth.sin(this.getYRot() * Mth.DEG_TO_RAD), -Mth.cos(this.getYRot() * Mth.DEG_TO_RAD), this, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.SWEEP_ATTACK); // Paper - knockback events
-                         EnchantmentHelper.doPostAttackEffects(serverLevel, nearby, damageSource);
+                         nearby.knockback(
+                             0.4F, Mth.sin(this.getYRot() * Mth.DEG_TO_RAD), -Mth.cos(this.getYRot() * Mth.DEG_TO_RAD), damageSource, enchantedDamage, this, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.SWEEP_ATTACK // Paper - knockback events

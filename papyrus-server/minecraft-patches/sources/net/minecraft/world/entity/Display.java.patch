@@ -9,7 +9,7 @@
      private boolean noCulling = true;
      protected boolean updateRenderState;
      private boolean updateStartTick;
-@@ -115,9 +_,20 @@
+@@ -114,9 +_,20 @@
      @Override
      public void onSyncedDataUpdated(final EntityDataAccessor<?> accessor) {
          super.onSyncedDataUpdated(accessor);
@@ -31,7 +31,7 @@
  
          if (DATA_TRANSFORMATION_INTERPOLATION_START_DELTA_TICKS_ID.equals(accessor)) {
              this.updateStartTick = true;
-@@ -379,13 +_,17 @@
+@@ -384,13 +_,17 @@
  
      @Override
      public void setPos(final double x, final double y, final double z) {

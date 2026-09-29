@@ -1,0 +1,292 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: malfrador <malfrador@gmail.com>
+Date: Sat, 12 Sep 2026 07:20:24 +0200
+Subject: [PATCH] Add optional Anti-Xray palette compaction POC metrics
+
+Add action bar timings and a palettecompaction on/off/status/reset command
+on top of the palette compaction implementation. OFF retains normal mode-1
+Anti-Xray and skips only the rewrite.
+
+Capture each packet mode for consistent A/B attribution, accumulate
+nanosecond timings outside the measured operation, and report compaction
+separately from queue-inclusive packet-ready latency. Raw byte savings
+are measured before network compression.
+
+This patch is optional proof-of-concept instrumentation and can be dropped
+without removing the palette compaction implementation.
+
+diff --git a/net/minecraft/commands/Commands.java b/net/minecraft/commands/Commands.java
+index fb816ac65e382eac207afd56185a73c440c6245a..a8988221e31d26c36bfc66b60176b001791077db 100644
+--- a/net/minecraft/commands/Commands.java
++++ b/net/minecraft/commands/Commands.java
+@@ -268,6 +268,7 @@ public class Commands {
+         WaypointCommand.register(this.dispatcher, context);
+         WeatherCommand.register(this.dispatcher);
+         WorldBorderCommand.register(this.dispatcher);
++        net.minecraft.network.protocol.game.ChunkPacketPaletteMetrics.register(this.dispatcher); // Paper - Compact Anti-Xray packet palettes - POC toggle
+         if (JvmProfiler.INSTANCE.isAvailable()) {
+             JfrCommand.register(this.dispatcher);
+         }
+diff --git a/net/minecraft/network/protocol/game/ChunkPacketPaletteMetrics.java b/net/minecraft/network/protocol/game/ChunkPacketPaletteMetrics.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..58f4646d10e7de0f5dc329b288a9d42d2e50aff0
+--- /dev/null
++++ b/net/minecraft/network/protocol/game/ChunkPacketPaletteMetrics.java
+@@ -0,0 +1,178 @@
++package net.minecraft.network.protocol.game;
++
++import com.mojang.brigadier.CommandDispatcher;
++import java.util.Locale;
++import net.minecraft.commands.CommandSourceStack;
++import net.minecraft.commands.Commands;
++import net.minecraft.network.chat.Component;
++import net.minecraft.server.MinecraftServer;
++import org.jspecify.annotations.NullMarked;
++
++/** Temporary POC instrumentation. Both A/B modes keep normal mode-1 Anti-Xray enabled. */
++@NullMarked
++public final class ChunkPacketPaletteMetrics {
++    private static Run on = new Run(true);
++    private static Run off = new Run(false);
++    private static volatile Run active = on;
++    // Reporting and commands run only on the server thread.
++    private static long lastReportNanos = System.nanoTime();
++    private static boolean reportedSamples;
++
++    private ChunkPacketPaletteMetrics() {
++    }
++
++    public static Run currentRun() {
++        return active;
++    }
++
++    public static void register(final CommandDispatcher<CommandSourceStack> dispatcher) {
++        dispatcher.register(Commands.literal("palettecompaction")
++            .requires(Commands.hasPermission(Commands.LEVEL_ADMINS))
++            .executes(context -> status(context.getSource()))
++            .then(Commands.literal("on").executes(context -> setEnabled(context.getSource(), true)))
++            .then(Commands.literal("off").executes(context -> setEnabled(context.getSource(), false)))
++            .then(Commands.literal("status").executes(context -> status(context.getSource())))
++            .then(Commands.literal("reset").executes(context -> reset(context.getSource())))
++        );
++    }
++
++    private static int setEnabled(final CommandSourceStack source, final boolean enabled) {
++        active = enabled ? on : off;
++        source.sendSuccess(() -> Component.literal("Palette compaction " + (enabled ? "ON" : "OFF (baseline)")
++            + ". Mode-1 Anti-Xray remains enabled. Applies to newly constructed chunk packets."), true);
++        return 1;
++    }
++
++    private static int reset(final CommandSourceStack source) {
++        boolean enabled = active.enabled;
++        on = new Run(true);
++        off = new Run(false);
++        active = enabled ? on : off;
++        lastReportNanos = System.nanoTime();
++        // In-flight packets retain the previous Run and cannot contaminate the new measurements.
++        source.sendSuccess(() -> Component.literal("Cleared both palette timing samples; current mode unchanged."), false);
++        return 1;
++    }
++
++    private static int status(final CommandSourceStack source) {
++        source.sendSuccess(() -> Component.literal("Palette compaction: " + (active.enabled ? "ON" : "OFF")
++            + ". Cumulative samples since reset:"), false);
++        String onSummary = summary("ON", on.total());
++        String offSummary = summary("OFF", off.total());
++        source.sendSuccess(() -> Component.literal(onSummary), false);
++        source.sendSuccess(() -> Component.literal(offSummary), false);
++        source.sendSuccess(() -> Component.literal("Times are elapsed ms/packet. Ready includes serialization, light data, worker queue and Anti-Xray;"
++            + " compact measures only our rewrite. Sizes are before network compression, not actual wire traffic."), false);
++        return 1;
++    }
++
++    private static String summary(final String mode, final Sample sample) {
++        if (sample.packets == 0) {
++            return mode + ": no samples";
++        }
++        return String.format(Locale.ROOT,
++            "%s: %d packets / %d sections | compact avg/max %.3f/%.3f ms | ready avg %.3f ms | raw avg %.1f -> %.1f KiB (saved %.1f%%)",
++            mode, sample.packets, sample.sections, sample.compactAverageMs(), sample.maxCompactNanos / 1_000_000.0,
++            sample.readyAverageMs(), sample.inputBytes / (sample.packets * 1024.0),
++            sample.outputBytes / (sample.packets * 1024.0), sample.savedPercent()
++        );
++    }
++
++    public static void tick(final MinecraftServer server) {
++        long now = System.nanoTime();
++        long intervalNanos = now - lastReportNanos;
++        if (intervalNanos < 1_000_000_000L) {
++            return;
++        }
++        Sample onWindow = on.drainWindow();
++        Sample offWindow = off.drainWindow();
++        lastReportNanos = now;
++        reportedSamples |= onWindow.packets != 0 || offWindow.packets != 0;
++        if (!reportedSamples || server.getPlayerList().getPlayerCount() == 0) {
++            return;
++        }
++        boolean enabled = active.enabled;
++        Sample sample = enabled ? onWindow : offWindow;
++        String mode = enabled ? "ON" : "OFF";
++        String message = sample.packets == 0 ? "Palette " + mode + ": idle | /palettecompaction status"
++            : String.format(Locale.ROOT,
++                "Palette %s | %.1f pkt/s | compact %.3f ms | max %.3f | ready %.3f ms | raw saved %.1f%%",
++                mode, sample.packets / (intervalNanos / 1_000_000_000.0), sample.compactAverageMs(),
++                sample.maxCompactNanos / 1_000_000.0, sample.readyAverageMs(), sample.savedPercent()
++            );
++        server.getPlayerList().broadcastAll(new ClientboundSetActionBarTextPacket(Component.literal(message)));
++    }
++
++    /** Captured once per packet; toggling cannot move an in-flight sample into the wrong A/B bucket. */
++    public static final class Run {
++        private final boolean enabled;
++        private final Counters cumulative = new Counters();
++        private final Counters window = new Counters();
++
++        private Run(final boolean enabled) {
++            this.enabled = enabled;
++        }
++
++        public boolean enabled() {
++            return this.enabled;
++        }
++
++        // One short critical section per completed packet, outside both measured intervals.
++        synchronized void record(final long readyNanos, final long compactNanos, final int sections, final int inputBytes, final int outputBytes) {
++            this.cumulative.add(readyNanos, compactNanos, sections, inputBytes, outputBytes);
++            this.window.add(readyNanos, compactNanos, sections, inputBytes, outputBytes);
++        }
++
++        private synchronized Sample total() {
++            return this.cumulative.snapshot();
++        }
++
++        private synchronized Sample drainWindow() {
++            Sample result = this.window.snapshot();
++            this.window.clear();
++            return result;
++        }
++    }
++
++    private static final class Counters {
++        private long packets;
++        private long sections;
++        private long readyNanos;
++        private long compactNanos;
++        private long maxCompactNanos;
++        private long inputBytes;
++        private long outputBytes;
++
++        private void add(final long readyNanos, final long compactNanos, final int sections, final int inputBytes, final int outputBytes) {
++            this.packets++;
++            this.sections += sections;
++            this.readyNanos += readyNanos;
++            this.compactNanos += compactNanos;
++            this.maxCompactNanos = Math.max(this.maxCompactNanos, compactNanos);
++            this.inputBytes += inputBytes;
++            this.outputBytes += outputBytes;
++        }
++
++        private Sample snapshot() {
++            return new Sample(this.packets, this.sections, this.readyNanos, this.compactNanos, this.maxCompactNanos, this.inputBytes, this.outputBytes);
++        }
++
++        private void clear() {
++            this.packets = this.sections = this.readyNanos = this.compactNanos = this.maxCompactNanos = this.inputBytes = this.outputBytes = 0;
++        }
++    }
++
++    private record Sample(long packets, long sections, long readyNanos, long compactNanos, long maxCompactNanos, long inputBytes, long outputBytes) {
++        private double compactAverageMs() {
++            return this.packets == 0 ? 0.0 : this.compactNanos / (this.packets * 1_000_000.0);
++        }
++
++        private double readyAverageMs() {
++            return this.packets == 0 ? 0.0 : this.readyNanos / (this.packets * 1_000_000.0);
++        }
++
++        private double savedPercent() {
++            return this.inputBytes == 0 ? 0.0 : 100.0 * (this.inputBytes - this.outputBytes) / this.inputBytes;
++        }
++    }
++}
+diff --git a/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java b/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java
+index c57bbd553e2675457a9c0ac868a2be0c812b2cad..60a6b08858f1bb8a6aaa4aa01b77c11a1b8405b3 100644
+--- a/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java
++++ b/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java
+@@ -52,9 +52,17 @@ public class ClientboundLevelChunkPacketData {
+     // Paper start - Async-Anti-Xray - Ready flag for the connection
+     private volatile boolean ready = true;
+     private int antiXrayPaletteSections; // Papyrus - Compact Anti-Xray packet palettes
++    private ChunkPacketPaletteMetrics.@Nullable Run paletteMetricsRun;
++    private long paletteCreatedNanos;
+ 
+-    void configureAntiXrayPaletteCompaction(final int sectionCount) {
++    void configureAntiXrayPaletteCompaction(final int sectionCount, final ChunkPacketPaletteMetrics.Run run, final long createdNanos) {
+         this.antiXrayPaletteSections = sectionCount;
++        this.paletteMetricsRun = run;
++        this.paletteCreatedNanos = createdNanos;
++    }
++
++    int antiXraySectionDataSize() {
++        return this.buffer.length;
+     }
+ 
+     void compactAntiXrayPalettes(final int sectionCount) {
+@@ -69,9 +77,19 @@ public class ClientboundLevelChunkPacketData {
+ 
+     public void setReady(final boolean ready) {
+         // Papyrus start - Compact Anti-Xray packet palettes
+-        if (ready && !this.ready && this.antiXrayPaletteSections != 0) {
+-            // Publish the compacted buffer through the volatile ready flag only after Anti-Xray finishes.
+-            this.compactAntiXrayPalettes(this.antiXrayPaletteSections);
++        if (ready && !this.ready && this.paletteMetricsRun != null) {
++            // OFF skips only our rewrite; normal mode-1 Anti-Xray still runs in both modes.
++            int originalBytes = this.antiXraySectionDataSize();
++            long compactNanos = 0;
++            if (this.paletteMetricsRun.enabled()) {
++                long started = System.nanoTime();
++                this.compactAntiXrayPalettes(this.antiXrayPaletteSections);
++                compactNanos = System.nanoTime() - started;
++            }
++            long readyNanos = System.nanoTime() - this.paletteCreatedNanos;
++            this.paletteMetricsRun.record(readyNanos, compactNanos, this.antiXrayPaletteSections,
++                originalBytes, this.antiXraySectionDataSize());
++            // Publish the completed buffer through the volatile ready flag below.
+         }
+         // Papyrus end - Compact Anti-Xray packet palettes
+         this.ready = ready;
+diff --git a/net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.java b/net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.java
+index 2e011a5f648ae5407217ad308dd66235368cd7f8..402ccdd53f24d32f91244d5972d16af4ce8a5024 100644
+--- a/net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.java
++++ b/net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.java
+@@ -53,6 +53,7 @@ public record ClientboundLevelChunkWithLightPacket(int x, int z, ClientboundLeve
+         final boolean modifyBlocks
+     ) {
+         // Paper end - Anti-Xray
++        long paletteCreatedNanos = System.nanoTime(); // Papyrus - Compact Anti-Xray packet palettes - POC timing
+         ChunkPos chunkPos = levelChunk.getPos();
+         io.papermc.paper.antixray.ChunkPacketInfo<net.minecraft.world.level.block.state.BlockState> chunkPacketInfo = modifyBlocks ? levelChunk.getLevel().chunkPacketBlockController.getChunkPacketInfo(levelChunk) : null; // Paper - Anti-Xray
+         this(
+@@ -64,7 +65,7 @@ public record ClientboundLevelChunkWithLightPacket(int x, int z, ClientboundLeve
+         // Papyrus start - Compact Anti-Xray packet palettes
+         if (chunkPacketInfo instanceof io.papermc.paper.antixray.ChunkPacketInfoAntiXray
+             && levelChunk.getLevel().paperConfig().anticheat.antiXray.engineMode == io.papermc.paper.configuration.type.EngineMode.HIDE) {
+-            this.chunkData.configureAntiXrayPaletteCompaction(levelChunk.getSectionsCount());
++            this.chunkData.configureAntiXrayPaletteCompaction(levelChunk.getSectionsCount(), ChunkPacketPaletteMetrics.currentRun(), paletteCreatedNanos);
+         }
+         // Papyrus end - Compact Anti-Xray packet palettes
+         // Paper start - Anti-Xray - Modify blocks
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+index 5049194656a65cc4a4ccff725238e0cce46509d6..ef366e07b4bb031d45aca85c35b2e272c18e6345 100644
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -1600,6 +1600,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+         this.tickCount++;
+         this.tickRateManager.tick();
+         this.tickChildren(haveTime);
++        net.minecraft.network.protocol.game.ChunkPacketPaletteMetrics.tick(this); // Paper - Compact Anti-Xray packet palettes - POC timings
+         if (nano - this.lastServerStatus >= STATUS_EXPIRE_TIME_NANOS) {
+             this.lastServerStatus = nano;
+             this.status = this.buildServerStatus();

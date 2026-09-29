@@ -378,7 +378,7 @@
 +            final de.erethon.papyrus.world.@Nullable VirtualTerrainProvider virtualTerrainProvider,
 +            final @Nullable NavigationSection physicalSection
 +        ) {
-+            PalettedContainer<BlockState> states = source.states.copy();
++            PalettedContainer<BlockState> states = source.getStates().copy();
 +            long virtualRevision = virtualTerrainProvider == null ? 0L : virtualTerrainProvider.getSectionRevision(key);
 +            if (virtualTerrainProvider != null && virtualTerrainProvider.isValid()) {
 +                int sectionX = SectionPos.x(key);
@@ -398,7 +398,7 @@
 +                    }
 +                }
 +            }
-+            byte[] pathTypes = new byte[LevelChunkSection.SECTION_SIZE];
++            byte[] pathTypes = new byte[SectionPos.SECTION_SIZE * SectionPos.SECTION_SIZE * SectionPos.SECTION_SIZE];
 +            boolean hasOnlyAir = true;
 +            for (int index = 0; index < pathTypes.length; index++) {
 +                BlockState state = states.get(index);

@@ -1,8 +1,8 @@
 --- a/net/minecraft/world/entity/Entity.java
 +++ b/net/minecraft/world/entity/Entity.java
-@@ -306,7 +_,12 @@
+@@ -309,7 +_,12 @@
      protected boolean wasEyeInWater;
-     public int invulnerableTime;
+     private int invulnerableTime;
      protected boolean firstTick = true;
 -    protected final SynchedEntityData entityData;
 +    protected SynchedEntityData entityData; // Papyrus - Not final for Aether
@@ -14,7 +14,7 @@
      protected static final EntityDataAccessor<Byte> DATA_SHARED_FLAGS_ID = SynchedEntityData.defineId(Entity.class, EntityDataSerializers.BYTE);
      protected static final int FLAG_ONFIRE = 0;
      private static final int FLAG_SHIFT_KEY_DOWN = 1;
-@@ -1072,8 +_,36 @@
+@@ -1098,8 +_,36 @@
      }
  
      private boolean isFree(final AABB box) {
@@ -53,7 +53,7 @@
  
      public void setOnGround(final boolean onGround) {
          this.onGround = onGround;
-@@ -1098,12 +_,12 @@
+@@ -1124,12 +_,12 @@
          if (onGround) {
              AABB boundingBox = this.getBoundingBox();
              AABB testArea = new AABB(boundingBox.minX, boundingBox.minY - 1.0E-6, boundingBox.minZ, boundingBox.maxX, boundingBox.minY, boundingBox.maxZ);
@@ -68,7 +68,7 @@
                  this.mainSupportingBlockPos = supportingBlock;
              }
  
-@@ -1185,8 +_,9 @@
+@@ -1218,8 +_,9 @@
                  if (this.fallDistance != 0.0 && movementLength >= 1.0) {
                      double checkDistance = Math.min(movement.length(), 8.0);
                      Vec3 checkTo = this.position().add(movement.normalize().scale(checkDistance));
@@ -80,7 +80,7 @@
                      if (hitResult.getType() != HitResult.Type.MISS) {
                          this.resetFallDistance();
                      }
-@@ -1216,7 +_,7 @@
+@@ -1251,7 +_,7 @@
              }
  
              BlockPos effectPos = this.getOnPosLegacy();
@@ -89,7 +89,7 @@
              if (this.isLocalInstanceAuthoritative()) {
                  this.checkFallDamage(movement.y, this.onGround(), effectState, effectPos);
              }
-@@ -1285,7 +_,7 @@
+@@ -1385,7 +_,7 @@
          float movedDistance = (float)(clippedMovement.length() * 0.6F);
          float horizontalMovedDistance = (float)(clippedMovement.horizontalDistance() * 0.6F);
          BlockPos supportingPos = this.getOnPos();
@@ -98,7 +98,7 @@
          boolean climbing = this.isStateClimbable(supportingState);
          this.moveDist += climbing ? movedDistance : horizontalMovedDistance;
          this.flyDist += movedDistance;
-@@ -1365,7 +_,7 @@
+@@ -1465,7 +_,7 @@
          if (this.isAffectedByBlocks()) {
              if (this.onGround()) {
                  BlockPos effectPos = this.getOnPosLegacy();
@@ -107,7 +107,7 @@
                  effectState.getBlock().stepOn(this.level(), effectPos, effectState, this);
              }
  
-@@ -1471,13 +_,14 @@
+@@ -1571,13 +_,14 @@
      }
  
      protected BlockPos getOnPos(final float offset) {
@@ -124,7 +124,7 @@
              return (!(offset <= 0.5) || !belowState.is(BlockTags.FENCES))
                      && !belowState.is(BlockTags.WALLS)
                      && !(belowState.getBlock() instanceof FenceGateBlock)
-@@ -1492,17 +_,17 @@
+@@ -1592,17 +_,17 @@
      }
  
      protected float getBlockJumpFactor() {
@@ -146,8 +146,8 @@
                  : speedFactorHere;
          } else {
              return speedFactorHere;
-@@ -1582,10 +_,7 @@
-             this.level, (Entity)(Object)this, initialCollisionBox, entityAABBs, 0, null
+@@ -1687,10 +_,7 @@
+             this.level, (Entity)(Object)this, entityQueryBox, entityAABBs, 0, null
          );
  
 -        ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.getCollisionsForBlocksOrWorldBorder(
@@ -158,7 +158,7 @@
          potentialCollisionsBB.addAll(entityAABBs);
          final Vec3 collided = ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.performCollisions(movement, currentBox, potentialCollisionsVoxel, potentialCollisionsBB);
  
-@@ -1610,10 +_,7 @@
+@@ -1715,10 +_,7 @@
          final List<VoxelShape> stepVoxels = new ArrayList<>();
          final List<AABB> stepAABBs = entityAABBs;
  
@@ -170,7 +170,7 @@
  
          for (final float step : calculateStepHeights(collidedYBox, stepVoxels, stepAABBs, (float)stepHeight, (float)collided.y)) {
              final Vec3 stepResult = ca.spottedleaf.moonrise.patches.collisions.CollisionUtil.performCollisions(new Vec3(movement.x, (double)step, movement.z), collidedYBox, stepVoxels, stepAABBs);
-@@ -1626,6 +_,26 @@
+@@ -1731,6 +_,26 @@
          // Paper end - optimise collisions
      }
  
@@ -197,7 +197,7 @@
      private static float[] collectCandidateStepUpHeights(
          final AABB boundingBox, final List<VoxelShape> colliders, final float maxStepHeight, final float stepHeightToSkip
      ) {
-@@ -1675,7 +_,9 @@
+@@ -1787,7 +_,9 @@
              colliders.add(worldBorder.getCollisionShape());
          }
  
@@ -208,7 +208,7 @@
          return colliders.build();
      }
  
-@@ -1769,7 +_,7 @@
+@@ -1893,7 +_,7 @@
                  }
  
                  iterations.set(iteration);
@@ -217,7 +217,7 @@
                  if (state.isAir()) {
                      if (debugEntityBlockIntersections) {
                          this.debugBlockIntersection((ServerLevel)this.level(), blockIntersection.immutable(), false, false);
-@@ -1979,7 +_,7 @@
+@@ -2107,7 +_,7 @@
          if (!this.touchingUnloadedChunk()) {
              this.checkSupportingBlock(onGround, new Vec3(xa, ya, za));
              BlockPos pos = this.getOnPosLegacy();
@@ -226,7 +226,7 @@
              this.checkFallDamage(ya, onGround, state, pos);
          }
      }
-@@ -1997,7 +_,7 @@
+@@ -2125,7 +_,7 @@
                          GameEvent.HIT_GROUND,
                          this.position,
                          GameEvent.Context.of(
@@ -235,7 +235,7 @@
                          )
                      );
              }
-@@ -2137,11 +_,11 @@
+@@ -2269,11 +_,11 @@
  
      @Deprecated
      protected BlockState getBlockStateOnLegacy() {
@@ -249,7 +249,7 @@
      }
  
      public boolean canSpawnSprintParticle() {
-@@ -2150,7 +_,7 @@
+@@ -2282,7 +_,7 @@
  
      protected void spawnSprintParticle() {
          BlockPos pos = this.getOnPosLegacy();

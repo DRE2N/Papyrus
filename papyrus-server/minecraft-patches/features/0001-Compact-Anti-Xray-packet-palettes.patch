@@ -1,0 +1,207 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: malfrador <malfrador@gmail.com>
+Date: Sat, 12 Sep 2026 07:20:24 +0200
+Subject: [PATCH] Compact Anti-Xray packet palettes
+
+Rebuild mode 1 outgoing block-state palettes from the final obfuscated data
+before publishing packet readiness. Drop unused states and canonicalize
+palette order and storage width to remove hidden-state palette history.
+
+Only packet-owned bytes are rewritten. Keep biome data and section counts
+unchanged, support single-value, indirect and direct containers, and retain
+the existing block-update reveal path.
+
+diff --git a/net/minecraft/network/protocol/game/ChunkPacketPaletteRewriter.java b/net/minecraft/network/protocol/game/ChunkPacketPaletteRewriter.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..8d983820373cef4d73f3fc06360396382339b08a
+--- /dev/null
++++ b/net/minecraft/network/protocol/game/ChunkPacketPaletteRewriter.java
+@@ -0,0 +1,128 @@
++package net.minecraft.network.protocol.game;
++
++import io.netty.buffer.Unpooled;
++import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
++import net.minecraft.network.FriendlyByteBuf;
++import net.minecraft.util.Mth;
++import net.minecraft.util.SimpleBitStorage;
++import org.jspecify.annotations.NullMarked;
++
++/** Re-encodes packet-owned block states without retaining the server palette's history. */
++@NullMarked
++final class ChunkPacketPaletteRewriter {
++    private static final int BLOCK_COUNT = 4096;
++    private static final int BIOME_COUNT = 64;
++    private static final int MAX_LOCAL_BITS = 8;
++
++    private ChunkPacketPaletteRewriter() {
++    }
++
++    static byte[] compact(final byte[] source, final int sectionCount, final int globalBits) {
++        FriendlyByteBuf input = new FriendlyByteBuf(Unpooled.wrappedBuffer(source));
++        FriendlyByteBuf output = new FriendlyByteBuf(Unpooled.buffer(source.length));
++        // Reuse the mapping and scratch arrays across sections, but never across packets/threads.
++        Int2IntOpenHashMap paletteIds = new Int2IntOpenHashMap();
++        paletteIds.defaultReturnValue(-1);
++        int[] palette = new int[BLOCK_COUNT];
++        int[] indices = new int[BLOCK_COUNT];
++        try {
++            for (int section = 0; section < sectionCount; section++) {
++                // Preserve the non-empty block and fluid counts. Mode 1 replaces solid blocks with solid blocks.
++                output.writeShort(input.readShort());
++                output.writeShort(input.readShort());
++                compactBlockStates(input, output, globalBits, paletteIds, palette, indices);
++
++                // Biomes are independent of Anti-Xray; copy their original container byte for byte.
++                int biomeStart = input.readerIndex();
++                skipBiomes(input);
++                output.writeBytes(source, biomeStart, input.readerIndex() - biomeStart);
++            }
++            if (input.isReadable()) {
++                throw new IllegalStateException("Unexpected trailing chunk section data");
++            }
++            byte[] result = new byte[output.writerIndex()];
++            output.getBytes(0, result);
++            return result;
++        } finally {
++            input.release();
++            output.release();
++        }
++    }
++
++    private static void compactBlockStates(
++        final FriendlyByteBuf input, final FriendlyByteBuf output, final int globalBits,
++        final Int2IntOpenHashMap paletteIds, final int[] palette, final int[] indices
++    ) {
++        int bits = input.readUnsignedByte();
++        if (bits == 0) {
++            output.writeByte(0);
++            output.writeVarInt(input.readVarInt());
++            return;
++        }
++
++        int[] oldPalette = null;
++        if (bits <= MAX_LOCAL_BITS) {
++            oldPalette = new int[input.readVarInt()];
++            for (int i = 0; i < oldPalette.length; i++) {
++                oldPalette[i] = input.readVarInt();
++            }
++        }
++        SimpleBitStorage oldStorage = new SimpleBitStorage(bits, BLOCK_COUNT);
++        // The current protocol infers the long count from bits-per-entry; there is no length prefix.
++        input.readFixedSizeLongArray(oldStorage.getRaw());
++        paletteIds.clear();
++        int paletteSize = 0;
++        for (int i = 0; i < BLOCK_COUNT; i++) {
++            int oldId = oldStorage.get(i);
++            int state = oldPalette == null ? oldId : oldPalette[oldId];
++            int newId = paletteIds.get(state);
++            if (newId == -1) {
++                newId = paletteSize++;
++                paletteIds.put(state, newId);
++                palette[newId] = state;
++            }
++            indices[i] = newId;
++        }
++
++        // First occurrence in the obfuscated block array determines palette order, not the original palette.
++        if (paletteSize == 1) {
++            output.writeByte(0);
++            output.writeVarInt(palette[0]);
++            return;
++        }
++        int outputBits = Math.max(4, Mth.ceillog2(paletteSize));
++        boolean local = outputBits <= MAX_LOCAL_BITS;
++        if (!local) {
++            outputBits = globalBits;
++        }
++        output.writeByte(outputBits);
++        if (local) {
++            output.writeVarInt(paletteSize);
++            for (int i = 0; i < paletteSize; i++) {
++                output.writeVarInt(palette[i]);
++            }
++        }
++        SimpleBitStorage storage = new SimpleBitStorage(outputBits, BLOCK_COUNT);
++        for (int i = 0; i < BLOCK_COUNT; i++) {
++            storage.set(i, local ? indices[i] : palette[indices[i]]);
++        }
++        output.writeFixedSizeLongArray(storage.getRaw());
++    }
++
++    private static void skipBiomes(final FriendlyByteBuf input) {
++        int bits = input.readUnsignedByte();
++        if (bits == 0) {
++            input.readVarInt();
++            return;
++        }
++        if (bits <= 3) {
++            int paletteSize = input.readVarInt();
++            for (int i = 0; i < paletteSize; i++) {
++                input.readVarInt();
++            }
++        }
++        int entriesPerLong = Long.SIZE / bits;
++        int longCount = (BIOME_COUNT + entriesPerLong - 1) / entriesPerLong;
++        input.skipBytes(longCount * Long.BYTES);
++    }
++}
+diff --git a/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java b/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java
+index 06f0088b4bdbd86c5942d523889386a81764a240..c57bbd553e2675457a9c0ac868a2be0c812b2cad 100644
+--- a/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java
++++ b/net/minecraft/network/protocol/game/ClientboundLevelChunkPacketData.java
+@@ -39,7 +39,7 @@ public class ClientboundLevelChunkPacketData {
+         ClientboundLevelChunkPacketData::new
+     );
+     private final Map<Heightmap.Types, long[]> heightmaps;
+-    private final byte[] buffer;
++    private byte[] buffer; // Papyrus - Compact Anti-Xray packet palettes
+     private final List<ClientboundLevelChunkPacketData.BlockEntityInfo> blockEntitiesData;
+     // Paper start - Handle oversized block entities in chunks
+     private final java.util.List<net.minecraft.network.protocol.Packet<?>> extraPackets = new java.util.ArrayList<>();
+@@ -51,12 +51,29 @@ public class ClientboundLevelChunkPacketData {
+     // Paper end - Handle oversized block entities in chunks
+     // Paper start - Async-Anti-Xray - Ready flag for the connection
+     private volatile boolean ready = true;
++    private int antiXrayPaletteSections; // Papyrus - Compact Anti-Xray packet palettes
++
++    void configureAntiXrayPaletteCompaction(final int sectionCount) {
++        this.antiXrayPaletteSections = sectionCount;
++    }
++
++    void compactAntiXrayPalettes(final int sectionCount) {
++        this.buffer = ChunkPacketPaletteRewriter.compact(
++            this.buffer, sectionCount, net.minecraft.util.Mth.ceillog2(net.minecraft.world.level.block.Block.BLOCK_STATE_REGISTRY.size())
++        );
++    }
+ 
+     public boolean isReady() {
+         return this.ready;
+     }
+ 
+     public void setReady(final boolean ready) {
++        // Papyrus start - Compact Anti-Xray packet palettes
++        if (ready && !this.ready && this.antiXrayPaletteSections != 0) {
++            // Publish the compacted buffer through the volatile ready flag only after Anti-Xray finishes.
++            this.compactAntiXrayPalettes(this.antiXrayPaletteSections);
++        }
++        // Papyrus end - Compact Anti-Xray packet palettes
+         this.ready = ready;
+     }
+     // Paper end - Async-Anti-Xray - Ready flag for the connection
+diff --git a/net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.java b/net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.java
+index 1b83d541378c98e3517904973e3ea4e33098a914..2e011a5f648ae5407217ad308dd66235368cd7f8 100644
+--- a/net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.java
++++ b/net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.java
+@@ -61,6 +61,12 @@ public record ClientboundLevelChunkWithLightPacket(int x, int z, ClientboundLeve
+             new ClientboundLevelChunkPacketData(levelChunk, chunkPacketInfo), // Paper - Anti-Xray
+             new ClientboundLightUpdatePacketData(chunkPos, lightEngine, skyChangedLightSectionFilter, blockChangedLightSectionFilter)
+         );
++        // Papyrus start - Compact Anti-Xray packet palettes
++        if (chunkPacketInfo instanceof io.papermc.paper.antixray.ChunkPacketInfoAntiXray
++            && levelChunk.getLevel().paperConfig().anticheat.antiXray.engineMode == io.papermc.paper.configuration.type.EngineMode.HIDE) {
++            this.chunkData.configureAntiXrayPaletteCompaction(levelChunk.getSectionsCount());
++        }
++        // Papyrus end - Compact Anti-Xray packet palettes
+         // Paper start - Anti-Xray - Modify blocks
+         if (chunkPacketInfo != null) {
+             chunkPacketInfo.setChunkPacket(this);

@@ -14,3 +14,5 @@ rootProject.name = "papyrus"
 
 include("papyrus-api")
 include("papyrus-server")
+
+include("paper-checkstyle")

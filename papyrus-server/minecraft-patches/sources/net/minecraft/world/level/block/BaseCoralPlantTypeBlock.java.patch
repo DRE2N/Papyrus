@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/block/BaseCoralPlantTypeBlock.java
 +++ b/net/minecraft/world/level/block/BaseCoralPlantTypeBlock.java
-@@ -35,12 +_,14 @@
+@@ -31,12 +_,14 @@
      protected void tryScheduleDieTick(
          final BlockState state, final BlockGetter level, final ScheduledTickAccess ticks, final RandomSource random, final BlockPos pos
      ) {
@@ -15,7 +15,7 @@
          if (state.getValue(WATERLOGGED)) {
              return true;
          }
-@@ -76,6 +_,7 @@
+@@ -72,6 +_,7 @@
          final BlockState neighbourState,
          final RandomSource random
      ) {
@@ -23,7 +23,7 @@
          if (state.getValue(WATERLOGGED)) {
              ticks.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
          }
-@@ -87,6 +_,7 @@
+@@ -83,6 +_,7 @@
  
      @Override
      protected boolean canSurvive(final BlockState state, final LevelReader level, final BlockPos pos) {

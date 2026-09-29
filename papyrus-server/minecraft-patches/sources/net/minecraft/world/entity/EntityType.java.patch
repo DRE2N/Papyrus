@@ -1,17 +1,15 @@
 --- a/net/minecraft/world/entity/EntityType.java
 +++ b/net/minecraft/world/entity/EntityType.java
-@@ -3,8 +_,8 @@
- import com.google.common.collect.ImmutableSet;
+@@ -2,6 +_,8 @@
+ 
  import com.mojang.logging.LogUtils;
  import com.mojang.serialization.Codec;
--import java.util.Optional;
--import java.util.Set;
-+
-+import java.util.*;
- import java.util.function.Consumer;
- import java.util.function.Supplier;
++import java.util.HashMap;
++import java.util.Map;
+ import java.util.Optional;
  import java.util.stream.Stream;
-@@ -183,6 +_,7 @@
+ import net.minecraft.core.BlockPos;
+@@ -48,6 +_,7 @@
  import net.minecraft.world.phys.Vec3;
  import net.minecraft.world.phys.shapes.Shapes;
  import net.minecraft.world.phys.shapes.VoxelShape;
@@ -19,68 +17,50 @@
  import org.jspecify.annotations.Nullable;
  import org.slf4j.Logger;
  
-@@ -194,6 +_,7 @@
+@@ -57,6 +_,7 @@
+     private final Holder.Reference<EntityType<?>> builtInRegistryHolder = BuiltInRegistries.ENTITY_TYPE.createIntrusiveHolder(this);
+     public static final Codec<EntityType<?>> CODEC = BuiltInRegistries.ENTITY_TYPE.byNameCodec();
      public static final StreamCodec<RegistryFriendlyByteBuf, EntityType<?>> STREAM_CODEC = ByteBufCodecs.registry(Registries.ENTITY_TYPE);
-     private static final float MAGIC_HORSE_WIDTH = 1.3964844F;
-     private static final int DISPLAY_TRACKING_RANGE = 10;
 +    public static final Map<String, Map.Entry<Plugin, Class<? extends Entity>>> customEntities = new HashMap<>(); // Papyrus - Custom Entities
-     public static final EntityType<Boat> ACACIA_BOAT = register(
-         "acacia_boat",
-         EntityType.Builder.of(boatFactory(() -> Items.ACACIA_BOAT), MobCategory.MISC)
-@@ -1545,22 +_,31 @@
- 
-     public static Optional<Entity> create(final ValueInput input, final Level level, final EntitySpawnReason reason, final boolean generation) {
+     public static final int NO_UPDATE_INTERVAL = Integer.MAX_VALUE;
+     private final EntityType.EntityFactory<T> factory;
+     private final MobCategory category;
+@@ -392,7 +_,21 @@
+     public static Optional<Entity> create(final ValueInput input, final Level level, final EntitySpawnRequest request, final boolean generation) {
          // Paper end - Don't fire sync event during generation
--        return Util.ifElse(
--            by(input).map(type -> type.create(level, reason)),
-+        return Util.ifElse(  EntityType.by(input).map(entitytypes -> {
+         return Util.ifElse(
+-            by(input).map(type -> type.create(level, request)),
++            by(input).map(type -> {
 +                // Papyrus start - Custom entities
-+                if (input.getString("papyrus-entity-id").isPresent()) {
-+                    Optional<String> customEntityId = input.getString("papyrus-entity-id");
-+                    if (customEntityId.isPresent() && customEntities.containsKey(customEntityId.get())) {
-+                        Map.Entry<Plugin, Class<? extends Entity>> entityEntry = customEntities.get(customEntityId.get());
-+                        if (entitytypes.getBaseClass().isAssignableFrom(entityEntry.getValue())) {
-+                            return EntityType.createCustomEntity(entityEntry.getValue(), entitytypes, entityEntry.getKey(), level, reason);
-+                        } else {
-+                            LOGGER.warn("Entity type {} is not assignable from custom entity class {}", entitytypes, entityEntry.getValue());
++                Optional<String> customEntityId = input.getString("papyrus-entity-id");
++                if (customEntityId.isPresent()) {
++                    Map.Entry<Plugin, Class<? extends Entity>> entry = customEntities.get(customEntityId.get());
++                    if (entry != null) {
++                        if (type.getBaseClass().isAssignableFrom(entry.getValue())) {
++                            return createCustomEntity(entry.getValue(), type, entry.getKey(), level, request);
 +                        }
++                        LOGGER.warn("Entity type {} is not assignable from custom entity class {}", type, entry.getValue());
 +                    }
 +                }
 +                // Papyrus end
-+                return entitytypes.create(level, reason);
++                return type.create(level, request);
 +            }),
              // Paper start - Don't fire sync event during generation
              entity -> {
                  if (generation) entity.generation = true; // Paper - Don't fire sync event during generation
-                 entity.load(input);
-             },
-             // Paper end - Don't fire sync event during generation
--            // Paper start - Add logging for debugging entity tags with invalid ids
--            () -> {
--                LOGGER.warn("Skipping Entity with id {}", input.getStringOr("id", "[invalid]"));
--                if ((DEBUG_ENTITIES_WITH_INVALID_IDS || level.getCraftServer().getServer().isDebugging()) && input instanceof TagValueInput tagInput) {
--                    LOGGER.warn("Skipped entity tag: {}", tagInput.input);
-+                () -> {
-+                    EntityType.LOGGER.warn("Skipping Entity with id {}", input.getString("id"));
-                 }
--            }
--            // Paper end - Add logging for debugging entity tags with invalid ids
-         );
-     }
- 
-@@ -1750,6 +_,18 @@
+@@ -572,6 +_,18 @@
      public boolean onlyOpCanSetNbt() {
-         return OP_ONLY_CUSTOM_DATA.contains(this);
+         return EntityTypes.OP_ONLY_CUSTOM_DATA.contains(this);
      }
 +
 +    // Papyrus start - Custom entities
-+    public static Entity createCustomEntity(Class<? extends Entity> customEntityClass, EntityType<?> type, Plugin plugin, Level level, EntitySpawnReason spawnReason) {
++    public static Entity createCustomEntity(Class<? extends Entity> customEntityClass, EntityType<?> type, Plugin plugin, Level level, EntitySpawnRequest request) {
 +        try {
 +            return customEntityClass.getConstructor(EntityType.class, Level.class).newInstance(type, level);
 +        } catch (Exception e) {
 +            LOGGER.warn("Failed to create custom entity", e);
 +            e.printStackTrace();
-+            return type.create(level, spawnReason);
++            return type.create(level, request);
 +        }
 +    }
 +    // Papyrus end

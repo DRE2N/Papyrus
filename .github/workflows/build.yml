@@ -28,6 +28,11 @@ jobs:
         run: ./gradlew applyAllPatches -x test
       - name: Build
         run: ./gradlew createPaperclipJar -x test
+      - name: Prepare release filename
+        run: |
+          mc_version="$(sed -n 's/^mcVersion[[:space:]]*=[[:space:]]*//p' gradle.properties)"
+          test -n "$mc_version"
+          cp "papyrus-server/build/libs/papyrus-paperclip-${mc_version}-SNAPSHOT.jar" "papyrus-server/build/libs/papyrus-paperclip-${mc_version}.jar"
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"

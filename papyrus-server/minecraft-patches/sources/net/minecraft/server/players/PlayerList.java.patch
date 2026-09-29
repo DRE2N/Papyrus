@@ -9,7 +9,7 @@
  import net.minecraft.ChatFormatting;
  import net.minecraft.commands.CommandSourceStack;
  import net.minecraft.core.BlockPos;
-@@ -414,7 +_,11 @@
+@@ -418,7 +_,11 @@
      protected void save(final ServerPlayer player) {
          if (!player.getBukkitEntity().isPersistent()) return; // CraftBukkit
          player.lastSave = MinecraftServer.currentTick; // Paper - Incremental chunk and player saving

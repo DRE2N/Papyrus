@@ -1,6 +1,6 @@
 --- a/net/minecraft/server/level/ServerLevel.java
 +++ b/net/minecraft/server/level/ServerLevel.java
-@@ -207,6 +_,12 @@
+@@ -209,6 +_,12 @@
      private final LevelTicks<Block> blockTicks = new LevelTicks<>(this::isPositionTickingWithEntitiesLoaded);
      private final LevelTicks<Fluid> fluidTicks = new LevelTicks<>(this::isPositionTickingWithEntitiesLoaded);
      private final PathTypeCache pathTypesByPosCache = new PathTypeCache();
@@ -13,7 +13,7 @@
      private final Set<Mob> navigatingMobs = new ObjectOpenHashSet<>();
      private volatile boolean isUpdatingNavigations;
      protected final Raids raids;
-@@ -1845,6 +_,7 @@
+@@ -1864,6 +_,7 @@
  
          this.getChunkSource().blockChanged(pos);
          this.pathTypesByPosCache.invalidate(pos);
@@ -21,7 +21,7 @@
          if (this.paperConfig().misc.updatePathfindingOnBlockUpdate) { // Paper - option to disable pathfinding updates
          VoxelShape oldShape = old.getCollisionShape(this, pos);
          VoxelShape newShape = current.getCollisionShape(this, pos);
-@@ -2631,6 +_,68 @@
+@@ -2908,6 +_,68 @@
      public PathTypeCache getPathTypeCache() {
          return this.pathTypesByPosCache;
      }

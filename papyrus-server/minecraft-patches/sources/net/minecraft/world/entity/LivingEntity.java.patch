@@ -10,8 +10,8 @@
  import it.unimi.dsi.fastutil.doubles.DoubleDoubleImmutablePair;
  import it.unimi.dsi.fastutil.objects.Object2LongMap;
  import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
-@@ -136,19 +_,19 @@
- import net.minecraft.world.scores.Scoreboard;
+@@ -139,19 +_,19 @@
+ import net.minecraft.world.phys.shapes.VoxelShape;
  import net.minecraft.world.waypoints.Waypoint;
  import net.minecraft.world.waypoints.WaypointTransmitter;
 +import org.bukkit.craftbukkit.attribute.CraftAttributeInstance;
@@ -34,8 +34,8 @@
  // CraftBukkit end
  
  public abstract class LivingEntity extends Entity implements Attackable, WaypointTransmitter {
-@@ -293,6 +_,11 @@
-     public int invulnerableDuration = LivingEntity.INVULNERABLE_DURATION; // Paper - configurable invulnerable duration
+@@ -306,6 +_,11 @@
+     public int invulnerableDuration = LivingEntity.DAMAGE_COOLDOWN_DURATION; // Paper - configurable invulnerable duration
      // CraftBukkit end
  
 +    // Papyrus start - Spellbook
@@ -46,13 +46,19 @@
      protected LivingEntity(final EntityType<? extends LivingEntity> type, final Level level) {
          super(type, level);
          this.attributes = new AttributeMap(DefaultAttributes.getSupplier(type));
-@@ -361,9 +_,42 @@
+@@ -374,14 +_,47 @@
              .add(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE)
              .add(Attributes.WATER_MOVEMENT_EFFICIENCY)
              .add(Attributes.MOVEMENT_EFFICIENCY)
 -            .add(Attributes.ATTACK_KNOCKBACK)
              .add(Attributes.CAMERA_DISTANCE)
--            .add(Attributes.WAYPOINT_TRANSMIT_RANGE);
+-            .add(Attributes.WAYPOINT_TRANSMIT_RANGE)
+             .add(Attributes.BOUNCINESS)
+             .add(Attributes.AIR_DRAG_MODIFIER)
+             .add(Attributes.FRICTION_MODIFIER)
+             .add(Attributes.NAME_TAG_DISTANCE)
+-            .add(Attributes.BELOW_NAME_DISTANCE);
++            .add(Attributes.BELOW_NAME_DISTANCE)
 +            .add(Attributes.WAYPOINT_TRANSMIT_RANGE)
 +            .add(Attributes.ATTACK_KNOCKBACK)
 +            // Papyrus start - Add attributes
@@ -91,15 +97,13 @@
      }
  
      @Override
-@@ -508,6 +_,7 @@
+@@ -530,11 +_,25 @@
          }
  
          this.tickEffects();
 +        spellbookTick(); // Papyrus - Spellbook
          this.yHeadRotO = this.yHeadRot;
          this.yBodyRotO = this.yBodyRot;
-         this.yRotO = this.getYRot();
-@@ -515,6 +_,19 @@
          profiler.pop();
      }
  
@@ -108,10 +112,10 @@
 +        if (tickCount % 20 == 0) {
 +            double energyRegen = getAttribute(Attributes.STAT_ENERGY_REGEN).getValue();
 +            double healthRegen = getAttribute(Attributes.STAT_HEALTH_REGEN).getValue();
-+            getBukkitLivingEntity().addEnergy((int) energyRegen);
++            getBukkitEntity().addEnergy((int) energyRegen);
 +            heal((float) healthRegen);
 +        }
-+        getBukkitLivingEntity().tick();
++        getBukkitEntity().tick();
 +    }
 +    // Papyrus end
 +
@@ -119,15 +123,15 @@
      protected boolean shouldTakeDrowningDamage() {
          return this.getAirSupply() <= -20;
      }
-@@ -1420,8 +_,124 @@
-         return this.getHealth() <= 0.0F;
+@@ -1427,8 +_,124 @@
+         return this.hurtTime > 0;
      }
  
 +    public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount, CraftPDamageType damageType) {
 +        if (isInvulnerable() || isRemoved() || dead || getHealth() <= 0F || isInvulnerableTo((ServerLevel) level, damageSource) || level().isClientSide()) {
 +            return false;
 +        }
-+        if (invulnerableTime > 0) {
++        if (this.getInvulnerableTime() > 0) {
 +            return false;
 +        }
 +        Entity attacker = damageSource.getEntity();
@@ -159,8 +163,8 @@
 +
 +            // Spells or traits may modify damage, but take effect after resistances
 +            if (attacker instanceof LivingEntity living) {
-+                org.bukkit.entity.LivingEntity attackerBukkit = living.getBukkitLivingEntity();
-+                finalDmg = getBukkitLivingEntity().onDamage(attackerBukkit, finalDmg, damageType.apiType);
++                org.bukkit.entity.LivingEntity attackerBukkit = living.getBukkitEntity();
++                finalDmg = getBukkitEntity().onDamage(attackerBukkit, finalDmg, damageType.apiType);
 +            }
 +
 +            de.erethon.papyrus.combat.CombatSource combatSource = de.erethon.papyrus.combat.CombatContext.capture();
@@ -218,13 +222,13 @@
 +                x = (Math.random() - Math.random()) * 0.01D;
 +            }
 +
-+            this.knockback(0.4000000059604645D, x, z, attacker, EntityKnockbackEvent.Cause.DAMAGE);
++            this.knockback(0.4000000059604645D, x, z, damageSource, (float) finalDmg, attacker, EntityKnockbackEvent.Cause.DAMAGE);
 +            if (this instanceof ServerPlayer player && player.isRealPlayer) {
 +                indicateDamage(x, z);
 +            }
 +        }
 +        markHurt();
-+        invulnerableTime = (int) getAttribute(Attributes.COMBAT_HURTINVULNERABILITY).getValue();
++        this.setInvulnerableTime((int) getAttribute(Attributes.COMBAT_HURTINVULNERABILITY).getValue());
 +        playHurtSound(damageSource);
 +        level().broadcastDamageEvent(this, damageSource); // hurt animation
 +        float dmg = (float) Math.max(finalDmg, 0);
@@ -245,22 +249,22 @@
          if (this.isInvulnerableTo(level, source)) {
              return false;
          }
-@@ -1579,7 +_,7 @@
+@@ -1562,7 +_,7 @@
          }
  
          return success;
 -    }
 +    }*/
  
-     public float applyItemBlocking(final ServerLevel level, final DamageSource source, final float damage) {
-         // Paper start
-@@ -3614,7 +_,13 @@
+     public void dealDefaultKnockback(final DamageSource source, final float damage, final boolean blocked) {
+         double xd = 0.0;
+@@ -3615,7 +_,13 @@
                          AttributeInstance instance = this.attributes.getInstance(attribute);
                          if (instance != null) {
                              instance.removeModifier(modifier.id());
 -                            instance.addTransientModifier(modifier);
 +                            // Papyrus start - Add modifier event
-+                            ItemModifierAddEvent event = new ItemModifierAddEvent(getBukkitLivingEntity(), CraftItemStack.asCraftMirror(current), CraftAttributeInstance.convert(modifier));
++                            ItemModifierAddEvent event = new ItemModifierAddEvent(getBukkitEntity(), CraftItemStack.asBukkitMirror(current), CraftAttributeInstance.convert(modifier));
 +                            event.callEvent();
 +                            if (!event.isCancelled()) {
 +                                instance.addTransientModifier(CraftAttributeInstance.convert(event.getAttributeModifier()));
@@ -269,7 +273,7 @@
                          }
                      });
                      if (this.level() instanceof ServerLevel serverLevel) {
-@@ -4040,7 +_,7 @@
+@@ -4042,7 +_,7 @@
          Vec3 to = new Vec3(target.getX(), eyeHeight, target.getZ());
          // Paper - diff on change - used in CraftLivingEntity#hasLineOfSight(Location) and CraftWorld#lineOfSightExists
          return !(to.distanceToSqr(from) > Mth.square(128.0)) // Paper - Perf: Use distance squared

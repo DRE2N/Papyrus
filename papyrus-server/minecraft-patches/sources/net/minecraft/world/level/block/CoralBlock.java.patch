@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/block/CoralBlock.java
 +++ b/net/minecraft/world/level/block/CoralBlock.java
-@@ -36,6 +_,7 @@
+@@ -24,6 +_,7 @@
  
      @Override
      protected void tick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
@@ -8,7 +8,7 @@
          if (!this.scanForWater(level, pos)) {
              // CraftBukkit start
              if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState()).isCancelled()) {
-@@ -57,6 +_,7 @@
+@@ -45,6 +_,7 @@
          final BlockState neighbourState,
          final RandomSource random
      ) {
@@ -16,7 +16,7 @@
          if (!this.scanForWater(level, pos)) {
              ticks.scheduleTick(pos, this, 60 + random.nextInt(40));
          }
-@@ -65,6 +_,7 @@
+@@ -53,6 +_,7 @@
      }
  
      protected boolean scanForWater(final BlockGetter level, final BlockPos blockPos) {
@@ -24,7 +24,7 @@
          for (Direction direction : Direction.values()) {
              FluidState fluidState = level.getFluidState(blockPos.relative(direction));
              if (fluidState.is(FluidTags.WATER)) {
-@@ -77,6 +_,7 @@
+@@ -65,6 +_,7 @@
  
      @Override
      public @Nullable BlockState getStateForPlacement(final BlockPlaceContext context) {

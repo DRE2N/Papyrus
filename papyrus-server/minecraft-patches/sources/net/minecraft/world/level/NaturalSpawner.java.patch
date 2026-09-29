@@ -10,7 +10,7 @@
  import it.unimi.dsi.fastutil.objects.Object2IntMap;
  import it.unimi.dsi.fastutil.objects.Object2IntMaps;
  import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-@@ -87,7 +_,11 @@
+@@ -86,7 +_,11 @@
  
          for (Entity entity : entities) {
              if (!(entity instanceof Mob mob && (mob.isPersistenceRequired() || mob.requiresCustomPersistence()))) {
@@ -23,7 +23,7 @@
                  if (category != MobCategory.MISC) {
                      // Paper start - Only count natural spawns
                      if (!entity.level().paperConfig().entities.spawning.countAllMobsForSpawning &&
-@@ -255,17 +_,20 @@
+@@ -246,17 +_,20 @@
          // Paper start - Optional per player mob spawns
          spawnCategoryForPosition(mobCategory, level, chunk, start, extraTest, spawnCallback, Integer.MAX_VALUE, null);
      }
@@ -54,7 +54,7 @@
          StructureManager structureManager = level.structureManager();
          ChunkGenerator generator = level.getChunkSource().getGenerator();
          int yStart = start.getY();
-@@ -328,6 +_,9 @@
+@@ -319,6 +_,9 @@
                                      groupData = mob.finalizeSpawn(
                                          level, level.getCurrentDifficultyAt(mob.blockPosition()), EntitySpawnReason.NATURAL, groupData
                                      );
@@ -64,17 +64,18 @@
                                      // CraftBukkit start
                                      // SPIGOT-7045: Give ocelot babies back their special spawn reason. Note: This is the only modification required as ocelots count as monsters which means they only spawn during normal chunk ticking and do not spawn during chunk generation as starter mobs.
                                      level.addFreshEntityWithPassengers(mob, (mob instanceof net.minecraft.world.entity.animal.feline.Ocelot && !((org.bukkit.entity.Ageable) mob.getBukkitEntity()).isAdult()) ? org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.OCELOT_BABY : org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL);
-@@ -472,9 +_,14 @@
-         final BlockPos pos,
-         final @Nullable Holder<Biome> biome
+@@ -458,9 +_,15 @@
+     private static WeightedList<MobSpawnSettings.SpawnerData> mobsAt(
+         final ServerLevel level, final StructureManager structureManager, final ChunkGenerator generator, final MobCategory mobCategory, final BlockPos pos
      ) {
 -        return isInNetherFortressBounds(pos, level, mobCategory, structureManager)
 -            ? NetherFortressStructure.FORTRESS_ENEMIES
--            : generator.getMobsAt(biome != null ? biome : level.getBiome(pos), structureManager, mobCategory, pos);
+-            : generator.getMobsAt(level, structureManager, mobCategory, pos);
 +        // Papyrus start - mob spawn event
++        Holder<Biome> biome = level.getBiome(pos);
 +        WeightedList<MobSpawnSettings.SpawnerData> spawnerData = isInNetherFortressBounds(pos, level, mobCategory, structureManager)
 +                ? NetherFortressStructure.FORTRESS_ENEMIES
-+                : generator.getMobsAt(biome != null ? biome : level.getBiome(pos), structureManager, mobCategory, pos);
++                : generator.getMobsAt(level, structureManager, mobCategory, pos);
 +        MobSpawnForBiomeEvent mobSpawnForBiomeEvent = new MobSpawnForBiomeEvent(level, structureManager, generator, mobCategory, pos, biome, spawnerData);
 +        mobSpawnForBiomeEvent.callEvent();
 +        return mobSpawnForBiomeEvent.getSpawnerData();
@@ -82,7 +83,7 @@
      }
  
      public static boolean isInNetherFortressBounds(
-@@ -672,7 +_,11 @@
+@@ -664,7 +_,11 @@
              }
  
              this.spawnPotential.addCharge(pos, charge);

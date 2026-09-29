@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/block/NoteBlock.java
 +++ b/net/minecraft/world/level/block/NoteBlock.java
-@@ -124,6 +_,7 @@
+@@ -117,6 +_,7 @@
          final InteractionHand hand,
          final BlockHitResult hitResult
      ) {

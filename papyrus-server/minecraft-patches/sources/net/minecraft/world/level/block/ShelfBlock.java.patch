@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/level/block/ShelfBlock.java
 +++ b/net/minecraft/world/level/block/ShelfBlock.java
-@@ -90,7 +_,8 @@
+@@ -83,7 +_,8 @@
  
      @Override
      public @Nullable BlockEntity newBlockEntity(final BlockPos worldPosition, final BlockState blockState) {

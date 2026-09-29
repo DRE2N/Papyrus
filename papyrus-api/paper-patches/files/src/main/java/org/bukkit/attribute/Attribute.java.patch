@@ -2,7 +2,7 @@
 +++ b/src/main/java/org/bukkit/attribute/Attribute.java
 @@ -160,6 +_,42 @@
       */
-     Attribute WAYPOINT_RECEIVE_RANGE = getAttribute("waypoint_receive_range");
+     Attribute NAME_TAG_DISTANCE = getAttribute("name_tag_distance");
  
 +    // Papyrus start - Attributes
 +    Attribute ADVANTAGE_AIR = getAttribute("advantage_air");

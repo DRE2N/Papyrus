@@ -1,6 +1,6 @@
 --- a/net/minecraft/core/component/PatchedDataComponentMap.java
 +++ b/net/minecraft/core/component/PatchedDataComponentMap.java
-@@ -210,6 +_,19 @@
+@@ -208,6 +_,19 @@
          return new DataComponentPatch(this.patch);
      }
  
