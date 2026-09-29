@@ -24,6 +24,7 @@ public class SpellbookAPI {
         queue = new SpellQueue(this);
 
         library = new SpellLibrary(this);
+        library.reload();
     }
 
     public Server getServer() {
