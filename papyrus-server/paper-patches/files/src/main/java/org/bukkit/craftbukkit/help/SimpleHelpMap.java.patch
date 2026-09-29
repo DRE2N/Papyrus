@@ -1,0 +1,31 @@
+--- a/src/main/java/org/bukkit/craftbukkit/help/SimpleHelpMap.java
++++ b/src/main/java/org/bukkit/craftbukkit/help/SimpleHelpMap.java
+@@ -12,6 +12,7 @@
+ import java.util.Set;
+ import java.util.TreeMap;
+ import java.util.TreeSet;
++import java.util.logging.Level;
+ import org.bukkit.command.Command;
+ import org.bukkit.command.CommandExecutor;
+ import org.bukkit.command.MultipleCommandAlias;
+@@ -129,6 +130,9 @@
+                 continue;
+             }
+ 
++            // A disabled plugin may leave a help factory registered. Keep its
++            // broken help topic from aborting server startup.
++            try {
+             // Register a topic
+             for (Class c : this.topicFactoryMap.keySet()) {
+                 if (c.isAssignableFrom(command.getClass())) {
+@@ -142,6 +146,10 @@
+                     continue outer;
+                 }
+             }
++            } catch (RuntimeException exception) {
++                this.server.getLogger().log(Level.WARNING, "Skipping help topic for command " + command.getName(), exception);
++                continue;
++            }
+             this.addTopic(new GenericCommandHelpTopic(command));
+         }
+ 

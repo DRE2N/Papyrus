@@ -60,62 +60,60 @@ public class SpellLibrary {
     public void loadSpells(File spellFolder) {
         Plugin plugin = Bukkit.getPluginManager().getPlugin("Hecate");
         if (plugin == null) {
-            spellbookAPI.getServer().getLogger().warning("Could not load spells due to Spellbook plugin missing.");
+            spellbookAPI.getServer().getLogger().warning("Could not load spells because Hecate is missing.");
             return;
         }
         ClassLoader classLoader = plugin.getClass().getClassLoader();
-        String currentPath = new File("").getAbsolutePath();
-        try {
-            for (File f : getFilesForFolder(new File(spellFolder, "spells"))) {
-                if (!f.getName().endsWith(".yml")) {
-                    continue;
-                }
-                String id = f.getName().replace(".yml", "");
 
-                SpellData spellData = new SpellData(spellbookAPI, id, classLoader);
-                try {
-                    spellData.load(f);
-                } catch (IOException | InvalidConfigurationException e) {
-                    throw new RuntimeException(e);
-                }
-                loadedSpells.put(id, spellData);
+        for (File file : getFilesForFolder(new File(spellFolder, "effects"))) {
+            if (!file.getName().endsWith(".yml")) continue;
+            String id = file.getName().replace(".yml", "");
+            try {
+                EffectData data = new EffectData(spellbookAPI, id, classLoader);
+                data.load(file);
+                loadedEffects.put(id, data);
+            } catch (Exception | LinkageError e) {
+                logLoadFailure("effect", file, e);
             }
-            spellbookAPI.getServer().getLogger().info("Loaded " + loadedSpells.size() + " spells.");
-
-            for (File f : getFilesForFolder(new File(spellFolder, "effects"))) {
-                if (!f.getName().endsWith(".yml")) {
-                    continue;
-                }
-                String id = f.getName().replace(".yml", "");
-                EffectData effectData = new EffectData(spellbookAPI, id, classLoader);
-                try {
-                    effectData.load(f);
-                } catch (IOException | InvalidConfigurationException e) {
-                    throw new RuntimeException(e);
-                }
-                loadedEffects.put(id, effectData);
-            }
-            spellbookAPI.getServer().getLogger().info("Loaded " + loadedEffects.size() + " effects.");
-
-            for (File f : getFilesForFolder(new File(spellFolder, "traits"))) {
-                if (!f.getName().endsWith(".yml")) {
-                    continue;
-                }
-                String id = f.getName().replace(".yml", "");
-                TraitData traitData = new TraitData(spellbookAPI, id, classLoader);
-                try {
-                    traitData.load(f);
-                } catch (IOException | InvalidConfigurationException e) {
-                    throw new RuntimeException(e);
-                }
-                loadedTraits.put(id, traitData);
-            }
-            spellbookAPI.getServer().getLogger().info("Loaded " + loadedTraits.size() + " traits.");
-
-        } catch (Exception e) {
-            spellbookAPI.getServer().getLogger().log(Level.SEVERE, "An error occurred while loading spells/effects/traits: " + currentPath + " Error: " + e.getMessage());
-            e.printStackTrace();
         }
+
+        for (File file : getFilesForFolder(new File(spellFolder, "spells"))) {
+            if (!file.getName().endsWith(".yml")) continue;
+            String id = file.getName().replace(".yml", "");
+            try {
+                SpellData data = new SpellData(spellbookAPI, id, classLoader);
+                data.load(file);
+                loadedSpells.put(id, data);
+            } catch (Exception | LinkageError e) {
+                logLoadFailure("spell", file, e);
+            }
+        }
+
+        List<File> traitFiles = getFilesForFolder(new File(spellFolder, "traits"));
+        for (File file : traitFiles) {
+            if (file.getName().endsWith(".yml")) {
+                String id = file.getName().replace(".yml", "");
+                loadedTraits.put(id, new TraitData(spellbookAPI, id, classLoader));
+            }
+        }
+        for (File file : traitFiles) {
+            if (!file.getName().endsWith(".yml")) continue;
+            String id = file.getName().replace(".yml", "");
+            try {
+                loadedTraits.get(id).load(file);
+            } catch (Exception | LinkageError e) {
+                loadedTraits.remove(id);
+                logLoadFailure("trait", file, e);
+            }
+        }
+
+        spellbookAPI.getServer().getLogger().info("Loaded " + loadedEffects.size() + " effects, "
+                + loadedSpells.size() + " spells and " + loadedTraits.size() + " traits.");
+    }
+
+    private void logLoadFailure(String type, File file, Throwable failure) {
+        spellbookAPI.getServer().getLogger().log(Level.WARNING,
+                "Skipping invalid Spellbook " + type + " '" + file.getName() + "': " + failure, failure);
     }
 
     public static List<File> getFilesForFolder(File folder) {
