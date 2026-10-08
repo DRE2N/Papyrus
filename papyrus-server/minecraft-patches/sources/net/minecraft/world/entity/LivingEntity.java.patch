@@ -123,42 +123,58 @@
      protected boolean shouldTakeDrowningDamage() {
          return this.getAirSupply() <= -20;
      }
-@@ -1427,8 +_,124 @@
+@@ -1427,8 +_,139 @@
          return this.hurtTime > 0;
      }
  
 +    public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount, CraftPDamageType damageType) {
 +        if (isInvulnerable() || isRemoved() || dead || getHealth() <= 0F || isInvulnerableTo((ServerLevel) level, damageSource) || level().isClientSide()) {
++            de.erethon.papyrus.combat.CombatDiagnostics.rejected(getId(), "invulnerable_or_dead", damageSource, amount);
 +            return false;
 +        }
 +        if (this.getInvulnerableTime() > 0) {
++            de.erethon.papyrus.combat.CombatDiagnostics.rejected(getId(), "hurt_immunity", damageSource, amount);
 +            return false;
 +        }
 +        Entity attacker = damageSource.getEntity();
++        de.erethon.papyrus.combat.CombatSource combatSource = de.erethon.papyrus.combat.CombatContext.capture();
++        Entity directEntity = damageSource.getDirectEntity();
++        if (combatSource == null && directEntity != null) {
++            combatSource = directEntity.papyrusCombatSource;
++        }
++        if (combatSource == null && attacker != null) {
++            combatSource = attacker.papyrusCombatSource;
++        }
++        if (combatSource == null) {
++            combatSource = de.erethon.papyrus.combat.CombatSource.basicAttack();
++        }
 +        double requestedDamage = amount;
 +        double finalDmg = amount;
 +        double resistance = getAttributeValue(damageType.resistance);
 +        double penetration = 0;
-+        boolean critical = false;
++        boolean critical = damageSource.isCritical();
 +        if (attacker != null) {
 +            if (attacker instanceof LivingEntity living) {
-+                // Remove the value of the attackers penetration attribute from the victims resistance
-+                // This can result in negative resistance values, which is intended
 +                penetration = living.getAttributeValue(damageType.penetration);
-+
-+                double critChance = living.getAttributeValue(Attributes.STAT_CRIT_CHANCE);
-+                double critDamage = living.getAttributeValue(Attributes.STAT_CRIT_DAMAGE);
-+                // Crit damage. If I do 100 initial damage, and my crit damage is 200, I will do 200 damage
-+                boolean isCrit = Math.random() < (critChance / 100.0);
-+                if (isCrit && damageType == CraftPDamageType.PHYSICAL) {
-+                    amount *= (float) (critDamage / 100.0);
-+                    critical = true;
-+                    damageSource.critical();
++                // Spellbook spells may already roll their own critical result. Papyrus
++                // only adds attribute crits to physical basic attacks.
++                if (damageType == CraftPDamageType.PHYSICAL
++                        && combatSource.type() == de.erethon.papyrus.combat.CombatSource.Type.BASIC_ATTACK) {
++                    double critBonus = living.getAttributeValue(Attributes.STAT_CRIT_DAMAGE);
++                    double multiplier = de.erethon.papyrus.combat.CombatMath.criticalMultiplier(critBonus);
++                    if (critical) {
++                        // Player.attack has already applied the vanilla 1.5 critical multiplier.
++                        amount *= (float) (multiplier / 1.5);
++                    } else if (java.util.concurrent.ThreadLocalRandom.current().nextDouble(100)
++                            < de.erethon.papyrus.combat.CombatMath.chancePercent(living.getAttributeValue(Attributes.STAT_CRIT_CHANCE))) {
++                        amount *= (float) multiplier;
++                        critical = true;
++                        damageSource = damageSource.critical();
++                    }
 +                }
 +            }
-+            // Now remove the resistance from the damage
 +            double effectiveResistance = resistance - penetration;
-+            finalDmg = amount - effectiveResistance;
++            finalDmg = de.erethon.papyrus.combat.CombatMath.applyResistance(amount, resistance, penetration);
 +            double damageAfterResistance = finalDmg;
 +
 +            // Spells or traits may modify damage, but take effect after resistances
@@ -167,17 +183,6 @@
 +                finalDmg = getBukkitEntity().onDamage(attackerBukkit, finalDmg, damageType.apiType);
 +            }
 +
-+            de.erethon.papyrus.combat.CombatSource combatSource = de.erethon.papyrus.combat.CombatContext.capture();
-+            Entity directEntity = damageSource.getDirectEntity();
-+            if (combatSource == null && directEntity != null) {
-+                combatSource = directEntity.papyrusCombatSource;
-+            }
-+            if (combatSource == null) {
-+                combatSource = attacker.papyrusCombatSource;
-+            }
-+            if (combatSource == null) {
-+                combatSource = de.erethon.papyrus.combat.CombatSource.basicAttack();
-+            }
 +            de.erethon.papyrus.combat.CombatDamageBreakdown breakdown = new de.erethon.papyrus.combat.CombatDamageBreakdown(
 +                    requestedDamage,
 +                    amount,
@@ -194,6 +199,7 @@
 +            EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(attacker.getBukkitEntity(), getBukkitEntity(), EntityDamageEvent.DamageCause.ENTITY_ATTACK, new CraftDamageSource(damageSource), finalDmg, damageType.apiType, critical, combatSource, breakdown);
 +            Bukkit.getServer().getPluginManager().callEvent(event);
 +            if (event.isCancelled()) {
++                de.erethon.papyrus.combat.CombatDiagnostics.rejected(getId(), "event_cancelled", damageSource, amount);
 +                return false;
 +            }
 +            // TODO: Doesn't work for now.
@@ -204,7 +210,8 @@
 +            }
 +
 +            finalDmg = event.getDamage();
-+            if (finalDmg <= 0) {
++            if (!Double.isFinite(finalDmg) || finalDmg <= 0) {
++                de.erethon.papyrus.combat.CombatDiagnostics.rejected(getId(), "zero_or_invalid_damage", damageSource, amount);
 +                return false; // Do not deal knockback or mark as last hurt if no damage was dealt
 +            }
 +
@@ -222,10 +229,18 @@
 +                x = (Math.random() - Math.random()) * 0.01D;
 +            }
 +
-+            this.knockback(0.4000000059604645D, x, z, damageSource, (float) finalDmg, attacker, EntityKnockbackEvent.Cause.DAMAGE);
++            // Routine spell and effect damage should not move its target. Basic
++            // attacks get restrained contact knockback; explicit ability and
++            // sprint/weapon displacement are handled at their call sites.
++            if (combatSource.type() == de.erethon.papyrus.combat.CombatSource.Type.BASIC_ATTACK) {
++                this.knockback(0.2D, x, z, damageSource, (float) finalDmg, attacker, EntityKnockbackEvent.Cause.DAMAGE);
++            }
 +            if (this instanceof ServerPlayer player && player.isRealPlayer) {
 +                indicateDamage(x, z);
 +            }
++            de.erethon.papyrus.combat.CombatDiagnostics.hit(getId(), attacker.getId(), damageSource,
++                    combatSource, damageType.name(), breakdown.withFinalDamage(finalDmg), getHealth(),
++                    combatSource.type() == de.erethon.papyrus.combat.CombatSource.Type.BASIC_ATTACK);
 +        }
 +        markHurt();
 +        this.setInvulnerableTime((int) getAttribute(Attributes.COMBAT_HURTINVULNERABILITY).getValue());
