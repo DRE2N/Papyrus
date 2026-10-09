@@ -13,11 +13,10 @@ CC-bar values, telegraphs and PvP/PvE coefficients remain authored by plugins.
    vanilla jump critical has already applied its 1.5 multiplier in
    `Player.attack`, so Papyrus adds only the remaining attribute bonus. Spells
    must own their own critical eligibility and avoid a second roll.
-3. Resistance applies after critical damage. Effective resistance is target
-   resistance minus attacker penetration. Nonnegative resistance uses
-   `max(0.2, 100 / (100 + effectiveResistance))`; negative resistance can
-   amplify damage up to 2x. A positive landed hit is not erased solely by
-   resistance.
+3. Resistance applies after critical damage as a flat subtraction:
+   `max(0, damageAfterCritical - (targetResistance - attackerPenetration))`.
+   Penetration offsets resistance point for point; excess penetration adds
+   flat damage. Resistance can fully block a hit.
 4. Spellbook `onDamage` modifiers run after mitigation. Bukkit's damage event
    can change or cancel the result. A nonpositive or nonfinite final result is
    rejected and does not trigger contact knockback or last-hurt attribution.

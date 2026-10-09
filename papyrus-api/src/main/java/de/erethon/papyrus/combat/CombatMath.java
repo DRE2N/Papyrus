@@ -10,9 +10,9 @@ public final class CombatMath {
     }
 
     /**
-     * Resistance has diminishing returns and cannot erase a landed hit.
-     * Penetration can move resistance below zero, increasing damage by at most
-     * 100%. Positive resistance can prevent at most 80% of incoming damage.
+     * Resistance and penetration are flat damage points. Penetration subtracts
+     * from resistance; excess penetration adds the remaining points to damage.
+     * Resistance can reduce a hit to zero, but never below zero.
      */
     public static double applyResistance(double damage, double resistance, double penetration) {
         if (!Double.isFinite(damage) || damage <= 0) {
@@ -22,10 +22,7 @@ public final class CombatMath {
         if (!Double.isFinite(effectiveResistance)) {
             return damage;
         }
-        if (effectiveResistance >= 0) {
-            return damage * Math.max(0.2, 100.0 / (100.0 + effectiveResistance));
-        }
-        return damage * (1.0 + Math.min(100.0, -effectiveResistance) / 100.0);
+        return Math.max(0.0, damage - effectiveResistance);
     }
 
     /** Normal critical hits deal 150% plus the critical damage attribute. */
