@@ -9,6 +9,15 @@
  import net.minecraft.core.BlockPos;
  import net.minecraft.core.Direction;
  import net.minecraft.core.GlobalPos;
+@@ -221,7 +_,8 @@
+     public static AttributeSupplier.Builder createAttributes() {
+         return LivingEntity.createLivingAttributes()
++            .add(Attributes.COMBAT_HURTINVULNERABILITY, 8.0)
+             .add(Attributes.ATTACK_DAMAGE, 1.0)
+             .add(Attributes.MOVEMENT_SPEED, 0.1F)
+             .add(Attributes.ATTACK_SPEED)
+             .add(Attributes.LUCK)
+             .add(Attributes.BLOCK_INTERACTION_RANGE)
 @@ -707,7 +_,7 @@
      }
  

@@ -123,17 +123,13 @@
      protected boolean shouldTakeDrowningDamage() {
          return this.getAirSupply() <= -20;
      }
-@@ -1427,8 +_,139 @@
+@@ -1427,8 +_,141 @@
          return this.hurtTime > 0;
      }
  
 +    public boolean hurtServer(ServerLevel level, DamageSource damageSource, float amount, CraftPDamageType damageType) {
 +        if (isInvulnerable() || isRemoved() || dead || getHealth() <= 0F || isInvulnerableTo((ServerLevel) level, damageSource) || level().isClientSide()) {
 +            de.erethon.papyrus.combat.CombatDiagnostics.rejected(getId(), "invulnerable_or_dead", damageSource, amount);
-+            return false;
-+        }
-+        if (this.getInvulnerableTime() > 0) {
-+            de.erethon.papyrus.combat.CombatDiagnostics.rejected(getId(), "hurt_immunity", damageSource, amount);
 +            return false;
 +        }
 +        Entity attacker = damageSource.getEntity();
@@ -147,6 +143,12 @@
 +        }
 +        if (combatSource == null) {
 +            combatSource = de.erethon.papyrus.combat.CombatSource.basicAttack();
++        }
++        boolean basicContact = attacker instanceof LivingEntity
++                && combatSource.type() == de.erethon.papyrus.combat.CombatSource.Type.BASIC_ATTACK;
++        if (basicContact && this.damageCooldownTime > 0) {
++            de.erethon.papyrus.combat.CombatDiagnostics.rejected(getId(), "hurt_immunity", damageSource, amount);
++            return false;
 +        }
 +        double requestedDamage = amount;
 +        double finalDmg = amount;
@@ -243,7 +245,7 @@
 +                    combatSource.type() == de.erethon.papyrus.combat.CombatSource.Type.BASIC_ATTACK);
 +        }
 +        markHurt();
-+        this.setInvulnerableTime((int) getAttribute(Attributes.COMBAT_HURTINVULNERABILITY).getValue());
++        if (basicContact) this.damageCooldownTime = (int) getAttribute(Attributes.COMBAT_HURTINVULNERABILITY).getValue();
 +        playHurtSound(damageSource);
 +        level().broadcastDamageEvent(this, damageSource); // hurt animation
 +        float dmg = (float) Math.max(finalDmg, 0);

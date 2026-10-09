@@ -96,7 +96,7 @@
 +            "stat_tenacity", new RangedAttribute("attribute.name.stat_tenacity", 0.0, 0.0, 4096).setSyncable(false)
 +    );
 +    public static final Holder<Attribute> COMBAT_HURTINVULNERABILITY = register(
-+            "combat_hurtinvulnerability", new RangedAttribute("attribute.name.combat_hurtinvulnerability", 0.0, 0.0, 4096).setSyncable(false)
++            "combat_hurtinvulnerability", new RangedAttribute("attribute.name.combat_hurtinvulnerability", 3.0, 0.0, 4096).setSyncable(false)
 +    );
 +    // Papyrus end
 +
